@@ -1,36 +1,66 @@
 """
-CP-SAT solver for the scheduler.
+CP-SAT Solver for the Automated Laboratory Scheduling System.
 
-The model keeps one scheduling unit per (instructor, subject) pair.  Each unit
-chooses a matching room and one valid timeslot block; overlap constraints are
-then enforced from those choices instead of pre-expanding room x block x pattern
-assignment variables.
+This module handles all scheduling logic using Google OR-Tools CP-SAT,
+a constraint satisfaction and optimization solver.
+
+The model creates one scheduling unit per (instructor, subject) pair.
+Each unit selects a matching room and one valid timeslot block.
+Overlap constraints are enforced after block selection rather than
+pre-expanding all possible room-block-pattern combinations, which
+keeps the model size manageable.
+
+Scheduling pipeline:
+    1. Filter valid timeslots (07:00-21:00, 30-minute aligned)
+    2. Parse instructor availability windows
+    3. Generate candidate time blocks per instructor-subject pair
+    4. Apply floor restrictions to filter matching rooms
+    5. Build CP-SAT model with hard constraints
+    6. Stage 1: Find any feasible solution
+    7. Stage 2: Minimize preferred time deviation (if set)
 """
 
 from ortools.sat.python import cp_model
 from typing import Any, Optional
 
-WINDOW_START_MINUTES = 7 * 60
-WINDOW_END_MINUTES = 21 * 60
-DEFAULT_PREFERRED_START_MINUTES = 9 * 60
+# Scheduling window boundaries in minutes from midnight
+WINDOW_START_MINUTES = 7 * 60   # 07:00
+WINDOW_END_MINUTES = 21 * 60    # 21:00
+
+# Default preferred start time if none is specified
+DEFAULT_PREFERRED_START_MINUTES = 9 * 60  # 09:00
+
+# All timeslots must align to 30-minute boundaries
 ALIGNMENT_MINUTES = 30
 
 
 def _time_to_minutes(time_str: str) -> int:
+    """Convert a time string like '09:30' to total minutes from midnight."""
     hours, minutes = map(int, time_str.split(":"))
     return hours * 60 + minutes
 
 
 def _is_aligned(minutes: int) -> bool:
+    """Check if a time in minutes falls on a 30-minute boundary from 07:00."""
     return (minutes - WINDOW_START_MINUTES) % ALIGNMENT_MINUTES == 0
 
 
 def _slot_duration(timeslots: list[dict]) -> int:
+    """Return the shortest slot duration found in the timeslot list."""
     durations = {int(t["duration"]) for t in timeslots}
     return min(durations) if durations else ALIGNMENT_MINUTES
 
 
 def _allowed_timeslots(timeslots: list[dict], slot_duration_minutes: int) -> list[dict]:
+    """
+    Filter timeslots to only those that are valid for scheduling.
+
+    A valid timeslot must:
+    - Match the expected slot duration
+    - Fall entirely within 07:00-21:00
+    - Have a duration that exactly matches start to end
+    - Start and end on 30-minute aligned boundaries
+    """
     allowed = []
     for slot in timeslots:
         start = _time_to_minutes(slot["start_time"])
@@ -48,6 +78,16 @@ def _allowed_timeslots(timeslots: list[dict], slot_duration_minutes: int) -> lis
 
 
 def _get_session_patterns(hours_per_week: int, slot_duration_minutes: int) -> list[tuple[int, ...]]:
+    """
+    Return the valid block patterns for a subject based on its weekly hours.
+
+    A pattern is a tuple of slot counts representing how a subject's weekly
+    hours can be split across sessions. For example:
+    - 3 hours/week = 6 slots -> can be (6,) single block or (3,3) two-day split
+    - 5 hours/week = 10 slots -> can be (10,), (4,6), or (5,5)
+
+    Returns an empty list if the hours do not align with the slot duration.
+    """
     total_slots = int(hours_per_week * (60 / slot_duration_minutes))
     if total_slots <= 0 or total_slots != hours_per_week * (60 / slot_duration_minutes):
         return []
@@ -59,15 +99,24 @@ def _get_session_patterns(hours_per_week: int, slot_duration_minutes: int) -> li
 
 
 def _find_consecutive_blocks(timeslots: list[dict], slots_needed: int) -> list[list[int]]:
+    """
+    Find all consecutive sequences of timeslots of a given size within each day.
+
+    Consecutive means each slot's end time must equal the next slot's start time.
+    Returns a list of blocks where each block is a list of timeslot IDs.
+    """
+    # Group timeslots by day
     by_day: dict[str, list[dict]] = {}
     for slot in timeslots:
         by_day.setdefault(slot["day"], []).append(slot)
 
     blocks = []
     for day_slots in by_day.values():
+        # Sort slots by start time within each day
         sorted_slots = sorted(day_slots, key=lambda s: _time_to_minutes(s["start_time"]))
         for start_index in range(len(sorted_slots) - slots_needed + 1):
             block = sorted_slots[start_index : start_index + slots_needed]
+            # Validate that all slots in the sequence are truly consecutive
             if all(
                 _time_to_minutes(block[i]["start_time"]) == _time_to_minutes(block[i - 1]["end_time"])
                 for i in range(1, len(block))
@@ -81,11 +130,29 @@ def _candidate_blocks(
     patterns: list[tuple[int, ...]],
     permitted_timeslot_ids: Optional[set[int]] = None,
 ) -> list[list[int]]:
+    """
+    Generate all valid candidate time blocks for a given set of session patterns.
+
+    For single-day patterns (e.g. (6,)), returns all consecutive blocks of that size.
+    For split patterns (e.g. (3,3)), combines two blocks from different days.
+
+    If permitted_timeslot_ids is provided, only blocks where every slot is in
+    that set are kept. This enforces instructor availability as a hard filter
+    before the CP-SAT model is built.
+
+    Symmetry deduplication is applied to split patterns so that (Monday block +
+    Tuesday block) and (Tuesday block + Monday block) are not both included.
+
+    If a split pattern would produce more than 1000 combinations, only blocks
+    with matching start times are kept to limit the model size.
+    """
+    # Pre-compute blocks of each required size
     by_size: dict[int, list[list[int]]] = {}
     for pattern in patterns:
         for size in pattern:
             if size not in by_size:
                 blocks = _find_consecutive_blocks(timeslots, size)
+                # Apply availability filter if provided
                 if permitted_timeslot_ids is not None:
                     blocks = [block for block in blocks if all(ts_id in permitted_timeslot_ids for ts_id in block)]
                 by_size[size] = blocks
@@ -96,6 +163,7 @@ def _candidate_blocks(
 
     for pattern in patterns:
         if len(pattern) == 1:
+            # Single-block pattern: add each block directly
             for block in by_size.get(pattern[0], []):
                 key = tuple(block)
                 if key not in seen:
@@ -103,17 +171,23 @@ def _candidate_blocks(
                     candidates.append(block)
             continue
 
+        # Split pattern: combine two blocks from different days
         first_size, second_size = pattern
         first_blocks = by_size.get(first_size, [])
         second_blocks = by_size.get(second_size, [])
         symmetric = first_size == second_size
+
+        # Limit combinations if there are too many to keep model size small
         use_aligned_split_starts = len(first_blocks) * len(second_blocks) > 1000
         for first in first_blocks:
             for second in second_blocks:
+                # Both halves must be on different days
                 if timeslot_map[first[0]]["day"] == timeslot_map[second[0]]["day"]:
                     continue
+                # For symmetric patterns, skip reverse duplicates using ID comparison
                 if symmetric and first[0] >= second[0]:
                     continue
+                # For large pattern spaces, only keep aligned start times
                 if use_aligned_split_starts and (
                     timeslot_map[first[0]]["start_time"] != timeslot_map[second[0]]["start_time"]
                 ):
@@ -131,29 +205,67 @@ def _parse_instructor_availability(
     timeslot_map: dict[int, dict],
     allowed_timeslot_ids: set[int],
 ) -> tuple[dict[int, list[tuple]], dict[int, set[int]]]:
-    windows: dict[int, list[tuple]] = {}
-    for row in instructor_availability:
-        windows.setdefault(row["instructor_id"], []).append(
-            (
-                row["day"],
-                _time_to_minutes(row["start_time"]),
-                _time_to_minutes(row["end_time"]),
-            )
-        )
+    """
+    Parse instructor availability records into allowed timeslot sets.
 
+    Supports two types of availability windows:
+    - Whole-week (day=None or empty): applies to every day of the week
+    - Day-specific: applies only to the named day
+
+    Override semantics: if day-specific windows exist for a given day,
+    they completely replace whole-week windows for that day. This allows
+    expressions like 'whole week 07:00-17:00 except Wednesday 10:00-12:00'
+    by adding a whole-week window plus an explicit Wednesday window.
+
+    Returns:
+        windows: flat list of (day_or_None, start_min, end_min) per instructor
+        allowed_by_instructor: set of allowed timeslot IDs per instructor
+    """
+    # Separate whole-week windows from day-specific windows
+    whole_week_windows: dict[int, list[tuple[int, int]]] = {}
+    day_specific_windows: dict[int, dict[str, list[tuple[int, int]]]] = {}
+
+    for row in instructor_availability:
+        iid = row["instructor_id"]
+        start_min = _time_to_minutes(row["start_time"])
+        end_min = _time_to_minutes(row["end_time"])
+        day = row.get("day") or None  # treat empty string the same as NULL
+
+        if day is None:
+            whole_week_windows.setdefault(iid, []).append((start_min, end_min))
+        else:
+            day_specific_windows.setdefault(iid, {}).setdefault(day, []).append((start_min, end_min))
+
+    # Build a flat (day_or_None, start_min, end_min) list per instructor
+    windows: dict[int, list[tuple]] = {}
+    all_instructor_ids = set(whole_week_windows) | set(day_specific_windows)
+    for iid in all_instructor_ids:
+        combined: list[tuple] = []
+        for s, e in whole_week_windows.get(iid, []):
+            combined.append((None, s, e))
+        for d, ranges in day_specific_windows.get(iid, {}).items():
+            for s, e in ranges:
+                combined.append((d, s, e))
+        windows[iid] = combined
+
+    # Determine which timeslots each instructor is allowed to use.
+    # Day-specific windows override whole-week windows for that particular day.
     allowed_by_instructor: dict[int, set[int]] = {}
-    for instructor_id, instructor_windows in windows.items():
+    for iid in all_instructor_ids:
         allowed: set[int] = set()
+        ww = whole_week_windows.get(iid, [])
+        ds = day_specific_windows.get(iid, {})
         for ts_id in allowed_timeslot_ids:
             slot = timeslot_map[ts_id]
+            ts_day = slot["day"]
             start = _time_to_minutes(slot["start_time"])
             end = _time_to_minutes(slot["end_time"])
-            if any(
-                slot["day"] == day and start >= win_start and end <= win_end
-                for day, win_start, win_end in instructor_windows
-            ):
+            # Use day-specific windows if they exist for this day, otherwise use whole-week
+            applicable = ds[ts_day] if ts_day in ds else ww
+            if any(start >= win_start and end <= win_end for win_start, win_end in applicable):
                 allowed.add(ts_id)
-        allowed_by_instructor[instructor_id] = allowed
+        allowed_by_instructor[iid] = allowed
+
     return windows, allowed_by_instructor
 
 
@@ -163,6 +275,13 @@ def _availability_satisfaction_score(
     timeslot_map: dict[int, dict],
     availability_windows: dict[int, list[tuple]],
 ) -> int:
+    """
+    Score a block based on how well it fits within the instructor's availability.
+
+    For each slot in the block, adds the remaining window time after the slot ends.
+    A higher score means the block is placed earlier in the availability window,
+    leaving more room after it. Returns 0 if no availability windows are set.
+    """
     windows = availability_windows.get(instructor_id)
     if not windows:
         return 0
@@ -173,7 +292,7 @@ def _availability_satisfaction_score(
         start = _time_to_minutes(slot["start_time"])
         end = _time_to_minutes(slot["end_time"])
         for day, win_start, win_end in windows:
-            if slot["day"] == day and start >= win_start and end <= win_end:
+            if (day is None or slot["day"] == day) and start >= win_start and end <= win_end:
                 score += win_end - end
                 break
     return score
@@ -186,9 +305,17 @@ def _preferred_time_deviation(
     timeslot_map: dict[int, dict],
     preferred_start_map: dict[tuple[int, int], int],
 ) -> int:
+    """
+    Calculate how far a block deviates from the instructor's preferred start time.
+
+    For each day in the block, checks if the earliest slot starts at the preferred
+    time. Adds 8 for each day where the start time does not match. Returns 0 if
+    no preferred time is set for this instructor-subject pair.
+    """
     preferred_start = preferred_start_map.get((instructor_id, subject_id))
     if preferred_start is None:
         return 0
+    # Find the earliest start time per day in this block
     first_by_day: dict[str, int] = {}
     for ts_id in block:
         slot = timeslot_map[ts_id]
@@ -199,6 +326,7 @@ def _preferred_time_deviation(
 
 
 def _status_name(solver: cp_model.CpSolver, status: int) -> str:
+    """Return the human-readable name of a CP-SAT solver status code."""
     return solver.status_name(status)
 
 
@@ -211,6 +339,15 @@ def _diagnostics(
     allowed_timeslot_ids: set[int],
     allowed_timeslots_per_instructor: dict[int, set[int]],
 ) -> str:
+    """
+    Generate a human-readable diagnostic message when the solver fails.
+
+    Checks for:
+    - Subjects with no matching room type
+    - Instructor-subject pairs with no valid candidate blocks
+    - Instructors whose required slots exceed their available slots
+    - Room types where total demand exceeds available room-slot capacity
+    """
     problems: list[str] = []
 
     rooms_by_type: dict[str, list[dict]] = {}
@@ -229,6 +366,7 @@ def _diagnostics(
                 " that also satisfies availability."
             )
 
+    # Check if any instructor needs more slots than they have available
     required_by_instructor: dict[int, int] = {}
     for data in pair_data.values():
         required_by_instructor[data["instructor_id"]] = (
@@ -242,6 +380,7 @@ def _diagnostics(
                 f"Instructor conflicts: {name} needs {required} slots but only {available} allowed slots exist."
             )
 
+    # Check if any room type is overloaded
     required_by_type: dict[str, int] = {}
     for data in pair_data.values():
         required_by_type[data["room_type"]] = required_by_type.get(data["room_type"], 0) + data["required_slots"]
@@ -269,6 +408,23 @@ def run_cpsat_solver(
     instructor_availability: Optional[list[dict]] = None,
     preferred_time_slots: Optional[list[dict]] = None,
 ) -> dict[str, Any]:
+    """
+    Main solver entry point. Generates a conflict-free schedule using CP-SAT.
+
+    Accepts all scheduling data from the database and returns a schedule
+    as a list of assignments, each linking an instructor, subject, room,
+    and timeslot.
+
+    Solving process:
+        Stage 1: Find any feasible solution satisfying all hard constraints.
+                 Hard constraints: no instructor overlap, no room overlap,
+                 room type match, room capacity, floor restriction, availability.
+        Stage 2: If preferred times are set, minimize total deviation from
+                 preferred start times across all instructor-subject pairs.
+
+    Returns a dict with keys: status, solution_status, message, assignments.
+    """
+    # Early exit if required data is missing
     if not instructor_subjects:
         return {
             "status": "error",
@@ -294,6 +450,7 @@ def run_cpsat_solver(
             "assignments": [],
         }
 
+    # Filter to only valid 30-minute aligned timeslots within 07:00-21:00
     slot_duration_minutes = _slot_duration(timeslots)
     allowed_timeslots = _allowed_timeslots(timeslots, slot_duration_minutes)
     allowed_timeslot_ids = {slot["id"] for slot in allowed_timeslots}
@@ -305,10 +462,12 @@ def run_cpsat_solver(
             "assignments": [],
         }
 
+    # Build lookup maps for fast access by ID
     timeslot_map = {slot["id"]: slot for slot in timeslots}
     instructor_map = {instructor["id"]: instructor for instructor in instructors}
     subject_map = {subject["id"]: subject for subject in subjects}
 
+    # Parse instructor availability windows into allowed timeslot sets
     availability_windows: dict[int, list[tuple]] = {}
     allowed_timeslots_per_instructor: dict[int, set[int]] = {}
     if instructor_availability:
@@ -318,6 +477,7 @@ def run_cpsat_solver(
             allowed_timeslot_ids,
         )
 
+    # Build preferred start time map keyed by (instructor_id, subject_id)
     preferred_start_map: dict[tuple[int, int], int] = {}
     if preferred_time_slots:
         for row in preferred_time_slots:
@@ -325,10 +485,12 @@ def run_cpsat_solver(
                 row["preferred_start_time"]
             )
 
+    # Group rooms by type for fast matching
     rooms_by_type: dict[str, list[dict]] = {}
     for room in rooms:
         rooms_by_type.setdefault(room["type"], []).append(room)
 
+    # Build pair data: one entry per instructor-subject assignment
     problems: list[str] = []
     pairs: list[dict] = []
     pair_data: dict[int, dict] = {}
@@ -346,14 +508,22 @@ def run_cpsat_solver(
             problems.append(f"Subject id={subject_id} no longer exists; remove and re-add the assignment.")
             continue
 
+        # Filter rooms by type and capacity requirements
         matching_rooms = [
             r for r in rooms_by_type.get(subject["type"], [])
             if r["capacity"] >= subject.get("students", 0)
         ]
+
+        # Apply floor restriction if the instructor has one set
+        floor_restriction = instructor.get("floor_restriction")
+        if floor_restriction:
+            matching_rooms = [r for r in matching_rooms if r.get("floor") == floor_restriction]
+
         if not matching_rooms:
+            floor_note = f" on floor '{floor_restriction}'" if floor_restriction else ""
             problems.append(
                 f"Missing rooms: {subject['code']} needs a {subject['type']} room with capacity "
-                f">= {subject.get('students', 0)}."
+                f">= {subject.get('students', 0)}{floor_note}."
             )
             continue
 
@@ -365,7 +535,10 @@ def run_cpsat_solver(
             )
             continue
 
+        # Get the instructor's allowed timeslots (None means no restriction)
         instructor_allowed = allowed_timeslots_per_instructor.get(instructor_id)
+
+        # Generate all valid candidate blocks for this pair
         blocks = _candidate_blocks(allowed_timeslots, patterns, instructor_allowed)
 
         pair_index = len(pairs)
@@ -384,6 +557,7 @@ def run_cpsat_solver(
                 " that also satisfies availability."
             )
 
+    # Stop early if any pair has unresolvable problems
     if problems:
         return {
             "status": "infeasible",
@@ -392,46 +566,65 @@ def run_cpsat_solver(
             "assignments": [],
         }
 
+    # ── Build the CP-SAT model ────────────────────────────────────────────────
+
     model = cp_model.CpModel()
 
-    assigned: dict[int, cp_model.IntVar] = {}
-    room_choice: dict[int, cp_model.IntVar] = {}
-    block_choice: dict[int, cp_model.IntVar] = {}
-    uses_slot: dict[tuple[int, int], cp_model.IntVar] = {}
-    uses_room: dict[tuple[int, int], cp_model.IntVar] = {}
-    uses_room_slot: dict[tuple[int, int, int], cp_model.IntVar] = {}
-    availability_terms = []
-    deviation_terms = []
-    max_deviation_total = 0
+    # Decision variable containers
+    assigned: dict[int, cp_model.IntVar] = {}       # Whether a pair is scheduled (always 1)
+    room_choice: dict[int, cp_model.IntVar] = {}     # Which room index is chosen
+    block_choice: dict[int, cp_model.IntVar] = {}    # Which block index is chosen
+    uses_slot: dict[tuple[int, int], cp_model.IntVar] = {}              # Is this slot used by this pair
+    uses_room: dict[tuple[int, int], cp_model.IntVar] = {}              # Is this room used by this pair
+    uses_room_slot: dict[tuple[int, int, int], cp_model.IntVar] = {}    # Is this room+slot combo used
+    deviation_terms = []  # Collected deviation variables for Stage 2 objective
 
     for pair_index, data in pair_data.items():
-        assigned[pair_index] = model.new_bool_var(f"assign_{pair_index}")
+        # Build a readable label for variable names in solver logs
+        instr_name    = instructor_map[data["instructor_id"]]["name"].replace(" ", "_")
+        subject_code  = subject_map[data["subject_id"]]["code"]
+        label         = f"{instr_name}/{subject_code}"
+
+        # Every pair must be assigned (no optional scheduling)
+        assigned[pair_index] = model.new_bool_var(f"assign[{label}]")
         model.add(assigned[pair_index] == 1)
 
         room_ids = data["room_ids"]
         blocks = data["blocks"]
-        room_choice[pair_index] = model.new_int_var(0, len(room_ids) - 1, f"room_{pair_index}")
-        block_choice[pair_index] = model.new_int_var(0, len(blocks) - 1, f"block_{pair_index}")
 
+        # Integer variables for room and block selection
+        room_choice[pair_index]  = model.new_int_var(0, len(room_ids) - 1, f"room_choice[{label}]")
+        block_choice[pair_index] = model.new_int_var(0, len(blocks) - 1,   f"block_choice[{label}]")
+
+        # Boolean flags to track which room is selected
         for room_idx, room_id in enumerate(room_ids):
-            room_var = model.new_bool_var(f"pair_{pair_index}_room_{room_id}")
+            room_name = rooms[next(i for i, r in enumerate(rooms) if r["id"] == room_id)]["name"]
+            room_var  = model.new_bool_var(f"uses_room[{label}/{room_name}]")
             model.add(room_choice[pair_index] == room_idx).only_enforce_if(room_var)
             model.add(room_choice[pair_index] != room_idx).only_enforce_if(room_var.Not())
             uses_room[(pair_index, room_id)] = room_var
 
+        # Boolean flags to track which timeslots are used, linked to block choice
         relevant_slots = sorted({ts_id for block in blocks for ts_id in block})
         for ts_id in relevant_slots:
+            # Find which blocks contain this timeslot
             containing_blocks = [block_idx for block_idx, block in enumerate(blocks) if ts_id in block]
-            slot_var = model.new_bool_var(f"pair_{pair_index}_slot_{ts_id}")
+            ts    = timeslot_map[ts_id]
+            slot_var = model.new_bool_var(f"uses_slot[{label}/{ts['day']}_{ts['start_time']}]")
+            # Table constraint: slot_var is 1 only when block_choice selects a block containing this slot
             model.add_allowed_assignments(
                 [block_choice[pair_index], slot_var],
                 [(block_idx, 1 if block_idx in containing_blocks else 0) for block_idx in range(len(blocks))],
             )
             uses_slot[(pair_index, ts_id)] = slot_var
 
+        # Boolean flags for room+slot combinations (used for room overlap constraints)
         for room_id in room_ids:
+            room_name = rooms[next(i for i, r in enumerate(rooms) if r["id"] == room_id)]["name"]
             for ts_id in relevant_slots:
-                room_slot_var = model.new_bool_var(f"pair_{pair_index}_room_{room_id}_slot_{ts_id}")
+                ts           = timeslot_map[ts_id]
+                room_slot_var = model.new_bool_var(f"uses_room_slot[{label}/{room_name}/{ts['day']}_{ts['start_time']}]")
+                # room_slot_var is true only when both room and slot are used by this pair
                 model.add_bool_and([uses_room[(pair_index, room_id)], uses_slot[(pair_index, ts_id)]]).only_enforce_if(
                     room_slot_var
                 )
@@ -440,21 +633,7 @@ def run_cpsat_solver(
                 ).only_enforce_if(room_slot_var.Not())
                 uses_room_slot[(pair_index, room_id, ts_id)] = room_slot_var
 
-        if availability_windows:
-            scores = [
-                _availability_satisfaction_score(
-                    block,
-                    data["instructor_id"],
-                    timeslot_map,
-                    availability_windows,
-                )
-                for block in blocks
-            ]
-            max_score = max(scores) if scores else 0
-            score_var = model.new_int_var(0, max_score, f"availability_score_{pair_index}")
-            model.add_element(block_choice[pair_index], scores, score_var)
-            availability_terms.append(score_var)
-
+        # Preferred time deviation variable for Stage 2 optimization
         if preferred_start_map:
             deviations = [
                 _preferred_time_deviation(
@@ -467,12 +646,13 @@ def run_cpsat_solver(
                 for block in blocks
             ]
             max_deviation = max(deviations) if deviations else 0
-            max_deviation_total += max_deviation
-            deviation_var = model.new_int_var(0, max_deviation, f"preferred_deviation_{pair_index}")
+            deviation_var = model.new_int_var(0, max_deviation, f"pref_deviation[{label}]")
+            # Link deviation_var to the chosen block using element constraint
             model.add_element(block_choice[pair_index], deviations, deviation_var)
             deviation_terms.append(deviation_var)
 
-    # No instructor overlap per timeslot.
+    # ── Hard Constraint: No instructor overlap ────────────────────────────────
+    # An instructor cannot teach two subjects at the same timeslot.
     instructor_slot_groups: dict[tuple[int, int], list[cp_model.IntVar]] = {}
     for (pair_index, ts_id), slot_var in uses_slot.items():
         instructor_slot_groups.setdefault((pair_data[pair_index]["instructor_id"], ts_id), []).append(slot_var)
@@ -480,7 +660,8 @@ def run_cpsat_solver(
         if len(group) > 1:
             model.add_at_most_one(group)
 
-    # No room overlap per timeslot.
+    # ── Hard Constraint: No room overlap ─────────────────────────────────────
+    # A room cannot be used by two classes at the same timeslot.
     room_slot_groups: dict[tuple[int, int], list[cp_model.IntVar]] = {}
     for (pair_index, room_id, ts_id), room_slot_var in uses_room_slot.items():
         room_slot_groups.setdefault((room_id, ts_id), []).append(room_slot_var)
@@ -488,20 +669,23 @@ def run_cpsat_solver(
         if len(group) > 1:
             model.add_at_most_one(group)
 
+    # ── Configure and run the solver ─────────────────────────────────────────
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = 30.0
-    solver.parameters.num_search_workers = 8
+    solver.parameters.max_time_in_seconds = 30.0   # Time limit per solve call
+    solver.parameters.num_search_workers = 8        # Parallel search workers
 
     best_rooms: dict[int, int] = {}
     best_blocks: dict[int, int] = {}
 
     def remember_solution() -> None:
+        """Store the current solution's room and block choices."""
         best_rooms.clear()
         best_blocks.clear()
         for pair_index, data in pair_data.items():
             best_rooms[pair_index] = data["room_ids"][solver.value(room_choice[pair_index])]
             best_blocks[pair_index] = solver.value(block_choice[pair_index])
 
+    # Stage 1: Find any feasible solution
     stage1_status = solver.solve(model)
     final_status = stage1_status
     if stage1_status not in (cp_model.FEASIBLE, cp_model.OPTIMAL):
@@ -522,28 +706,16 @@ def run_cpsat_solver(
         }
     remember_solution()
 
-    availability_expr = sum(availability_terms) if availability_terms else None
+    # Stage 2: Minimize total preferred time deviation across all pairs
     deviation_expr = sum(deviation_terms) if deviation_terms else None
-
-    if availability_expr is not None:
-        model.maximize(availability_expr)
+    if deviation_expr is not None:
+        model.minimize(deviation_expr)
         stage2_status = solver.solve(model)
         if stage2_status in (cp_model.FEASIBLE, cp_model.OPTIMAL):
             final_status = stage2_status
             remember_solution()
 
-    if deviation_expr is not None:
-        if availability_expr is not None:
-            # Keep Stage 2 lexicographic: one point of availability is worth more
-            # than the full possible preferred-time deviation range.
-            model.minimize((max_deviation_total + 1) * -availability_expr + deviation_expr)
-        else:
-            model.minimize(deviation_expr)
-        stage3_status = solver.solve(model)
-        if stage3_status in (cp_model.FEASIBLE, cp_model.OPTIMAL):
-            final_status = stage3_status
-            remember_solution()
-
+    # ── Build and return the final assignment list ────────────────────────────
     assignments = []
     for pair_index, data in pair_data.items():
         block = data["blocks"][best_blocks[pair_index]]
