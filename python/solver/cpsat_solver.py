@@ -513,7 +513,7 @@ def run_cpsat_solver(
             r for r in rooms_by_type.get(subject["type"], [])
             if r["capacity"] >= subject.get("students", 0)
         ]
-
+        
         # Apply floor restriction if the instructor has one set
         floor_restriction = instructor.get("floor_restriction")
         if floor_restriction:
