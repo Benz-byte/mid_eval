@@ -19,6 +19,7 @@ __pycache__/
 *.pyc
 *.pyo
 python/scheduler.db
+database/lite/scheduler.db
 python/__pycache__/
 python/routes/__pycache__/
 python/solver/__pycache__/

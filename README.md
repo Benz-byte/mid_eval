@@ -55,7 +55,7 @@ This single command starts three processes in parallel:
 - **Electron** — opens the desktop window
 - **Flask** — starts the Python API on `http://localhost:5000`
 
-The database (`python/scheduler.db`) is created and seeded automatically on first run.
+The legacy SQLite database is stored at `database/lite/scheduler.db`.
 
 ---
 

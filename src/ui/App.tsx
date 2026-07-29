@@ -1,546 +1,744 @@
-import { useState, useEffect, useCallback } from 'react'
-import { api } from '../api/client'
-import type { Subject, Room, Instructor, ScheduleEntry, InstructorAvailability, RoomType } from '../api/types'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties, ChangeEvent, FormEvent } from 'react'
+import {
+  loadSharedSchedule,
+  saveSharedSchedule,
+  subscribeToSharedSchedule,
+} from '../api/scheduleRepository'
 import './App.css'
 
-type Tab = 'subjects' | 'rooms' | 'instructors' | 'schedule'
-type ApiStatus = 'connecting' | 'online' | 'offline'
+type Tab = 'schedule' | 'event' | 'student-assistant'
+type EventSource = 'csv' | 'admin'
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+interface CalendarEvent {
+  id: string
+  source: EventSource
+  stubCode?: string
+  courseCode: string
+  subject: string
+  startMinutes: number
+  endMinutes: number
+  dayCode?: string
+  date?: string
+  classType: string
+  section: string
+  room: string
+  studentCount: string
+  instructorLastName: string
+}
 
-const PREFERRED_TIMES = [
-  { label: 'Any time', value: '' },
-  ...Array.from({ length: 14 }, (_, i) => {
-    const h = String(7 + i).padStart(2, '0')
-    return { label: `Start at ${h}:00`, value: `${h}:00` }
-  }),
+interface AdminEventForm {
+  title: string
+  date: string
+  room: string
+  startTime: string
+  endTime: string
+}
+
+const DEFAULT_ROOMS = [
+  'MT102', 'MTAVR1', 'MTAVR2',
+  'MTCL1', 'MTCL2', 'MTCL3', 'MTCL4', 'MTCL5', 'MTCL6', 'MTCL7', 'MTCL8',
+  'SHSCL1', 'SHSCL2',
 ]
+const DEFAULT_START = 7 * 60
+const DEFAULT_END = 21 * 60
+const TIME_ROW_HEIGHT = 48
+const ADMIN_STORAGE_KEY = 'auto-scheduler-admin-events'
+const CSV_STORAGE_KEY = 'auto-scheduler-imported-schedule'
+const ACTIVE_TAB_STORAGE_KEY = 'auto-scheduler-active-tab'
+const SCHEDULE_DATE_STORAGE_KEY = 'auto-scheduler-selected-date'
 
-const AVAIL_DAYS = [
-  { label: 'All days',   value: '' },
-  { label: 'Monday',     value: 'Monday' },
-  { label: 'Tuesday',    value: 'Tuesday' },
-  { label: 'Wednesday',  value: 'Wednesday' },
-  { label: 'Thursday',   value: 'Thursday' },
-  { label: 'Friday',     value: 'Friday' },
-]
-
-const AVAIL_TIMES = Array.from({ length: 29 }, (_, i) => {
-  const m = 7 * 60 + i * 30
-  const h = String(Math.floor(m / 60)).padStart(2, '0')
-  const min = String(m % 60).padStart(2, '0')
-  return { label: `${h}:${min}`, value: `${h}:${min}` }
-})
-
-// ── Subjects ────────────────────────────────────────────────────────────────
-
-function SubjectsTab() {
-  const [items, setItems]         = useState<Subject[]>([])
-  const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
-  const [form, setForm]           = useState({ code: '', name: '', hours_per_week: 3, type: '', students: 30 })
-  const [err, setErr]             = useState('')
-
-  const load = useCallback(async () => {
-    try { setItems(await api.subjects.list()) } catch (e) { setErr(String(e)) }
-  }, [])
-
-  useEffect(() => { load() }, [load])
-  useEffect(() => {
-    api.rooms.listTypes()
-      .then(types => { setRoomTypes(types); setForm(f => ({ ...f, type: f.type || (types[0]?.name ?? '') })) })
-      .catch(() => {})
-  }, [])
-
-  const handleAdd = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault(); setErr('')
-    try { await api.subjects.create(form); setForm(f => ({ ...f, code: '', name: '', hours_per_week: 3, students: 30 })); load() }
-    catch (e) { setErr(String(e)) }
-  }
-
-  return (
-    <div className="tab-pane">
-      <h2>Subjects</h2>
-      {err && <p className="msg-error">{err}</p>}
-      <form className="add-form" onSubmit={handleAdd}>
-        <input placeholder="Code (e.g. CS101)" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} required />
-        <input placeholder="Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
-        <input type="number" placeholder="Hrs/wk" value={form.hours_per_week} min={1} max={14} onChange={e => setForm(f => ({ ...f, hours_per_week: +e.target.value }))} required />
-        <input type="number" placeholder="Students" value={form.students} min={1} onChange={e => setForm(f => ({ ...f, students: +e.target.value }))} required />
-        <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} required>
-          {roomTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-        </select>
-        <button type="submit" className="btn-add">+ Add</button>
-      </form>
-      <table>
-        <thead><tr><th>Code</th><th>Name</th><th>Hrs/Wk</th><th>Students</th><th>Type</th><th /></tr></thead>
-        <tbody>
-          {items.map(s => (
-            <tr key={s.id}>
-              <td>{s.code}</td><td>{s.name}</td><td>{s.hours_per_week}</td>
-              <td>{s.students}</td>
-              <td><span className={`badge badge-${s.type}`}>{s.type}</span></td>
-              <td><button className="btn-del" onClick={() => api.subjects.remove(s.id).then(load).catch(e => setErr(String(e)))}>×</button></td>
-            </tr>
-          ))}
-          {items.length === 0 && <tr><td colSpan={6} className="empty-row">No subjects yet</td></tr>}
-        </tbody>
-      </table>
-    </div>
-  )
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-// ── Rooms ───────────────────────────────────────────────────────────────────
-
-function RoomsTab() {
-  const [items, setItems]         = useState<Room[]>([])
-  const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
-  const [form, setForm]           = useState({ name: '', capacity: 40, type: '', floor: 'Ground' })
-  const [typeInput, setTypeInput] = useState('')
-  const [err, setErr]             = useState('')
-
-  const loadTypes = useCallback(async () => {
-    try {
-      const types = await api.rooms.listTypes()
-      setRoomTypes(types)
-      setForm(f => ({ ...f, type: f.type || (types[0]?.name ?? '') }))
-    } catch (e) { setErr(String(e)) }
-  }, [])
-
-  const load = useCallback(async () => {
-    try { setItems(await api.rooms.list()) } catch (e) { setErr(String(e)) }
-  }, [])
-
-  useEffect(() => { load(); loadTypes() }, [load, loadTypes])
-
-  const handleAdd = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault(); setErr('')
-    try { await api.rooms.create(form); setForm(f => ({ ...f, name: '', capacity: 40 })); load() }
-    catch (e) { setErr(String(e)) }
+function createEmptyAdminForm(date = toDateInputValue(new Date())): AdminEventForm {
+  return {
+    title: '',
+    date,
+    room: '',
+    startTime: '07:00',
+    endTime: '08:00',
   }
-
-  const handleAddType = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault(); setErr('')
-    try { await api.rooms.addType(typeInput); setTypeInput(''); loadTypes() }
-    catch (e) { setErr(String(e)) }
-  }
-
-  const handleRemoveType = async (id: number) => {
-    try { await api.rooms.removeType(id); loadTypes() }
-    catch (e) { setErr(String(e)) }
-  }
-
-  return (
-    <div className="tab-pane">
-      <h2>Rooms</h2>
-      {err && <p className="msg-error">{err}</p>}
-      <form className="add-form" onSubmit={handleAdd}>
-        <input placeholder="Room name (e.g. R101)" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
-        <input type="number" placeholder="Capacity" value={form.capacity} min={1} onChange={e => setForm(f => ({ ...f, capacity: +e.target.value }))} required />
-        <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} required>
-          {roomTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-        </select>
-        <select value={form.floor} onChange={e => setForm(f => ({ ...f, floor: e.target.value }))}>
-          <option value="Ground">Ground Floor</option>
-          <option value="2nd Floor">2nd Floor</option>
-        </select>
-        <button type="submit" className="btn-add">+ Add</button>
-      </form>
-      <table>
-        <thead><tr><th>Name</th><th>Capacity</th><th>Type</th><th>Floor</th><th /></tr></thead>
-        <tbody>
-          {items.map(r => (
-            <tr key={r.id}>
-              <td>{r.name}</td><td>{r.capacity}</td>
-              <td><span className={`badge badge-${r.type}`}>{r.type}</span></td>
-              <td>{r.floor}</td>
-              <td><button className="btn-del" onClick={() => api.rooms.remove(r.id).then(load)}>×</button></td>
-            </tr>
-          ))}
-          {items.length === 0 && <tr><td colSpan={5} className="empty-row">No rooms yet</td></tr>}
-        </tbody>
-      </table>
-
-      <h3 style={{ marginTop: '1.5rem', marginBottom: '0.5rem' }}>Room Types</h3>
-      <form className="add-form" onSubmit={handleAddType}>
-        <input placeholder="New type (e.g. Studio)" value={typeInput} onChange={e => setTypeInput(e.target.value)} required />
-        <button type="submit" className="btn-add">+ Add</button>
-      </form>
-      <table>
-        <thead><tr><th>Type</th><th /></tr></thead>
-        <tbody>
-          {roomTypes.map(t => (
-            <tr key={t.id}>
-              <td>{t.name}</td>
-              <td><button className="btn-del" onClick={() => handleRemoveType(t.id)}>×</button></td>
-            </tr>
-          ))}
-          {roomTypes.length === 0 && <tr><td colSpan={2} className="empty-row">No room types yet</td></tr>}
-        </tbody>
-      </table>
-    </div>
-  )
 }
 
-// ── Instructors ──────────────────────────────────────────────────────────────
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = []
+  let row: string[] = []
+  let field = ''
+  let quoted = false
 
-function InstructorsTab() {
-  const [items, setItems]                       = useState<Instructor[]>([])
-  const [form, setForm]                         = useState({ name: '', floor_restriction: '' })
-  const [err, setErr]                           = useState('')
-  const [subjects, setSubjects]                 = useState<Subject[]>([])
-  const [assignedSubjects, setAssignedSubjects] = useState<Record<number, Subject[]>>({})
-  const [assignForm, setAssignForm]             = useState({ instructor_id: 0, subject_id: 0, preferred_time: '' })
-  const [availability, setAvailability]         = useState<Record<number, InstructorAvailability[]>>({})
-  const [availForm, setAvailForm]               = useState({ instructor_id: 0, day: '', start_time: '07:00', end_time: '17:00' })
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index]
+    const next = text[index + 1]
 
-  const load = useCallback(async () => {
-    try {
-      const instructors = await api.instructors.list()
-      setItems(instructors)
-      const [subjectPairs, availPairs] = await Promise.all([
-        Promise.all(
-          instructors.map(async (i) => {
-            try { return [i.id, await api.instructors.listSubjects(i.id)] as [number, Subject[]] }
-            catch  { return [i.id, []] as [number, Subject[]] }
-          })
-        ),
-        Promise.all(
-          instructors.map(async (i) => {
-            try { return [i.id, await api.instructors.listAvailability(i.id)] as [number, InstructorAvailability[]] }
-            catch  { return [i.id, []] as [number, InstructorAvailability[]] }
-          })
-        ),
-      ])
-      setAssignedSubjects(Object.fromEntries(subjectPairs))
-      setAvailability(Object.fromEntries(availPairs))
-    } catch (e) { setErr(String(e)) }
-  }, [])
-
-  useEffect(() => { load() }, [load])
-  useEffect(() => { api.subjects.list().then(setSubjects).catch(() => {}) }, [])
-
-  const handleAdd = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault(); setErr('')
-    try { await api.instructors.create(form); setForm({ name: '', floor_restriction: '' }); load() }
-    catch (e) { setErr(String(e)) }
-  }
-
-  const handleAssign = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault(); setErr('')
-    const { instructor_id, subject_id } = assignForm
-    if (!instructor_id || !subject_id) return
-    try {
-      await api.instructors.assignSubject(instructor_id, subject_id, assignForm.preferred_time || undefined)
-      const updated = await api.instructors.listSubjects(instructor_id)
-      setAssignedSubjects(prev => ({ ...prev, [instructor_id]: updated }))
-    } catch (e) { setErr(String(e)) }
-  }
-
-  const handleRemoveSubject = async (instructorId: number, subjectId: number) => {
-    try {
-      await api.instructors.removeSubject(instructorId, subjectId)
-      setAssignedSubjects(prev => ({
-        ...prev,
-        [instructorId]: (prev[instructorId] ?? []).filter(s => s.id !== subjectId),
-      }))
-    } catch (e) { setErr(String(e)) }
-  }
-
-  const handleAddAvailability = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault(); setErr('')
-    const { instructor_id, day, start_time, end_time } = availForm
-    if (!instructor_id) return
-    try {
-      await api.instructors.addAvailability(instructor_id, { day: day || null, start_time, end_time })
-      const updated = await api.instructors.listAvailability(instructor_id)
-      setAvailability(prev => ({ ...prev, [instructor_id]: updated }))
-    } catch (e) { setErr(String(e)) }
-  }
-
-  const handleRemoveAvailability = async (instructorId: number, availId: number) => {
-    try {
-      await api.instructors.removeAvailability(instructorId, availId)
-      setAvailability(prev => ({
-        ...prev,
-        [instructorId]: (prev[instructorId] ?? []).filter(a => a.id !== availId),
-      }))
-    } catch (e) { setErr(String(e)) }
-  }
-
-  return (
-    <div className="tab-pane">
-      <h2>Instructors</h2>
-      {err && <p className="msg-error">{err}</p>}
-      <form className="add-form" onSubmit={handleAdd}>
-        <input placeholder="Full name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
-        <select value={form.floor_restriction} onChange={e => setForm(f => ({ ...f, floor_restriction: e.target.value }))}>
-          <option value="">No floor restriction</option>
-          <option value="Ground">Ground floor only</option>
-        </select>
-        <button type="submit" className="btn-add">+ Add</button>
-      </form>
-      <table>
-        <thead><tr><th>Name</th><th>Floor</th><th>Assigned Subjects</th><th>Availability</th><th /></tr></thead>
-        <tbody>
-          {items.map(i => (
-            <tr key={i.id}>
-              <td>{i.name}</td>
-              <td>{i.floor_restriction ? 'Ground only' : 'Any'}</td>
-              <td>
-                {(assignedSubjects[i.id] ?? []).map(s => (
-                  <span
-                    key={s.id}
-                    className={`badge badge-${s.type}`}
-                    style={{ marginRight: 4, cursor: 'pointer' }}
-                    title={`${s.name} — click to remove`}
-                    onClick={() => handleRemoveSubject(i.id, s.id)}
-                  >
-                    {s.code} ×
-                  </span>
-                ))}
-                {(assignedSubjects[i.id] ?? []).length === 0 && <span style={{ color: 'var(--text-muted, #888)', fontSize: '0.85em' }}>none</span>}
-              </td>
-              <td>
-                {(availability[i.id] ?? []).map(a => (
-                  <span
-                    key={a.id}
-                    style={{ display: 'inline-block', marginRight: 4, marginBottom: 2, padding: '2px 6px', borderRadius: 4, background: '#2563eb', color: '#fff', fontSize: '0.78em', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                    title="Click to remove"
-                    onClick={() => handleRemoveAvailability(i.id, a.id)}
-                  >
-                    {a.day ?? 'All days'} {a.start_time}–{a.end_time} ×
-                  </span>
-                ))}
-                {(availability[i.id] ?? []).length === 0 && <span style={{ color: 'var(--text-muted, #888)', fontSize: '0.85em' }}>any time</span>}
-              </td>
-              <td><button className="btn-del" onClick={() => api.instructors.remove(i.id).then(load)}>×</button></td>
-            </tr>
-          ))}
-          {items.length === 0 && <tr><td colSpan={6} className="empty-row">No instructors yet</td></tr>}
-        </tbody>
-      </table>
-
-      <h3 style={{ marginTop: '1.5rem', marginBottom: '0.5rem' }}>Assign Subject to Instructor</h3>
-      <form className="add-form" onSubmit={handleAssign}>
-        <select
-          value={assignForm.instructor_id}
-          onChange={e => setAssignForm(f => ({ ...f, instructor_id: +e.target.value }))}
-          required
-        >
-          <option value={0}>Select instructor…</option>
-          {items.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
-        </select>
-        <select
-          value={assignForm.subject_id}
-          onChange={e => setAssignForm(f => ({ ...f, subject_id: +e.target.value }))}
-          required
-        >
-          <option value={0}>Select subject…</option>
-          {subjects.map(s => <option key={s.id} value={s.id}>{s.code} — {s.name}</option>)}
-        </select>
-        <select value={assignForm.preferred_time} onChange={e => setAssignForm(f => ({ ...f, preferred_time: e.target.value }))}>
-          {PREFERRED_TIMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <button type="submit" className="btn-add">Assign</button>
-      </form>
-
-      <h3 style={{ marginTop: '1.5rem', marginBottom: '0.5rem' }}>Instructor Availability</h3>
-      <p style={{ fontSize: '0.85em', color: 'var(--text-muted, #888)', marginBottom: '0.5rem' }}>
-        Restrict when an instructor can be scheduled. "All days" applies every day unless a day-specific window
-        overrides it for that day. Leave blank for no restriction.
-      </p>
-      <form className="add-form" onSubmit={handleAddAvailability}>
-        <select
-          value={availForm.instructor_id}
-          onChange={e => setAvailForm(f => ({ ...f, instructor_id: +e.target.value }))}
-          required
-        >
-          <option value={0}>Select instructor…</option>
-          {items.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
-        </select>
-        <select value={availForm.day} onChange={e => setAvailForm(f => ({ ...f, day: e.target.value }))}>
-          {AVAIL_DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-        </select>
-        <select value={availForm.start_time} onChange={e => setAvailForm(f => ({ ...f, start_time: e.target.value }))}>
-          {AVAIL_TIMES.slice(0, -1).map(t => <option key={t.value} value={t.value}>{t.value}</option>)}
-        </select>
-        <span style={{ alignSelf: 'center', padding: '0 4px' }}>to</span>
-        <select value={availForm.end_time} onChange={e => setAvailForm(f => ({ ...f, end_time: e.target.value }))}>
-          {AVAIL_TIMES.slice(1).map(t => <option key={t.value} value={t.value}>{t.value}</option>)}
-        </select>
-        <button type="submit" className="btn-add">+ Add</button>
-      </form>
-    </div>
-  )
-}
-
-// ── Sections ─────────────────────────────────────────────────────────────────
-
-// ── Schedule ─────────────────────────────────────────────────────────────────
-
-function ScheduleTab() {
-  const [entries,   setEntries]   = useState<ScheduleEntry[]>([])
-  const [rooms,     setRooms]     = useState<Room[]>([])
-  const [timeSlots, setTimeSlots] = useState<{ start_time: string; end_time: string }[]>([])
-  const [running,   setRunning]   = useState(false)
-  const [msg,       setMsg]       = useState('')
-  const [err,       setErr]       = useState('')
-
-  const load = useCallback(async () => {
-    try {
-      const [sched, roomList, slots] = await Promise.all([
-        api.schedules.list(),
-        api.rooms.list(),
-        api.timeslots.list(),
-      ])
-      setEntries(sched)
-      setRooms(roomList)
-      setTimeSlots(slots)
-    } catch (e) { setErr(String(e)) }
-  }, [])
-
-  useEffect(() => { load() }, [load])
-
-  const runSolver = async () => {
-    setRunning(true); setMsg(''); setErr('')
-    try {
-      const result = await api.solver.run()
-      if (result.status === 'success') {
-        setMsg(`Schedule generated using ${result.solver ?? 'solver'} — ${result.assignments.length} slots assigned.`)
-        load()
+    if (character === '"') {
+      if (quoted && next === '"') {
+        field += '"'
+        index += 1
       } else {
-        setErr(result.message ?? 'Solver returned no solution.')
+        quoted = !quoted
       }
-    } catch (e) { setErr(String(e)) }
-    finally { setRunning(false) }
+    } else if (character === ',' && !quoted) {
+      row.push(field)
+      field = ''
+    } else if ((character === '\n' || character === '\r') && !quoted) {
+      if (character === '\r' && next === '\n') index += 1
+      row.push(field)
+      if (row.some(value => value.trim() !== '')) rows.push(row)
+      row = []
+      field = ''
+    } else {
+      field += character
+    }
   }
 
-  const clearAll = async () => {
-    try { await api.schedules.clear(); setEntries([]); setMsg(''); setErr('') }
-    catch (e) { setErr(String(e)) }
+  row.push(field)
+  if (row.some(value => value.trim() !== '')) rows.push(row)
+  return rows
+}
+
+function parseCsvTime(value: string): number | null {
+  const digits = value.replace(/\D/g, '')
+  if (!digits) return null
+
+  const numeric = Number(digits)
+  let hour = Math.floor(numeric / 100)
+  let minute = numeric % 100
+
+  hour += Math.floor(minute / 60)
+  minute %= 60
+
+  const result = hour * 60 + minute
+  return result >= 0 && result <= 24 * 60 ? result : null
+}
+
+function parseInputTime(value: string): number {
+  const [hour, minute] = value.split(':').map(Number)
+  return hour * 60 + minute
+}
+
+function formatTime(minutes: number) {
+  const hour = Math.floor(minutes / 60)
+  const minute = minutes % 60
+  const period = hour >= 12 ? 'PM' : 'AM'
+  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${period}`
+}
+
+function normalizeField(value = '') {
+  return value.replace(/\u00a0/g, ' ').trim()
+}
+
+function csvRowsToEvents(rows: string[][]): CalendarEvent[] {
+  const events: CalendarEvent[] = []
+
+  rows.forEach((columns, index) => {
+    if (columns.length < 14) return
+
+    const startMinutes = parseCsvTime(columns[4])
+    const endMinutes = parseCsvTime(columns[5])
+    if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) return
+
+    const room = normalizeField(columns[9])
+    const dayCode = normalizeField(columns[6])
+    if (!room || !dayCode) return
+
+    events.push({
+      id: `csv-${index}-${normalizeField(columns[1])}`,
+      source: 'csv',
+      stubCode: normalizeField(columns[1]),
+      courseCode: normalizeField(columns[2]),
+      subject: normalizeField(columns[3]),
+      startMinutes,
+      endMinutes,
+      dayCode,
+      classType: normalizeField(columns[7]),
+      section: normalizeField(columns[8]),
+      room,
+      studentCount: normalizeField(columns[10]),
+      instructorLastName: normalizeField(columns[11]),
+    })
+  })
+
+  return events
+}
+
+function matchesSelectedDay(dayCode: string | undefined, date: Date) {
+  if (!dayCode) return false
+  const selectedCode = ['Su', 'M', 'T', 'W', 'Th', 'F', 'S'][date.getDay()]
+  if (dayCode === 'MW') return selectedCode === 'M' || selectedCode === 'W'
+  if (dayCode === 'TTh') return selectedCode === 'T' || selectedCode === 'Th'
+  return dayCode === selectedCode
+}
+
+function loadAdminEvents(): CalendarEvent[] {
+  try {
+    const saved = localStorage.getItem(ADMIN_STORAGE_KEY)
+    return saved ? JSON.parse(saved) as CalendarEvent[] : []
+  } catch {
+    return []
+  }
+}
+
+function loadCsvSchedule(): { events: CalendarEvent[]; name: string } {
+  try {
+    const saved = localStorage.getItem(CSV_STORAGE_KEY)
+    if (!saved) return { events: [], name: '' }
+
+    const parsed = JSON.parse(saved) as { events?: CalendarEvent[]; name?: string }
+    return {
+      events: Array.isArray(parsed.events) ? parsed.events : [],
+      name: typeof parsed.name === 'string' ? parsed.name : '',
+    }
+  } catch {
+    return { events: [], name: '' }
+  }
+}
+
+function loadActiveTab(): Tab {
+  const saved = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY)
+  return saved === 'schedule' || saved === 'event' || saved === 'student-assistant'
+    ? saved
+    : 'schedule'
+}
+
+function loadScheduleDate(): Date {
+  const saved = localStorage.getItem(SCHEDULE_DATE_STORAGE_KEY)
+  if (!saved) return new Date()
+
+  const parsed = new Date(`${saved}T00:00:00`)
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed
+}
+
+function ScheduleCalendar({
+  csvEvents,
+  adminEvents,
+  csvName,
+  rooms,
+  onCsvUpload,
+  onCsvRemove,
+}: {
+  csvEvents: CalendarEvent[]
+  adminEvents: CalendarEvent[]
+  csvName: string
+  rooms: string[]
+  onCsvUpload: (file: File) => Promise<void>
+  onCsvRemove: () => void
+}) {
+  const [selectedDate, setSelectedDate] = useState(loadScheduleDate)
+  const [uploadError, setUploadError] = useState('')
+  const selectedDateKey = toDateInputValue(selectedDate)
+
+  useEffect(() => {
+    localStorage.setItem(SCHEDULE_DATE_STORAGE_KEY, selectedDateKey)
+  }, [selectedDateKey])
+
+  const allEvents = useMemo(() => [...csvEvents, ...adminEvents], [csvEvents, adminEvents])
+  const visibleEvents = useMemo(
+    () => allEvents.filter(event =>
+      event.source === 'csv'
+        ? matchesSelectedDay(event.dayCode, selectedDate)
+        : event.date === selectedDateKey,
+    ),
+    [allEvents, selectedDate, selectedDateKey],
+  )
+
+  const { rangeStart, rangeEnd } = useMemo(() => {
+    if (allEvents.length === 0) return { rangeStart: DEFAULT_START, rangeEnd: DEFAULT_END }
+    const earliest = Math.min(...allEvents.map(event => event.startMinutes))
+    const latest = Math.max(...allEvents.map(event => event.endMinutes))
+    return {
+      rangeStart: Math.floor(earliest / 30) * 30,
+      rangeEnd: Math.ceil(latest / 30) * 30,
+    }
+  }, [allEvents])
+
+  const guideMinutes = useMemo(() => {
+    const values = new Set<number>()
+    for (let minute = rangeStart; minute <= rangeEnd; minute += 30) values.add(minute)
+    allEvents.forEach(event => {
+      values.add(event.startMinutes)
+      values.add(event.endMinutes)
+    })
+    return [...values].filter(value => value >= rangeStart && value <= rangeEnd).sort((a, b) => a - b)
+  }, [allEvents, rangeEnd, rangeStart])
+
+  const positionForMinute = (minute: number) => {
+    const index = guideMinutes.indexOf(minute)
+    return Math.max(index, 0) * TIME_ROW_HEIGHT
+  }
+  const timelineHeight = Math.max((guideMinutes.length - 1) * TIME_ROW_HEIGHT, TIME_ROW_HEIGHT)
+  const timetableStyle = {
+    '--room-count': rooms.length,
+    '--timeline-height': `${timelineHeight}px`,
+    '--timetable-width': `${96 + rooms.length * 145}px`,
+  } as CSSProperties
+
+  const moveDate = (days: number) => {
+    setSelectedDate(current => {
+      const next = new Date(current)
+      next.setDate(next.getDate() + days)
+      return next
+    })
   }
 
-  // Lookup: "room_name|day|start_time" → ScheduleEntry
-  const scheduleMap: Record<string, ScheduleEntry> = {}
-  for (const entry of entries) {
-    scheduleMap[`${entry.room_name}|${entry.day}|${entry.start_time}`] = entry
+  const selectDate = (value: string) => {
+    if (!value) return
+    const [year, month, day] = value.split('-').map(Number)
+    setSelectedDate(new Date(year, month - 1, day))
+  }
+
+  const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setUploadError('')
+    try {
+      await onCsvUpload(file)
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Unable to read the CSV file.')
+    } finally {
+      event.target.value = ''
+    }
   }
 
   return (
-    <div className="tab-pane">
-      <h2>Generated Schedule</h2>
-      <div className="solver-bar">
-        <button className="btn-primary" onClick={runSolver} disabled={running}>
-          {running ? 'Running solver…' : 'Run Solver (CP-SAT)'}
-        </button>
-        <button className="btn-secondary" onClick={clearAll} disabled={running}>Clear</button>
-      </div>
-      {msg && <p className="msg-success">{msg}</p>}
-      {err && <p className="msg-error">{err}</p>}
+    <section className="schedule-calendar">
+      <div className="calendar-toolbar">
+        <div className="calendar-nav">
+          <button type="button" onClick={() => moveDate(-1)} aria-label="Previous date">←</button>
+          <button type="button" onClick={() => setSelectedDate(new Date())}>Today</button>
+          <button type="button" onClick={() => moveDate(1)} aria-label="Next date">→</button>
+        </div>
 
-      {rooms.length === 0 ? (
-        <p className="empty-row" style={{ marginTop: '2rem' }}>
-          No rooms yet — add subjects, rooms, and instructors, assign subjects to instructors, then click Run Solver.
-        </p>
-      ) : (
-        DAYS.map(day => (
-          <div key={day} className="day-group">
-            <h3 className="day-heading">{day}</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th style={{ whiteSpace: 'nowrap' }}>Time</th>
-                  {rooms.map(room => (
-                    <th key={room.id}>
-                      {room.name}
-                      <br />
-                      <span style={{ fontWeight: 'normal', fontSize: '0.78em' }}>({room.type})</span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {timeSlots.map(slot => (
-                  <tr key={slot.start_time}>
-                    <td className="time-cell" style={{ whiteSpace: 'nowrap' }}>
-                      {slot.start_time} – {slot.end_time}
-                    </td>
-                    {rooms.map(room => {
-                      const entry = scheduleMap[`${room.name}|${day}|${slot.start_time}`]
-                      return (
-                        <td key={room.id} style={entry ? { verticalAlign: 'top' } : { color: '#bbb', textAlign: 'center', fontSize: '0.8em' }}>
-                          {entry ? (
-                            <>
-                              <strong>{entry.subject_code}</strong>
-                              <br />
-                              <small style={{ display: 'block' }}>{entry.subject_name}</small>
-                              <small style={{ display: 'block', color: '#666' }}>{entry.instructor_name}</small>
-                            </>
-                          ) : 'Vacant'}
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <h2>
+          {selectedDate.toLocaleDateString(undefined, {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </h2>
+
+        <div className="calendar-actions">
+          <input
+            type="date"
+            aria-label="Choose schedule date"
+            value={selectedDateKey}
+            onChange={event => selectDate(event.target.value)}
+          />
+          <label className="csv-upload-button">
+            Upload CSV
+            <input type="file" accept=".csv,text/csv" aria-label="Upload schedule CSV" onChange={handleUpload} />
+          </label>
+          {csvName && (
+            <button className="remove-csv-button" type="button" onClick={onCsvRemove}>
+              Remove CSV
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="calendar-summary">
+        <span>{csvName || 'No CSV uploaded'}</span>
+      </div>
+      {uploadError && <p className="msg-error">{uploadError}</p>}
+
+      <div className="timetable-scroll">
+        <div className="adaptive-timetable" style={timetableStyle}>
+          <div className="adaptive-header">
+            <div className="timetable-corner">Time</div>
+            {rooms.map(room => <div className="room-header" key={room}>{room}</div>)}
           </div>
-        ))
-      )}
-    </div>
+
+          <div className="timeline-body">
+            <div className="time-axis">
+              {guideMinutes.map(minute => (
+                <span
+                  className={`time-axis-label${minute === rangeStart ? ' first' : ''}${minute === rangeEnd ? ' last' : ''}`}
+                  key={minute}
+                  style={{ top: positionForMinute(minute) }}
+                >
+                  {formatTime(minute)}
+                </span>
+              ))}
+            </div>
+
+            <div className="room-lanes">
+              {rooms.map(room => (
+                <div className="room-lane" key={room}>
+                  {guideMinutes.map(minute => (
+                    <span
+                      className="time-guide"
+                      key={minute}
+                      style={{ top: positionForMinute(minute) }}
+                    />
+                  ))}
+                  {visibleEvents
+                    .filter(event => event.room === room)
+                    .map(event => (
+                      <article
+                        className={`calendar-event ${event.source}`}
+                        key={event.id}
+                        style={{
+                          top: positionForMinute(event.startMinutes),
+                          height: Math.max(
+                            positionForMinute(event.endMinutes) - positionForMinute(event.startMinutes),
+                            28,
+                          ),
+                        }}
+                        title={`${event.courseCode} ${event.subject}\n${event.stubCode ? `Stub: ${event.stubCode}\n` : ''}${formatTime(event.startMinutes)}–${formatTime(event.endMinutes)}`}
+                      >
+                        <strong>{event.courseCode || event.subject}</strong>
+                        {event.courseCode && event.subject && <span>{event.subject}</span>}
+                        {event.stubCode && <small>Stub: {event.stubCode}</small>}
+                        <small>
+                          {formatTime(event.startMinutes)}–{formatTime(event.endMinutes)}
+                          {event.instructorLastName && ` · ${event.instructorLastName}`}
+                        </small>
+                        <small>
+                          {[event.section, event.classType, event.studentCount && `${event.studentCount} students`]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </small>
+                      </article>
+                    ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
-// ── Root App ─────────────────────────────────────────────────────────────────
+function AdminEventsPanel({
+  events,
+  csvEvents,
+  rooms,
+  onSave,
+  onDelete,
+}: {
+  events: CalendarEvent[]
+  csvEvents: CalendarEvent[]
+  rooms: string[]
+  onSave: (form: AdminEventForm, editingId: string | null) => void
+  onDelete: (id: string) => void
+}) {
+  const [form, setForm] = useState<AdminEventForm>(() => createEmptyAdminForm())
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [error, setError] = useState('')
+
+  const requestedStart = parseInputTime(form.startTime)
+  const requestedEnd = parseInputTime(form.endTime)
+  const hasValidTimeRange = requestedEnd > requestedStart
+
+  const availableRooms = useMemo(() => {
+    if (!hasValidTimeRange) return []
+    const requestedDate = new Date(`${form.date}T12:00:00`)
+
+    return rooms.filter(room => !room.toUpperCase().startsWith('SHS')).filter(room => {
+      const hasCsvConflict = csvEvents.some(event =>
+        event.room === room &&
+        matchesSelectedDay(event.dayCode, requestedDate) &&
+        event.startMinutes < requestedEnd &&
+        event.endMinutes > requestedStart,
+      )
+      const hasAdminConflict = events.some(event =>
+        event.id !== editingId &&
+        event.room === room &&
+        event.date === form.date &&
+        event.startMinutes < requestedEnd &&
+        event.endMinutes > requestedStart,
+      )
+      return !hasCsvConflict && !hasAdminConflict
+    })
+  }, [
+    csvEvents,
+    editingId,
+    events,
+    form.date,
+    hasValidTimeRange,
+    requestedEnd,
+    requestedStart,
+    rooms,
+  ])
+
+  const updateField = (field: keyof AdminEventForm, value: string) => {
+    setForm(current => ({
+      ...current,
+      [field]: value,
+      ...(field === 'date' || field === 'startTime' || field === 'endTime' ? { room: '' } : {}),
+    }))
+  }
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    setError('')
+    if (parseInputTime(form.endTime) <= parseInputTime(form.startTime)) {
+      setError('End time must be later than start time.')
+      return
+    }
+    if (!form.room || !availableRooms.includes(form.room)) {
+      setError('Select one of the available rooms.')
+      return
+    }
+    onSave(form, editingId)
+    setEditingId(null)
+    setForm(createEmptyAdminForm(form.date))
+  }
+
+  const startEditing = (event: CalendarEvent) => {
+    setEditingId(event.id)
+    setForm({
+      title: event.courseCode,
+      date: event.date ?? toDateInputValue(new Date()),
+      room: event.room,
+      startTime: `${String(Math.floor(event.startMinutes / 60)).padStart(2, '0')}:${String(event.startMinutes % 60).padStart(2, '0')}`,
+      endTime: `${String(Math.floor(event.endMinutes / 60)).padStart(2, '0')}:${String(event.endMinutes % 60).padStart(2, '0')}`,
+    })
+  }
+
+  return (
+    <section className="event-panel">
+      <div className="event-panel-heading">
+        <div>
+          <h2>{editingId ? 'Edit Event' : 'Add Event'}</h2>
+          <p>Enter the event time, choose a vacant room, and save.</p>
+        </div>
+      </div>
+
+      {error && <p className="msg-error">{error}</p>}
+      <form className="event-form" onSubmit={submit}>
+        <label>Event name<input required value={form.title} onChange={event => updateField('title', event.target.value)} /></label>
+        <label>Date<input required type="date" value={form.date} onChange={event => updateField('date', event.target.value)} /></label>
+        <label>Start<input required type="time" value={form.startTime} onChange={event => updateField('startTime', event.target.value)} /></label>
+        <label>End<input required type="time" value={form.endTime} onChange={event => updateField('endTime', event.target.value)} /></label>
+
+        <fieldset className="vacant-room-picker">
+          <legend>Vacant rooms</legend>
+          {!hasValidTimeRange && <p>Choose an end time later than the start time.</p>}
+          {hasValidTimeRange && availableRooms.length === 0 && <p>No rooms are vacant for the complete time period.</p>}
+          {availableRooms.map(room => (
+            <button
+              className={form.room === room ? 'selected' : ''}
+              type="button"
+              key={room}
+              onClick={() => updateField('room', room)}
+            >
+              {room}
+            </button>
+          ))}
+        </fieldset>
+
+        <div className="event-form-actions">
+          <button className="btn-primary" type="submit">{editingId ? 'Save Changes' : 'Save Event'}</button>
+          {editingId && (
+            <button
+              className="btn-secondary"
+              type="button"
+              onClick={() => {
+                setEditingId(null)
+                setForm(createEmptyAdminForm(form.date))
+              }}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      </form>
+
+      <div className="admin-event-list">
+        <h3>Admin Events</h3>
+        {events.length === 0 && <p className="empty-state">No admin events yet.</p>}
+        {events.map(event => (
+          <article className="admin-event-card" key={event.id}>
+            <div>
+              <strong>{event.courseCode}</strong>
+              <span>{event.date} · {event.room} · {formatTime(event.startMinutes)}–{formatTime(event.endMinutes)}</span>
+              {event.instructorLastName && <small>Instructor: {event.instructorLastName}</small>}
+            </div>
+            <div>
+              <button type="button" className="btn-secondary" onClick={() => startEditing(event)}>Edit</button>
+              <button type="button" className="btn-danger" onClick={() => onDelete(event.id)}>Delete</button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('subjects')
-  const [apiStatus, setApiStatus] = useState<ApiStatus>('connecting')
+  const savedCsvSchedule = useMemo(() => loadCsvSchedule(), [])
+  const [activeTab, setActiveTab] = useState<Tab>(loadActiveTab)
+  const [csvEvents, setCsvEvents] = useState<CalendarEvent[]>(savedCsvSchedule.events)
+  const [csvName, setCsvName] = useState(savedCsvSchedule.name)
+  const [adminEvents, setAdminEvents] = useState<CalendarEvent[]>(loadAdminEvents)
+  const [databaseReady, setDatabaseReady] = useState(false)
+  const applyingRemoteUpdate = useRef(false)
 
   useEffect(() => {
-    const check = () =>
-      api.health()
-        .then(() => setApiStatus('online'))
-        .catch(() => setApiStatus('offline'))
+    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminEvents))
+  }, [adminEvents])
 
-    check()
-    const id = setInterval(check, 5000)
-    return () => clearInterval(id)
-  }, [])
+  useEffect(() => {
+    localStorage.setItem(CSV_STORAGE_KEY, JSON.stringify({ events: csvEvents, name: csvName }))
+  }, [csvEvents, csvName])
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'subjects',    label: 'Subjects' },
-    { key: 'rooms',       label: 'Rooms' },
-    { key: 'instructors', label: 'Instructors' },
-    { key: 'schedule',    label: 'Schedule' },
-  ]
+  useEffect(() => {
+    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab)
+  }, [activeTab])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const hydrateFromDatabase = async () => {
+      try {
+        const remote = await loadSharedSchedule<CalendarEvent>()
+        if (cancelled) return
+
+        if (remote) {
+          setCsvEvents(remote.csvEvents)
+          setCsvName(remote.csvName)
+          setAdminEvents(remote.adminEvents)
+        } else {
+          await saveSharedSchedule({
+            csvEvents: savedCsvSchedule.events,
+            csvName: savedCsvSchedule.name,
+            adminEvents: loadAdminEvents(),
+          })
+        }
+      } catch (error) {
+        console.warn('Supabase is unavailable; using the saved local schedule.', error)
+      } finally {
+        if (!cancelled) setDatabaseReady(true)
+      }
+    }
+
+    void hydrateFromDatabase()
+    return () => {
+      cancelled = true
+    }
+  }, [savedCsvSchedule])
+
+  useEffect(() => {
+    if (!databaseReady) return
+    if (applyingRemoteUpdate.current) {
+      applyingRemoteUpdate.current = false
+      return
+    }
+
+    const timeout = window.setTimeout(() => {
+      void saveSharedSchedule({ csvEvents, csvName, adminEvents }).catch(error => {
+        console.warn('Could not sync the schedule to Supabase. The local copy is still saved.', error)
+      })
+    }, 300)
+
+    return () => window.clearTimeout(timeout)
+  }, [adminEvents, csvEvents, csvName, databaseReady])
+
+  useEffect(() => {
+    if (!databaseReady) return
+
+    return subscribeToSharedSchedule(() => {
+      void loadSharedSchedule<CalendarEvent>().then(remote => {
+        if (!remote) return
+        applyingRemoteUpdate.current = true
+        setCsvEvents(remote.csvEvents)
+        setCsvName(remote.csvName)
+        setAdminEvents(remote.adminEvents)
+      }).catch(error => {
+        console.warn('Could not receive the latest shared schedule.', error)
+      })
+    })
+  }, [databaseReady])
+
+  const rooms = useMemo(() => {
+    const importedRooms = [...new Set(csvEvents.map(event => event.room))]
+    const adminRooms = adminEvents.map(event => event.room)
+    const combined = [...new Set([...importedRooms, ...adminRooms])].filter(Boolean)
+    return combined.length > 0 ? combined : DEFAULT_ROOMS
+  }, [adminEvents, csvEvents])
+
+  const uploadCsv = async (file: File) => {
+    const text = await file.text()
+    const parsed = csvRowsToEvents(parseCsv(text))
+    if (parsed.length === 0) throw new Error('No valid schedule rows were found in this CSV.')
+    setCsvEvents(parsed)
+    setCsvName(file.name)
+  }
+
+  const saveAdminEvent = (form: AdminEventForm, editingId: string | null) => {
+    const calendarEvent: CalendarEvent = {
+      id: editingId ?? `admin-${crypto.randomUUID()}`,
+      source: 'admin',
+      courseCode: form.title.trim(),
+      subject: '',
+      date: form.date,
+      startMinutes: parseInputTime(form.startTime),
+      endMinutes: parseInputTime(form.endTime),
+      classType: 'EVENT',
+      section: '',
+      room: form.room.trim(),
+      studentCount: '',
+      instructorLastName: '',
+    }
+
+    setAdminEvents(current =>
+      editingId
+        ? current.map(event => event.id === editingId ? calendarEvent : event)
+        : [...current, calendarEvent],
+    )
+  }
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <span className="app-title">Auto Scheduler</span>
-        <span className={`api-badge api-${apiStatus}`}>
-          {apiStatus === 'connecting' ? 'Connecting…' : apiStatus === 'online' ? 'API Online' : 'API Offline'}
-        </span>
-      </header>
+      <header className="app-header"><span className="app-title">Auto Scheduler</span></header>
 
       <nav className="tab-nav">
-        {tabs.map(t => (
+        {([
+          ['schedule', 'Schedule'],
+          ['event', 'Event'],
+          ['student-assistant', 'Student Assistant'],
+        ] as const).map(([key, label]) => (
           <button
-            key={t.key}
-            className={`tab-btn${tab === t.key ? ' active' : ''}`}
-            onClick={() => setTab(t.key)}
+            className={`tab-btn${activeTab === key ? ' active' : ''}`}
+            type="button"
+            key={key}
+            onClick={() => setActiveTab(key)}
           >
-            {t.label}
+            {label}
           </button>
         ))}
       </nav>
 
       <main className="app-main">
-        {tab === 'subjects'    && <SubjectsTab />}
-        {tab === 'rooms'       && <RoomsTab />}
-        {tab === 'instructors' && <InstructorsTab />}
-        {tab === 'schedule'    && <ScheduleTab />}
+        {activeTab === 'schedule' && (
+          <ScheduleCalendar
+            csvEvents={csvEvents}
+            adminEvents={adminEvents}
+            csvName={csvName}
+            rooms={rooms}
+            onCsvUpload={uploadCsv}
+            onCsvRemove={() => {
+              setCsvEvents([])
+              setCsvName('')
+            }}
+          />
+        )}
+        {activeTab === 'event' && (
+          <AdminEventsPanel
+            events={adminEvents}
+            csvEvents={csvEvents}
+            rooms={rooms}
+            onSave={saveAdminEvent}
+            onDelete={id => setAdminEvents(current => current.filter(event => event.id !== id))}
+          />
+        )}
       </main>
     </div>
   )
