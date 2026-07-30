@@ -140,6 +140,18 @@ The migration:
 After the migration runs, deleting an event removes its database row. Reopening
 the app or using another device will no longer restore that deleted event.
 
+## Enable Student Assistant Synchronization
+
+Run this file once in **Supabase Dashboard → SQL Editor**:
+
+```text
+database/supa/migrations/003_student_assistant_schedules.sql
+```
+
+This creates shared storage for the imported student-assistant CSV schedules
+and the latest generated duty calendar. Uploading, renaming, or removing an
+assistant and generating a new solution are then synchronized across devices.
+
 ## Test Flask
 
 While the application is running, open this address in a browser:
@@ -153,6 +165,27 @@ A working Flask service returns:
 ```json
 {"status": "ok"}
 ```
+
+## Create a Student Assistant Duty Schedule
+
+1. Open the **Schedule** tab and upload the main class schedule CSV. This is the
+   list of classes that must be covered.
+2. Open the **Student Assistant** tab.
+3. Select **Add assistant schedule CSVs** and choose one personal class-schedule
+   CSV for each student assistant. You can select several files at once.
+4. Edit the displayed assistant labels if needed, then select **Create optimized
+   schedule**.
+
+The CP-SAT solver assigns at most one available assistant to a class. During
+testing, classes are allowed to remain unassigned. It keeps each assistant at
+exactly 20 duty hours per recurring week, prevents personal-class conflicts and
+double booking, and limits duty to six hours per day. A class that meets on
+multiple days is assigned to the same assistant on all of its meeting days.
+
+The main schedule must provide at least enough available class hours for the
+assistants. For example, four assistants need at least 80 hours of duty
+opportunities. The solver covers as many classes as possible and reports how
+many remain unassigned.
 
 ## Common Problems
 

@@ -12,9 +12,19 @@ import {
   saveSharedAdminEvent,
   subscribeToSharedAdminEvents,
 } from '../api/adminEventRepository'
+import {
+  solveStudentAssistantSchedule,
+  type DutyAssignment,
+  type StudentAssistantResult,
+} from '../api/studentAssistantSolver'
+import {
+  loadSharedStudentAssistantData,
+  saveSharedStudentAssistantData,
+  subscribeToSharedStudentAssistantData,
+} from '../api/studentAssistantRepository'
 import './App.css'
 
-type Tab = 'schedule' | 'event' | 'student-assistant'
+type Tab = 'schedule' | 'student-assistant'
 type EventSource = 'csv' | 'admin'
 
 interface CalendarEvent {
@@ -207,7 +217,7 @@ function loadCsvSchedule(): { events: CalendarEvent[]; name: string } {
 
 function loadActiveTab(): Tab {
   const saved = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY)
-  return saved === 'schedule' || saved === 'event' || saved === 'student-assistant'
+  return saved === 'schedule' || saved === 'student-assistant'
     ? saved
     : 'schedule'
 }
@@ -227,6 +237,7 @@ function ScheduleCalendar({
   rooms,
   onCsvUpload,
   onCsvRemove,
+  onOpenEvents,
 }: {
   csvEvents: CalendarEvent[]
   adminEvents: CalendarEvent[]
@@ -234,6 +245,7 @@ function ScheduleCalendar({
   rooms: string[]
   onCsvUpload: (file: File) => Promise<void>
   onCsvRemove: () => void
+  onOpenEvents: () => void
 }) {
   const [selectedDate, setSelectedDate] = useState(loadScheduleDate)
   const [uploadError, setUploadError] = useState('')
@@ -340,6 +352,9 @@ function ScheduleCalendar({
             Upload CSV
             <input type="file" accept=".csv,text/csv" aria-label="Upload schedule CSV" onChange={handleUpload} />
           </label>
+          <button className="btn-primary" type="button" onClick={onOpenEvents}>
+            Add / Manage Events
+          </button>
           {csvName && (
             <button className="remove-csv-button" type="button" onClick={onCsvRemove}>
               Remove CSV
@@ -579,14 +594,424 @@ function AdminEventsPanel({
   )
 }
 
+interface UploadedAssistant {
+  id: string
+  label: string
+  fileName: string
+  events: CalendarEvent[]
+}
+
+const ASSISTANT_STORAGE_KEY = 'auto-scheduler-student-assistants'
+
+function loadLocalAssistantData(): {
+  assistants: UploadedAssistant[]
+  result: StudentAssistantResult | null
+} {
+  try {
+    const saved = localStorage.getItem(ASSISTANT_STORAGE_KEY)
+    if (!saved) return { assistants: [], result: null }
+    const parsed = JSON.parse(saved) as {
+      assistants?: UploadedAssistant[]
+      result?: StudentAssistantResult | null
+    }
+    return {
+      assistants: Array.isArray(parsed.assistants) ? parsed.assistants : [],
+      result: parsed.result ?? null,
+    }
+  } catch {
+    return { assistants: [], result: null }
+  }
+}
+
+const DAY_SORT: Record<string, number> = {
+  M: 0, T: 1, W: 2, Th: 3, F: 4, S: 5, Su: 6,
+}
+const WEEK_DAYS = [
+  { code: 'M', label: 'Monday' },
+  { code: 'T', label: 'Tuesday' },
+  { code: 'W', label: 'Wednesday' },
+  { code: 'Th', label: 'Thursday' },
+  { code: 'F', label: 'Friday' },
+  { code: 'S', label: 'Saturday' },
+  { code: 'Su', label: 'Sunday' },
+] as const
+
+function expandedDayCodes(dayCode = '') {
+  if (dayCode === 'MW') return ['M', 'W']
+  if (dayCode === 'TTh') return ['T', 'Th']
+  return [dayCode]
+}
+
+function AssistantWeeklyCalendar({
+  assistant,
+  assignments,
+}: {
+  assistant: UploadedAssistant
+  assignments: DutyAssignment[]
+}) {
+  const personalClasses = assistant.events.flatMap(event =>
+    expandedDayCodes(event.dayCode).map(day => ({ ...event, day })),
+  )
+  const allPeriods = [...personalClasses, ...assignments]
+  const rangeStart = allPeriods.length
+    ? Math.floor(Math.min(...allPeriods.map(item => item.startMinutes)) / 60) * 60
+    : DEFAULT_START
+  const rangeEnd = allPeriods.length
+    ? Math.ceil(Math.max(...allPeriods.map(item => item.endMinutes)) / 60) * 60
+    : DEFAULT_END
+  const pixelsPerHour = 64
+  const calendarHeight = Math.max(((rangeEnd - rangeStart) / 60) * pixelsPerHour, pixelsPerHour)
+  const position = (minutes: number) => ((minutes - rangeStart) / 60) * pixelsPerHour
+  const hourLabels: number[] = []
+  for (let minute = rangeStart; minute <= rangeEnd; minute += 60) hourLabels.push(minute)
+
+  return (
+    <div className="sa-weekly-calendar">
+      <div className="sa-week-header">
+        <div className="sa-week-corner">Time</div>
+        {WEEK_DAYS.map(day => <div key={day.code}>{day.label}</div>)}
+      </div>
+      <div className="sa-week-body" style={{ '--sa-calendar-height': `${calendarHeight}px` } as CSSProperties}>
+        <div className="sa-week-time-axis">
+          {hourLabels.map(minute => (
+            <span key={minute} style={{ top: position(minute) }}>{formatTime(minute)}</span>
+          ))}
+        </div>
+        {WEEK_DAYS.map(day => (
+          <div className="sa-day-lane" key={day.code}>
+            {hourLabels.map(minute => (
+              <span className="sa-hour-line" key={minute} style={{ top: position(minute) }} />
+            ))}
+            {personalClasses.filter(item => item.day === day.code).map(item => (
+              <article
+                className="sa-calendar-block personal"
+                key={`personal-${item.id}-${day.code}`}
+                style={{
+                  top: position(item.startMinutes),
+                  height: Math.max(position(item.endMinutes) - position(item.startMinutes), 28),
+                }}
+                title={`Personal class: ${item.courseCode || item.subject}`}
+              >
+                <small className="sa-block-label">Personal Class</small>
+                <strong>{item.courseCode || item.subject || 'Personal class'}</strong>
+                <small>{formatTime(item.startMinutes)}–{formatTime(item.endMinutes)}</small>
+              </article>
+            ))}
+            {assignments.filter(item => item.day === day.code).map((item, index) => (
+              <article
+                className="sa-calendar-block duty"
+                key={`duty-${item.classId}-${item.startMinutes}-${index}`}
+                style={{
+                  top: position(item.startMinutes),
+                  height: Math.max(position(item.endMinutes) - position(item.startMinutes), 28),
+                }}
+                title={`Duty: ${item.courseCode || item.subject} in ${item.room}`}
+              >
+                <small className="sa-block-label">Duty</small>
+                <strong>{item.courseCode || item.subject || 'Duty'}</strong>
+                <span>{item.room}</span>
+                <small>{formatTime(item.startMinutes)}–{formatTime(item.endMinutes)}</small>
+              </article>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="sa-calendar-legend">
+        <span><i className="personal" /> Personal class</span>
+        <span><i className="duty" /> Assigned duty</span>
+      </div>
+    </div>
+  )
+}
+
+function StudentAssistantPanel({
+  mainSchedule,
+  mainScheduleName,
+}: {
+  mainSchedule: CalendarEvent[]
+  mainScheduleName: string
+}) {
+  const localAssistantData = useMemo(() => loadLocalAssistantData(), [])
+  const [assistants, setAssistants] = useState<UploadedAssistant[]>(localAssistantData.assistants)
+  const [result, setResult] = useState<StudentAssistantResult | null>(localAssistantData.result)
+  const [error, setError] = useState('')
+  const [solving, setSolving] = useState(false)
+  const [selectedAssistantId, setSelectedAssistantId] = useState('')
+  const [syncMessage, setSyncMessage] = useState('Loading saved assistants…')
+
+  useEffect(() => {
+    let cancelled = false
+
+    const refresh = async () => {
+      try {
+        const saved = await loadSharedStudentAssistantData<
+          UploadedAssistant,
+          StudentAssistantResult
+        >()
+        if (cancelled) return
+        if (saved) {
+          setAssistants(saved.assistants)
+          setResult(saved.solverResult)
+          localStorage.setItem(ASSISTANT_STORAGE_KEY, JSON.stringify({
+            assistants: saved.assistants,
+            result: saved.solverResult,
+          }))
+          setSyncMessage('Student assistant data synchronized')
+        } else {
+          setSyncMessage(isCloudConfigured ? 'No saved assistant schedule' : 'Local session only')
+        }
+      } catch (syncError) {
+        console.warn('Could not load student assistant data.', syncError)
+        if (!cancelled) setSyncMessage('Assistant database unavailable')
+      }
+    }
+
+    void refresh()
+    const unsubscribe = subscribeToSharedStudentAssistantData(() => {
+      void refresh()
+    })
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [])
+
+  const saveAssistantData = (
+    nextAssistants: UploadedAssistant[],
+    nextResult: StudentAssistantResult | null,
+  ) => {
+    localStorage.setItem(ASSISTANT_STORAGE_KEY, JSON.stringify({
+      assistants: nextAssistants,
+      result: nextResult,
+    }))
+    setSyncMessage(isCloudConfigured ? 'Saving assistant data…' : 'Local session only')
+    void saveSharedStudentAssistantData({
+      assistants: nextAssistants,
+      solverResult: nextResult,
+    }).then(() => {
+      setSyncMessage(isCloudConfigured ? 'Student assistant data synchronized' : 'Local session only')
+    }).catch(syncError => {
+      console.warn('Could not save student assistant data.', syncError)
+      setSyncMessage('Assistant database unavailable')
+    })
+  }
+
+  const uploadAssistants = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? [])
+    event.target.value = ''
+    if (files.length === 0) return
+
+    setError('')
+    const additions: UploadedAssistant[] = []
+    for (const file of files) {
+      const events = csvRowsToEvents(parseCsv(await file.text()))
+      if (events.length === 0) {
+        setError(`${file.name} has no valid schedule rows and was not added.`)
+        continue
+      }
+      additions.push({
+        id: crypto.randomUUID(),
+        label: file.name.replace(/\.csv$/i, ''),
+        fileName: file.name,
+        events,
+      })
+    }
+    const nextAssistants = [...assistants, ...additions]
+    setAssistants(nextAssistants)
+    setResult(null)
+    saveAssistantData(nextAssistants, null)
+  }
+
+  const runSolver = async () => {
+    setError('')
+    setResult(null)
+    setSolving(true)
+    try {
+      const response = await solveStudentAssistantSchedule(
+        mainSchedule,
+        assistants.map(assistant => ({
+          id: assistant.id,
+          label: assistant.label.trim() || assistant.fileName,
+          schedule: assistant.events,
+        })),
+      )
+      setResult(response)
+      saveAssistantData(assistants, response)
+    } catch (solverError) {
+      console.error(solverError)
+      setError('Could not reach the scheduler. Make sure the Flask service started with the app.')
+    } finally {
+      setSolving(false)
+    }
+  }
+
+  const assignments = [...(result?.assignments ?? [])].sort((left, right) =>
+    (DAY_SORT[left.day] ?? 99) - (DAY_SORT[right.day] ?? 99)
+    || left.startMinutes - right.startMinutes
+    || left.room.localeCompare(right.room),
+  )
+  const effectiveSelectedAssistantId = assistants.some(
+    assistant => assistant.id === selectedAssistantId,
+  )
+    ? selectedAssistantId
+    : assistants[0]?.id ?? ''
+  const selectedAssistant = assistants.find(
+    assistant => assistant.id === effectiveSelectedAssistantId,
+  )
+  const selectedAssignments = assignments.filter(
+    assignment => assignment.assistantId === effectiveSelectedAssistantId,
+  )
+
+  return (
+    <section className="sa-panel">
+      <div className="section-heading">
+        <div>
+          <h2>Student Assistant Scheduler</h2>
+          <p>Creates 20 weekly duty hours per assistant. Classes may remain unassigned while testing.</p>
+        </div>
+      </div>
+
+      <div className={`sa-main-status ${mainSchedule.length > 0 ? 'ready' : ''}`}>
+        <strong>Main class schedule</strong>
+        <span>
+          {mainSchedule.length > 0
+            ? `${mainScheduleName || 'Imported schedule'} · ${mainSchedule.length} CSV rows`
+            : 'Upload the main class schedule in the Schedule tab first.'}
+        </span>
+      </div>
+      <p className="sa-sync-message">{syncMessage}</p>
+
+      <div className="sa-upload">
+        <label className="btn-primary">
+          Add assistant schedule CSVs
+          <input type="file" accept=".csv,text/csv" multiple onChange={uploadAssistants} hidden />
+        </label>
+        <span>{assistants.length} assistant{assistants.length === 1 ? '' : 's'} added</span>
+      </div>
+
+      <div className="sa-file-list">
+        {assistants.length === 0 && (
+          <p className="empty-state">Add one CSV per student assistant. The filename is used as the assistant label.</p>
+        )}
+        {assistants.map(assistant => (
+          <article className="sa-file-card" key={assistant.id}>
+            <div>
+              <input
+                aria-label={`Name for ${assistant.fileName}`}
+                value={assistant.label}
+                onChange={event => {
+                  const nextAssistants = assistants.map(item =>
+                    item.id === assistant.id ? { ...item, label: event.target.value } : item,
+                  )
+                  setAssistants(nextAssistants)
+                  setResult(null)
+                  saveAssistantData(nextAssistants, null)
+                }}
+              />
+              <small>{assistant.fileName} · {assistant.events.length} class rows</small>
+            </div>
+            <button
+              className="btn-danger"
+              type="button"
+              onClick={() => {
+                const nextAssistants = assistants.filter(item => item.id !== assistant.id)
+                setAssistants(nextAssistants)
+                setResult(null)
+                saveAssistantData(nextAssistants, null)
+              }}
+            >
+              Remove
+            </button>
+          </article>
+        ))}
+      </div>
+
+      {error && <p className="form-error">{error}</p>}
+      <button
+        className="btn-primary sa-solve"
+        type="button"
+        disabled={solving || mainSchedule.length === 0 || assistants.length === 0}
+        onClick={() => void runSolver()}
+      >
+        {solving ? 'Creating schedule…' : 'Create optimized schedule'}
+      </button>
+
+      {result && (
+        <div className="sa-results">
+          <div className={`sa-result-status ${result.status.toLowerCase()}`}>
+            <strong>{result.status === 'OPTIMAL' || result.status === 'FEASIBLE'
+              ? 'Schedule created'
+              : 'No valid schedule found'}</strong>
+            {result.summary && (
+              <span>
+                {result.summary.assistantCount} assistants · {result.summary.assignedClassCount ?? 0} classes assigned
+                {typeof result.summary.unassignedClassCount === 'number'
+                  ? ` · ${result.summary.unassignedClassCount} unassigned`
+                  : ''}
+              </span>
+            )}
+          </div>
+
+          {result.diagnostics.length > 0 && (
+            <ul className="sa-diagnostics">
+              {result.diagnostics.map(message => <li key={message}>{message}</li>)}
+            </ul>
+          )}
+
+          {(result.assistantTotals?.length ?? 0) > 0 && (
+            <div className="sa-total-grid">
+              {result.assistantTotals?.map(total => (
+                <div key={total.assistantId}>
+                  <strong>{total.assistantLabel}</strong>
+                  <span>{total.hours} hours/week</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {selectedAssistant && (
+            <div className="sa-calendar-section">
+              <div className="sa-calendar-switcher">
+                <div>
+                  <h3>Weekly Schedule</h3>
+                  <p>Switch assistants to view personal classes and assigned duties.</p>
+                </div>
+                <label>
+                  Student assistant
+                  <select
+                    value={effectiveSelectedAssistantId}
+                    onChange={event => setSelectedAssistantId(event.target.value)}
+                  >
+                    {assistants.map(assistant => (
+                      <option value={assistant.id} key={assistant.id}>
+                        {assistant.label || assistant.fileName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <AssistantWeeklyCalendar
+                assistant={selectedAssistant}
+                assignments={selectedAssignments}
+              />
+            </div>
+          )}
+
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function App() {
   const savedCsvSchedule = useMemo(() => loadCsvSchedule(), [])
   const [activeTab, setActiveTab] = useState<Tab>(loadActiveTab)
   const [csvEvents, setCsvEvents] = useState<CalendarEvent[]>(savedCsvSchedule.events)
   const [csvName, setCsvName] = useState(savedCsvSchedule.name)
   const [adminEvents, setAdminEvents] = useState<CalendarEvent[]>(loadAdminEvents)
-  const [storageStatus, setStorageStatus] = useState('Opening interface…')
-  const [storageStatusClass, setStorageStatusClass] = useState('api-connecting')
+  const [eventsPanelOpen, setEventsPanelOpen] = useState(false)
+  const [, setStorageStatus] = useState('Opening interface…')
+  const [, setStorageStatusClass] = useState('api-connecting')
 
   useEffect(() => {
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminEvents))
@@ -739,15 +1164,9 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <span className="app-title">Auto Scheduler</span>
-        <span className={`api-badge ${storageStatusClass}`}>{storageStatus}</span>
-      </header>
-
       <nav className="tab-nav">
         {([
           ['schedule', 'Schedule'],
-          ['event', 'Event'],
           ['student-assistant', 'Student Assistant'],
         ] as const).map(([key, label]) => (
           <button
@@ -770,18 +1189,47 @@ export default function App() {
             rooms={rooms}
             onCsvUpload={uploadCsv}
             onCsvRemove={removeCsv}
+            onOpenEvents={() => setEventsPanelOpen(true)}
           />
         )}
-        {activeTab === 'event' && (
-          <AdminEventsPanel
-            events={adminEvents}
-            csvEvents={csvEvents}
-            rooms={rooms}
-            onSave={saveAdminEvent}
-            onDelete={deleteAdminEvent}
+        {activeTab === 'student-assistant' && (
+          <StudentAssistantPanel
+            mainSchedule={csvEvents}
+            mainScheduleName={csvName}
           />
         )}
       </main>
+
+      {eventsPanelOpen && (
+        <div
+          className="event-drawer-backdrop"
+          role="presentation"
+          onMouseDown={event => {
+            if (event.target === event.currentTarget) setEventsPanelOpen(false)
+          }}
+        >
+          <aside className="event-drawer" role="dialog" aria-modal="true" aria-label="Add and manage events">
+            <div className="event-drawer-toolbar">
+              <strong>Schedule Events</strong>
+              <button
+                type="button"
+                className="event-drawer-close"
+                onClick={() => setEventsPanelOpen(false)}
+                aria-label="Close event panel"
+              >
+                ×
+              </button>
+            </div>
+            <AdminEventsPanel
+              events={adminEvents}
+              csvEvents={csvEvents}
+              rooms={rooms}
+              onSave={saveAdminEvent}
+              onDelete={deleteAdminEvent}
+            />
+          </aside>
+        </div>
+      )}
     </div>
   )
 }
