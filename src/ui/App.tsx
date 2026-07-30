@@ -694,6 +694,8 @@ function AssistantWeeklyCalendar({
               >
                 <small className="sa-block-label">Personal Class</small>
                 <strong>{item.courseCode || item.subject || 'Personal class'}</strong>
+                <span>Room: {item.room || 'TBA'}</span>
+                <span>Stub: {item.stubCode || 'N/A'}</span>
                 <small>{formatTime(item.startMinutes)}–{formatTime(item.endMinutes)}</small>
               </article>
             ))}
@@ -709,7 +711,8 @@ function AssistantWeeklyCalendar({
               >
                 <small className="sa-block-label">Duty</small>
                 <strong>{item.courseCode || item.subject || 'Duty'}</strong>
-                <span>{item.room}</span>
+                <span>Room: {item.room || 'TBA'}</span>
+                <span>Stub: {item.stubCode || 'N/A'}</span>
                 <small>{formatTime(item.startMinutes)}–{formatTime(item.endMinutes)}</small>
               </article>
             ))}

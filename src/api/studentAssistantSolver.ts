@@ -8,6 +8,7 @@ export interface DutyAssignment {
   assistantId: string
   assistantLabel: string
   classId: string
+  stubCode: string
   day: string
   startMinutes: number
   endMinutes: number

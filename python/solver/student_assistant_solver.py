@@ -21,6 +21,7 @@ SLOT_MINUTES = 30
 class Meeting:
     occurrence_id: str
     source_id: str
+    stub_code: str
     day: str
     start: int
     end: int
@@ -65,6 +66,7 @@ def _parse_meetings(events: list[dict[str, Any]], prefix: str) -> list[Meeting]:
                 Meeting(
                     occurrence_id=f"{source_id}-{day}",
                     source_id=source_id,
+                    stub_code=str(event.get("stubCode", "")).strip(),
                     day=day,
                     start=start,
                     end=end,
@@ -170,6 +172,7 @@ def _assignment_payload(
         "assistantId": assistant_id,
         "assistantLabel": assistant_label,
         "classId": meeting.source_id,
+        "stubCode": meeting.stub_code,
         "day": meeting.day,
         "startMinutes": start,
         "endMinutes": end,
@@ -329,6 +332,14 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
         for (assistant_id, class_id), variable in class_assistant_vars.items()
         if solver.value(variable)
     }
+    unassigned_class_ids = [
+        class_id for class_id in units_by_class
+        if class_id not in assigned_class_ids
+    ]
+    print(
+        f"\n[CP-SAT] Unassigned classes: {len(unassigned_class_ids)}",
+        flush=True,
+    )
     unassigned_count = len(units_by_class) - len(assigned_class_ids)
     return {
         "status": "OPTIMAL" if status == cp_model.OPTIMAL else "FEASIBLE",
