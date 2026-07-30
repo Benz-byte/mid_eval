@@ -56,47 +56,26 @@ run:
 npm install
 ```
 
-## Install Python Packages
+This command installs the JavaScript packages and automatically installs the
+Python packages from `python\requirements.txt`.
 
-Run:
+## Supabase Configuration
 
-```powershell
-python -m pip install -r python\requirements.txt
-```
-
-Using a virtual environment is optional but recommended:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r python\requirements.txt
-```
-
-The virtual environment can be recreated at any time and should not be uploaded
-to GitHub.
-
-## Configure Supabase
-
-Create a file named `.env.local` in the project root beside `package.json`.
-
-You can copy the included template:
-
-```powershell
-Copy-Item .env.example .env.local
-```
-
-Open `.env.local` and enter the Supabase project values:
+The tracked `.env` file contains the public Supabase configuration. The
+publishable key has already been added. Before committing and sharing the
+project, the repository owner only needs to replace the Project URL placeholder:
 
 ```env
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
+VITE_SUPABASE_PUBLISHABLE_KEY=already-configured
 ```
 
-Use only the Supabase publishable key. Never place a service-role key, secret
-key, private key, or database password in this file.
+The Project URL is available in **Supabase Dashboard → Project Settings → API**.
+After the real URL is committed, collaborators do not create or edit any
+environment file. They receive the configuration automatically through GitHub.
 
-The `.env.local` file is intentionally not downloaded from GitHub. Every
-developer must create it locally.
+Only a Supabase publishable key may be stored in this frontend configuration.
+Never add a service-role key, secret key, private key, or database password.
 
 ## Run the Application
 
@@ -138,8 +117,8 @@ Cloning a repository does not automatically open it in VS Code.
 ### Electron opens as a blank window
 
 Wait until the terminal displays the Vite address, then press `Ctrl+R` in the
-Electron window. Check that `.env.local` exists and uses the exact variable
-names shown above.
+Electron window. Check that `.env` contains the real Supabase URL and
+publishable key.
 
 ### `npm` is not recognized
 
@@ -174,7 +153,6 @@ If the repository was cloned previously, download the latest committed changes:
 git switch main
 git pull origin main
 npm install
-python -m pip install -r python\requirements.txt
 ```
 
 Then start the application again with:

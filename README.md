@@ -13,10 +13,12 @@ included as the integration point for the new CP-SAT solver.
 
 ```powershell
 npm install
-python -m pip install -r python\requirements.txt
 ```
 
-Copy `.env.example` to `.env.local` and add the Supabase project values:
+`npm install` installs both the JavaScript and Python packages.
+
+Before sharing the repository, the owner must add the public Supabase project
+values to the tracked `.env` file:
 
 ```env
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
@@ -24,7 +26,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
 ```
 
 Use only a Supabase publishable key. Do not place a secret or service-role key
-in the frontend environment file.
+in the frontend environment file. Once these values are committed,
+collaborators do not need to create or edit an environment file.
 
 ## Run
 
