@@ -3,6 +3,7 @@ import type { CSSProperties, ChangeEvent, FormEvent } from 'react'
 import {
   isCloudConfigured,
   loadSharedSchedule,
+  saveSharedSchedule,
   subscribeToSharedSchedule,
 } from '../api/scheduleRepository'
 import {
@@ -646,7 +647,7 @@ export default function App() {
 
     const refreshAdminEvents = async () => {
       try {
-        const events = await loadSharedAdminEvents<CalendarEvent>()
+        const events = await loadSharedAdminEvents()
         if (!cancelled) setAdminEvents(events)
       } catch (error) {
         console.warn('Could not load shared events; local events remain available.', error)
@@ -677,6 +678,29 @@ export default function App() {
     if (parsed.length === 0) throw new Error('No valid schedule rows were found in this CSV.')
     setCsvEvents(parsed)
     setCsvName(file.name)
+
+    try {
+      await saveSharedSchedule({ csvEvents: parsed, csvName: file.name })
+      if (isCloudConfigured) {
+        setStorageStatus('Database schedule loaded')
+        setStorageStatusClass('api-online')
+      }
+    } catch (error) {
+      console.warn('Could not synchronize the CSV schedule; the local copy remains available.', error)
+      setStorageStatus('Database unavailable')
+      setStorageStatusClass('api-offline')
+    }
+  }
+
+  const removeCsv = () => {
+    setCsvEvents([])
+    setCsvName('')
+
+    void saveSharedSchedule({ csvEvents: [], csvName: '' }).catch(error => {
+      console.warn('Could not synchronize CSV removal; the local copy was still removed.', error)
+      setStorageStatus('Database unavailable')
+      setStorageStatusClass('api-offline')
+    })
   }
 
   const saveAdminEvent = (form: AdminEventForm, editingId: string | null) => {
@@ -745,10 +769,7 @@ export default function App() {
             csvName={csvName}
             rooms={rooms}
             onCsvUpload={uploadCsv}
-            onCsvRemove={() => {
-              setCsvEvents([])
-              setCsvName('')
-            }}
+            onCsvRemove={removeCsv}
           />
         )}
         {activeTab === 'event' && (

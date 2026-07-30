@@ -3,18 +3,35 @@
 
 create table if not exists public.admin_events (
   id text primary key,
-  event jsonb not null,
+  title text not null,
+  event_date date not null,
+  room text not null,
+  start_minutes integer not null,
+  end_minutes integer not null,
   updated_at timestamptz not null default now()
 );
 
--- Copy any events stored in the old shared_schedules JSON array.
-insert into public.admin_events (id, event)
-select item->>'id', item
+-- Copy events from the legacy shared_schedules JSON array.
+insert into public.admin_events (
+  id, title, event_date, room, start_minutes, end_minutes
+)
+select
+  item->>'id',
+  item->>'courseCode',
+  (item->>'date')::date,
+  item->>'room',
+  (item->>'startMinutes')::integer,
+  (item->>'endMinutes')::integer
 from public.shared_schedules
 cross join lateral jsonb_array_elements(admin_events) as item
 where item->>'id' is not null
+  and item->>'date' is not null
 on conflict (id) do update set
-  event = excluded.event,
+  title = excluded.title,
+  event_date = excluded.event_date,
+  room = excluded.room,
+  start_minutes = excluded.start_minutes,
+  end_minutes = excluded.end_minutes,
   updated_at = now();
 
 alter table public.admin_events enable row level security;

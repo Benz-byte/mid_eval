@@ -56,15 +56,16 @@ desktop distribution for the corresponding platform.
 
 ```text
 React UI
-├── localStorage → local CSV imports and manually added events
-├── Supabase     → schedule data loaded for the calendar
+├── localStorage → fallback copy for the current device
+├── Supabase     → shared CSV schedule and admin events
 └── Flask        → reserved for the future CP-SAT solver
 ```
 
 The interface continues working if Supabase or the internet is unavailable; it
 shows locally saved data or an empty calendar instead of a blank window.
 Manually added events use one Supabase row per event, so create, edit, and
-delete actions synchronize across running devices.
+delete actions synchronize across running devices. Uploading or removing a CSV
+also updates `shared_schedules`, so every device plots the same class schedule.
 When the new solver is added, place its Python modules under `python/` and
 register its HTTP endpoint in `python/app.py`.
 
@@ -81,7 +82,7 @@ events from the legacy JSON array.
 ## Important files
 
 - `src/ui/App.tsx` — schedule and event interface
-- `src/api/scheduleRepository.ts` — Supabase schedule loading
+- `src/api/scheduleRepository.ts` — shared CSV schedule loading and saving
 - `database/supa/supabase.ts` — Supabase client
 - `database/supa/migrations/001_shared_schedule.sql` — database schema
 - `database/supa/migrations/002_admin_events.sql` — synchronized event schema

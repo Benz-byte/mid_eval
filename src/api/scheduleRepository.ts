@@ -34,6 +34,21 @@ export async function loadSharedSchedule<T>(): Promise<SharedSchedule<T> | null>
   }
 }
 
+export async function saveSharedSchedule<T>(schedule: SharedSchedule<T>): Promise<void> {
+  if (!supabase) return
+
+  const { error } = await supabase
+    .from('shared_schedules')
+    .upsert({
+      id: SHARED_SCHEDULE_ID,
+      csv_name: schedule.csvName,
+      csv_events: schedule.csvEvents,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' })
+
+  if (error) throw error
+}
+
 export function subscribeToSharedSchedule(onChange: () => void) {
   const client = supabase
   if (!client) return () => undefined

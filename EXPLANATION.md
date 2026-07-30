@@ -108,9 +108,10 @@ Supabase is a schedule data source. It does not run or host the interface. If
 the database or internet is unavailable, the tabs and calendar still display.
 
 CSV imports and events added through the UI are stored in that device's browser
-storage as a fallback. Manually added events are also written to the Supabase
-`admin_events` table. Adding, editing, or deleting an event triggers a realtime
-refresh on other running devices.
+storage as a fallback and written to Supabase. Uploading or removing a CSV
+updates `shared_schedules`. Manually added events use the `admin_events` table.
+Adding, editing, or deleting shared data triggers a realtime refresh on other
+running devices.
 
 The header can show:
 
