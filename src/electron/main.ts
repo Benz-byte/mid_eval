@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { spawn } from 'child_process'
@@ -68,7 +68,6 @@ app.on('ready', () => {
     mainWindow.loadFile(path.join(app.getAppPath(), '/dist-react/index.html'))
   }
 
-  ipcMain.handle('get-app-version', () => app.getVersion())
 })
 
 app.on('before-quit', stopFlask)

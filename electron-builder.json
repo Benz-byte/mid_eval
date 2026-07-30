@@ -1,5 +1,5 @@
 {
-  "appId": "com.group-27.electron-template",
+  "appId": "com.group27.auto-scheduler",
   "files": ["dist-electron", "dist-react"],
   "extraResources": [
     { "from": "python", "to": "python", "filter": ["**/*"] },
