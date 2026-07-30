@@ -836,8 +836,7 @@ tr:hover td { background: #161b27; }
 .sa-main-status span,
 .sa-upload span,
 .sa-file-card small,
-.sa-result-status span,
-.sa-total-grid span {
+.sa-result-status span {
   color: #a0aec0;
 }
 
@@ -871,12 +870,6 @@ tr:hover td { background: #161b27; }
   align-items: center;
   gap: 1rem;
   margin: 1rem 0;
-}
-
-.sa-sync-message {
-  margin: -0.45rem 0 1rem;
-  color: #718096;
-  font-size: 0.78rem;
 }
 
 .sa-file-list {
@@ -923,22 +916,6 @@ tr:hover td { background: #161b27; }
 .sa-diagnostics {
   margin: 0.75rem 0;
   color: #feb2b2;
-}
-
-.sa-total-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.6rem;
-  margin: 1rem 0;
-}
-
-.sa-total-grid div {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.75rem;
-  border: 1px solid #2d3748;
-  border-radius: 7px;
 }
 
 .sa-calendar-section {

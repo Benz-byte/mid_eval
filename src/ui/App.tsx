@@ -737,7 +737,7 @@ function StudentAssistantPanel({
   const [error, setError] = useState('')
   const [solving, setSolving] = useState(false)
   const [selectedAssistantId, setSelectedAssistantId] = useState('')
-  const [syncMessage, setSyncMessage] = useState('Loading saved assistants…')
+  const [, setSyncMessage] = useState('Loading saved assistants…')
 
   useEffect(() => {
     let cancelled = false
@@ -861,13 +861,15 @@ function StudentAssistantPanel({
   const selectedAssignments = assignments.filter(
     assignment => assignment.assistantId === effectiveSelectedAssistantId,
   )
+  const visibleDiagnostics = (result?.diagnostics ?? []).filter(
+    message => !message.includes('classes remain unassigned because test coverage is optional'),
+  )
 
   return (
     <section className="sa-panel">
       <div className="section-heading">
         <div>
           <h2>Student Assistant Scheduler</h2>
-          <p>Creates 20 weekly duty hours per assistant. Classes may remain unassigned while testing.</p>
         </div>
       </div>
 
@@ -879,8 +881,6 @@ function StudentAssistantPanel({
             : 'Upload the main class schedule in the Schedule tab first.'}
         </span>
       </div>
-      <p className="sa-sync-message">{syncMessage}</p>
-
       <div className="sa-upload">
         <label className="btn-primary">
           Add assistant schedule CSVs
@@ -908,7 +908,7 @@ function StudentAssistantPanel({
                   saveAssistantData(nextAssistants, null)
                 }}
               />
-              <small>{assistant.fileName} · {assistant.events.length} class rows</small>
+              <small>{assistant.fileName}</small>
             </div>
             <button
               className="btn-danger"
@@ -942,31 +942,12 @@ function StudentAssistantPanel({
             <strong>{result.status === 'OPTIMAL' || result.status === 'FEASIBLE'
               ? 'Schedule created'
               : 'No valid schedule found'}</strong>
-            {result.summary && (
-              <span>
-                {result.summary.assistantCount} assistants · {result.summary.assignedClassCount ?? 0} classes assigned
-                {typeof result.summary.unassignedClassCount === 'number'
-                  ? ` · ${result.summary.unassignedClassCount} unassigned`
-                  : ''}
-              </span>
-            )}
           </div>
 
-          {result.diagnostics.length > 0 && (
+          {visibleDiagnostics.length > 0 && (
             <ul className="sa-diagnostics">
-              {result.diagnostics.map(message => <li key={message}>{message}</li>)}
+              {visibleDiagnostics.map(message => <li key={message}>{message}</li>)}
             </ul>
-          )}
-
-          {(result.assistantTotals?.length ?? 0) > 0 && (
-            <div className="sa-total-grid">
-              {result.assistantTotals?.map(total => (
-                <div key={total.assistantId}>
-                  <strong>{total.assistantLabel}</strong>
-                  <span>{total.hours} hours/week</span>
-                </div>
-              ))}
-            </div>
           )}
 
           {selectedAssistant && (

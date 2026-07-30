@@ -330,13 +330,6 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
         if solver.value(variable)
     }
     unassigned_count = len(units_by_class) - len(assigned_class_ids)
-    diagnostics = []
-    if unassigned_count:
-        diagnostics.append(
-            f"{unassigned_count} of {len(units_by_class)} classes remain unassigned "
-            "because test coverage is optional."
-        )
-
     return {
         "status": "OPTIMAL" if status == cp_model.OPTIMAL else "FEASIBLE",
         "assignments": assignments,
@@ -356,5 +349,5 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
             "assignedClassCount": len(assigned_class_ids),
             "unassignedClassCount": unassigned_count,
         },
-        "diagnostics": diagnostics,
+        "diagnostics": [],
     }
