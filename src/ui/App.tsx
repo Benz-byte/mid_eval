@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, ChangeEvent, FormEvent } from 'react'
 import {
+  isCloudConfigured,
   loadSharedSchedule,
-  saveSharedSchedule,
   subscribeToSharedSchedule,
 } from '../api/scheduleRepository'
 import './App.css'
@@ -578,8 +578,8 @@ export default function App() {
   const [csvEvents, setCsvEvents] = useState<CalendarEvent[]>(savedCsvSchedule.events)
   const [csvName, setCsvName] = useState(savedCsvSchedule.name)
   const [adminEvents, setAdminEvents] = useState<CalendarEvent[]>(loadAdminEvents)
-  const [databaseReady, setDatabaseReady] = useState(false)
-  const applyingRemoteUpdate = useRef(false)
+  const [storageStatus, setStorageStatus] = useState('Opening interface…')
+  const [storageStatusClass, setStorageStatusClass] = useState('api-connecting')
 
   useEffect(() => {
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminEvents))
@@ -596,66 +596,44 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
 
-    const hydrateFromDatabase = async () => {
+    const loadDatabaseSchedule = async () => {
+      if (!isCloudConfigured) {
+        setStorageStatus('Local schedule')
+        setStorageStatusClass('api-connecting')
+        return
+      }
+
       try {
-        const remote = await loadSharedSchedule<CalendarEvent>()
+        const schedule = await loadSharedSchedule<CalendarEvent>()
         if (cancelled) return
 
-        if (remote) {
-          setCsvEvents(remote.csvEvents)
-          setCsvName(remote.csvName)
-          setAdminEvents(remote.adminEvents)
+        if (schedule) {
+          setCsvEvents(schedule.csvEvents)
+          setCsvName(schedule.csvName)
+          setAdminEvents(schedule.adminEvents)
+          setStorageStatus('Database schedule loaded')
+          setStorageStatusClass('api-online')
         } else {
-          await saveSharedSchedule({
-            csvEvents: savedCsvSchedule.events,
-            csvName: savedCsvSchedule.name,
-            adminEvents: loadAdminEvents(),
-          })
+          setStorageStatus('No database schedule')
+          setStorageStatusClass('api-connecting')
         }
       } catch (error) {
-        console.warn('Supabase is unavailable; using the saved local schedule.', error)
-      } finally {
-        if (!cancelled) setDatabaseReady(true)
+        console.warn('Could not load the database schedule; the interface remains available.', error)
+        setStorageStatus('Database unavailable')
+        setStorageStatusClass('api-offline')
       }
     }
 
-    void hydrateFromDatabase()
+    void loadDatabaseSchedule()
+    const unsubscribe = subscribeToSharedSchedule(() => {
+      void loadDatabaseSchedule()
+    })
+
     return () => {
       cancelled = true
+      unsubscribe()
     }
-  }, [savedCsvSchedule])
-
-  useEffect(() => {
-    if (!databaseReady) return
-    if (applyingRemoteUpdate.current) {
-      applyingRemoteUpdate.current = false
-      return
-    }
-
-    const timeout = window.setTimeout(() => {
-      void saveSharedSchedule({ csvEvents, csvName, adminEvents }).catch(error => {
-        console.warn('Could not sync the schedule to Supabase. The local copy is still saved.', error)
-      })
-    }, 300)
-
-    return () => window.clearTimeout(timeout)
-  }, [adminEvents, csvEvents, csvName, databaseReady])
-
-  useEffect(() => {
-    if (!databaseReady) return
-
-    return subscribeToSharedSchedule(() => {
-      void loadSharedSchedule<CalendarEvent>().then(remote => {
-        if (!remote) return
-        applyingRemoteUpdate.current = true
-        setCsvEvents(remote.csvEvents)
-        setCsvName(remote.csvName)
-        setAdminEvents(remote.adminEvents)
-      }).catch(error => {
-        console.warn('Could not receive the latest shared schedule.', error)
-      })
-    })
-  }, [databaseReady])
+  }, [])
 
   const rooms = useMemo(() => {
     const importedRooms = [...new Set(csvEvents.map(event => event.room))]
@@ -697,7 +675,10 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header"><span className="app-title">Auto Scheduler</span></header>
+      <header className="app-header">
+        <span className="app-title">Auto Scheduler</span>
+        <span className={`api-badge ${storageStatusClass}`}>{storageStatus}</span>
+      </header>
 
       <nav className="tab-nav">
         {([

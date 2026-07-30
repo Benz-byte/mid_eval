@@ -1,8 +1,8 @@
 # Auto Scheduler
 
-Electron and React desktop application for viewing CCS schedules, adding room
-events, and sharing schedule data through Supabase. A minimal Flask service is
-included as the integration point for the new CP-SAT solver.
+Electron and React desktop application for viewing CCS schedules and adding
+room events. The interface opens independently, then reads schedule data from
+Supabase and plots it on the calendar.
 
 ## Requirements
 
@@ -56,19 +56,21 @@ desktop distribution for the corresponding platform.
 
 ```text
 React UI
-├── Supabase → shared schedule persistence and realtime updates
-└── Flask   → reserved for the new CP-SAT solver API
+├── localStorage → local CSV imports and manually added events
+├── Supabase     → schedule data loaded for the calendar
+└── Flask        → reserved for the future CP-SAT solver
 ```
 
-The old SQLite persistence code and old solver placeholders have been removed.
+The interface continues working if Supabase or the internet is unavailable; it
+shows locally saved data or an empty calendar instead of a blank window.
 When the new solver is added, place its Python modules under `python/` and
 register its HTTP endpoint in `python/app.py`.
 
 ## Important files
 
 - `src/ui/App.tsx` — schedule and event interface
-- `src/api/scheduleRepository.ts` — Supabase schedule reads and writes
+- `src/api/scheduleRepository.ts` — Supabase schedule loading
 - `database/supa/supabase.ts` — Supabase client
 - `database/supa/migrations/001_shared_schedule.sql` — database schema
-- `python/app.py` — minimal Flask service
+- `python/app.py` — Flask shell for the future solver
 - `src/electron/main.ts` — Electron process and Flask lifecycle

@@ -1,4 +1,4 @@
-import { supabase } from '../../database/supa/supabase'
+import { isCloudConfigured, supabase } from '../../database/supa/supabase'
 
 const SHARED_SCHEDULE_ID = 'ccs-main'
 
@@ -7,7 +7,6 @@ interface SharedScheduleRow<T> {
   csv_name: string
   csv_events: T[]
   admin_events: T[]
-  updated_at: string
 }
 
 export interface SharedSchedule<T> {
@@ -16,10 +15,14 @@ export interface SharedSchedule<T> {
   adminEvents: T[]
 }
 
+export { isCloudConfigured }
+
 export async function loadSharedSchedule<T>(): Promise<SharedSchedule<T> | null> {
+  if (!supabase) return null
+
   const { data, error } = await supabase
     .from('shared_schedules')
-    .select('id,csv_name,csv_events,admin_events,updated_at')
+    .select('id,csv_name,csv_events,admin_events')
     .eq('id', SHARED_SCHEDULE_ID)
     .maybeSingle()
 
@@ -34,22 +37,11 @@ export async function loadSharedSchedule<T>(): Promise<SharedSchedule<T> | null>
   }
 }
 
-export async function saveSharedSchedule<T>(schedule: SharedSchedule<T>): Promise<void> {
-  const { error } = await supabase
-    .from('shared_schedules')
-    .upsert({
-      id: SHARED_SCHEDULE_ID,
-      csv_name: schedule.csvName,
-      csv_events: schedule.csvEvents,
-      admin_events: schedule.adminEvents,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' })
-
-  if (error) throw error
-}
-
 export function subscribeToSharedSchedule(onChange: () => void) {
-  const channel = supabase
+  const client = supabase
+  if (!client) return () => undefined
+
+  const channel = client
     .channel('shared-schedule-changes')
     .on(
       'postgres_changes',
@@ -64,7 +56,6 @@ export function subscribeToSharedSchedule(onChange: () => void) {
     .subscribe()
 
   return () => {
-    void supabase.removeChannel(channel)
+    void client.removeChannel(channel)
   }
 }
-

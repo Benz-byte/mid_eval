@@ -61,18 +61,15 @@ Python packages from `python\requirements.txt`.
 
 ## Supabase Configuration
 
-The tracked `.env` file contains the public Supabase configuration. The
-publishable key has already been added. Before committing and sharing the
-project, the repository owner only needs to replace the Project URL placeholder:
+The tracked `.env` file already contains the public Supabase configuration:
 
 ```env
-VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_URL=https://petevdqelbhnzlznvwdw.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=already-configured
 ```
 
-The Project URL is available in **Supabase Dashboard → Project Settings → API**.
-After the real URL is committed, collaborators do not create or edit any
-environment file. They receive the configuration automatically through GitHub.
+Collaborators do not create or edit an environment file. They receive the
+configuration automatically through GitHub.
 
 Only a Supabase publishable key may be stored in this frontend configuration.
 Never add a service-role key, secret key, private key, or database password.
@@ -92,6 +89,33 @@ This starts:
 - Flask at `http://127.0.0.1:5000`
 
 The Electron desktop window should open automatically.
+
+## How Schedule Loading Works
+
+The interface does not depend on the database to start:
+
+```text
+Open React interface immediately
+        ↓
+Show locally saved data or an empty calendar
+        ↓
+Request the schedule from Supabase
+        ↓
+Plot returned classes and events on the calendar
+```
+
+Supabase is a schedule data source. It does not run or host the interface. If
+the database or internet is unavailable, the tabs and calendar still display.
+
+CSV imports and events added through the UI are stored in that device's browser
+storage. They are not automatically written back to Supabase.
+
+The header can show:
+
+- **Database schedule loaded** — Supabase data was loaded and plotted
+- **No database schedule** — the connection worked, but no schedule row exists
+- **Database unavailable** — the UI remains open using local data
+- **Local schedule** — Supabase configuration is not present
 
 ## Test Flask
 
