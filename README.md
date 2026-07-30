@@ -63,8 +63,20 @@ React UI
 
 The interface continues working if Supabase or the internet is unavailable; it
 shows locally saved data or an empty calendar instead of a blank window.
+Manually added events use one Supabase row per event, so create, edit, and
+delete actions synchronize across running devices.
 When the new solver is added, place its Python modules under `python/` and
 register its HTTP endpoint in `python/app.py`.
+
+## Required Supabase migrations
+
+Run these files once, in order, through **Supabase Dashboard → SQL Editor**:
+
+1. `database/supa/migrations/001_shared_schedule.sql`
+2. `database/supa/migrations/002_admin_events.sql`
+
+The second migration creates the realtime `admin_events` table and copies
+events from the legacy JSON array.
 
 ## Important files
 
@@ -72,5 +84,6 @@ register its HTTP endpoint in `python/app.py`.
 - `src/api/scheduleRepository.ts` — Supabase schedule loading
 - `database/supa/supabase.ts` — Supabase client
 - `database/supa/migrations/001_shared_schedule.sql` — database schema
+- `database/supa/migrations/002_admin_events.sql` — synchronized event schema
 - `python/app.py` — Flask shell for the future solver
 - `src/electron/main.ts` — Electron process and Flask lifecycle

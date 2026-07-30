@@ -108,7 +108,9 @@ Supabase is a schedule data source. It does not run or host the interface. If
 the database or internet is unavailable, the tabs and calendar still display.
 
 CSV imports and events added through the UI are stored in that device's browser
-storage. They are not automatically written back to Supabase.
+storage as a fallback. Manually added events are also written to the Supabase
+`admin_events` table. Adding, editing, or deleting an event triggers a realtime
+refresh on other running devices.
 
 The header can show:
 
@@ -116,6 +118,26 @@ The header can show:
 - **No database schedule** — the connection worked, but no schedule row exists
 - **Database unavailable** — the UI remains open using local data
 - **Local schedule** — Supabase configuration is not present
+
+## Enable Shared Event Synchronization
+
+The repository owner must run this file once in **Supabase Dashboard → SQL
+Editor**:
+
+```text
+database/supa/migrations/002_admin_events.sql
+```
+
+The migration:
+
+- Creates one database row per manually added event
+- Allows anonymous and authenticated prototype users to read, create, update,
+  and delete events
+- Enables Supabase Realtime
+- Copies events from the old `shared_schedules.admin_events` JSON array
+
+After the migration runs, deleting an event removes its database row. Reopening
+the app or using another device will no longer restore that deleted event.
 
 ## Test Flask
 

@@ -6,13 +6,11 @@ interface SharedScheduleRow<T> {
   id: string
   csv_name: string
   csv_events: T[]
-  admin_events: T[]
 }
 
 export interface SharedSchedule<T> {
   csvName: string
   csvEvents: T[]
-  adminEvents: T[]
 }
 
 export { isCloudConfigured }
@@ -22,7 +20,7 @@ export async function loadSharedSchedule<T>(): Promise<SharedSchedule<T> | null>
 
   const { data, error } = await supabase
     .from('shared_schedules')
-    .select('id,csv_name,csv_events,admin_events')
+    .select('id,csv_name,csv_events')
     .eq('id', SHARED_SCHEDULE_ID)
     .maybeSingle()
 
@@ -33,7 +31,6 @@ export async function loadSharedSchedule<T>(): Promise<SharedSchedule<T> | null>
   return {
     csvName: row.csv_name,
     csvEvents: Array.isArray(row.csv_events) ? row.csv_events : [],
-    adminEvents: Array.isArray(row.admin_events) ? row.admin_events : [],
   }
 }
 

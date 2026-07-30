@@ -5,6 +5,12 @@ import {
   loadSharedSchedule,
   subscribeToSharedSchedule,
 } from '../api/scheduleRepository'
+import {
+  deleteSharedAdminEvent,
+  loadSharedAdminEvents,
+  saveSharedAdminEvent,
+  subscribeToSharedAdminEvents,
+} from '../api/adminEventRepository'
 import './App.css'
 
 type Tab = 'schedule' | 'event' | 'student-assistant'
@@ -610,7 +616,6 @@ export default function App() {
         if (schedule) {
           setCsvEvents(schedule.csvEvents)
           setCsvName(schedule.csvName)
-          setAdminEvents(schedule.adminEvents)
           setStorageStatus('Database schedule loaded')
           setStorageStatusClass('api-online')
         } else {
@@ -627,6 +632,30 @@ export default function App() {
     void loadDatabaseSchedule()
     const unsubscribe = subscribeToSharedSchedule(() => {
       void loadDatabaseSchedule()
+    })
+
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isCloudConfigured) return
+    let cancelled = false
+
+    const refreshAdminEvents = async () => {
+      try {
+        const events = await loadSharedAdminEvents<CalendarEvent>()
+        if (!cancelled) setAdminEvents(events)
+      } catch (error) {
+        console.warn('Could not load shared events; local events remain available.', error)
+      }
+    }
+
+    void refreshAdminEvents()
+    const unsubscribe = subscribeToSharedAdminEvents(() => {
+      void refreshAdminEvents()
     })
 
     return () => {
@@ -671,6 +700,17 @@ export default function App() {
         ? current.map(event => event.id === editingId ? calendarEvent : event)
         : [...current, calendarEvent],
     )
+
+    void saveSharedAdminEvent(calendarEvent).catch(error => {
+      console.warn('Could not synchronize the event; the local copy remains available.', error)
+    })
+  }
+
+  const deleteAdminEvent = (id: string) => {
+    setAdminEvents(current => current.filter(event => event.id !== id))
+    void deleteSharedAdminEvent(id).catch(error => {
+      console.warn('Could not synchronize the deletion.', error)
+    })
   }
 
   return (
@@ -717,7 +757,7 @@ export default function App() {
             csvEvents={csvEvents}
             rooms={rooms}
             onSave={saveAdminEvent}
-            onDelete={id => setAdminEvents(current => current.filter(event => event.id !== id))}
+            onDelete={deleteAdminEvent}
           />
         )}
       </main>
