@@ -12,6 +12,8 @@
     "dev:flask": "python python/app.py",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test:conflicts": "node scripts/test-conflicts-database.mjs",
+    "test:conflicts:sample": "node scripts/test-conflicts.mjs",
     "preview": "vite preview",
     "transpile:electron": "tsc --project src/electron/tsconfig.json && tsc --project src/electron/tsconfig.preload.json",
     "dist:mac": "npm run transpile:electron && npm run build && electron-builder --mac --arm64",
@@ -21,7 +23,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.110.9",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

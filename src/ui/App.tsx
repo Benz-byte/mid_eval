@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, ChangeEvent, FormEvent } from 'react'
+import * as XLSX from 'xlsx'
 import {
   isCloudConfigured,
   loadSharedSchedule,
@@ -22,35 +23,37 @@ import {
   saveSharedStudentAssistantData,
   subscribeToSharedStudentAssistantData,
 } from '../api/studentAssistantRepository'
+import type {
+  AdminEventForm,
+  CalendarEvent,
+  ScheduleConflict,
+  ScheduleImportResult,
+  Tab,
+} from './shared/scheduleTypes'
+import {
+  conflictLabel,
+  createEmptyAdminForm,
+  formatTime,
+  matchesSelectedDay,
+  parseInputTime,
+  toDateInputValue,
+} from './shared/scheduleTime'
+import {
+  ACTIVE_TAB_STORAGE_KEY,
+  ADMIN_STORAGE_KEY,
+  CSV_STORAGE_KEY,
+  SCHEDULE_DATE_STORAGE_KEY,
+  loadActiveTab,
+  loadAdminEvents,
+  loadCsvSchedule,
+  loadScheduleDate,
+} from './shared/scheduleStorage'
+import {
+  ASSISTANT_STORAGE_KEY,
+  loadLocalAssistantData,
+  type UploadedAssistant,
+} from './features/student-assistants/studentAssistantStorage'
 import './App.css'
-
-type Tab = 'schedule' | 'student-assistant'
-type EventSource = 'csv' | 'admin'
-
-interface CalendarEvent {
-  id: string
-  source: EventSource
-  stubCode?: string
-  courseCode: string
-  subject: string
-  startMinutes: number
-  endMinutes: number
-  dayCode?: string
-  date?: string
-  classType: string
-  section: string
-  room: string
-  studentCount: string
-  instructorLastName: string
-}
-
-interface AdminEventForm {
-  title: string
-  date: string
-  room: string
-  startTime: string
-  endTime: string
-}
 
 const DEFAULT_ROOMS = [
   'MT102', 'MTAVR1', 'MTAVR2',
@@ -60,27 +63,6 @@ const DEFAULT_ROOMS = [
 const DEFAULT_START = 7 * 60
 const DEFAULT_END = 21 * 60
 const TIME_ROW_HEIGHT = 48
-const ADMIN_STORAGE_KEY = 'auto-scheduler-admin-events'
-const CSV_STORAGE_KEY = 'auto-scheduler-imported-schedule'
-const ACTIVE_TAB_STORAGE_KEY = 'auto-scheduler-active-tab'
-const SCHEDULE_DATE_STORAGE_KEY = 'auto-scheduler-selected-date'
-
-function toDateInputValue(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function createEmptyAdminForm(date = toDateInputValue(new Date())): AdminEventForm {
-  return {
-    title: '',
-    date,
-    room: '',
-    startTime: '07:00',
-    endTime: '08:00',
-  }
-}
 
 function parseCsv(text: string): string[][] {
   const rows: string[][] = []
@@ -119,7 +101,18 @@ function parseCsv(text: string): string[][] {
 }
 
 function parseCsvTime(value: string): number | null {
-  const digits = value.replace(/\D/g, '')
+  const normalized = normalizeField(value).toUpperCase()
+  const meridiem = normalized.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/)
+  if (meridiem) {
+    let hour = Number(meridiem[1])
+    const minute = Number(meridiem[2] ?? 0)
+    if (hour < 1 || hour > 12 || minute > 59) return null
+    if (hour === 12) hour = 0
+    if (meridiem[3] === 'PM') hour += 12
+    return hour * 60 + minute
+  }
+
+  const digits = normalized.replace(/\D/g, '')
   if (!digits) return null
 
   const numeric = Number(digits)
@@ -133,107 +126,238 @@ function parseCsvTime(value: string): number | null {
   return result >= 0 && result <= 24 * 60 ? result : null
 }
 
-function parseInputTime(value: string): number {
-  const [hour, minute] = value.split(':').map(Number)
-  return hour * 60 + minute
-}
-
-function formatTime(minutes: number) {
-  const hour = Math.floor(minutes / 60)
-  const minute = minutes % 60
-  const period = hour >= 12 ? 'PM' : 'AM'
-  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${period}`
-}
 
 function normalizeField(value = '') {
   return value.replace(/\u00a0/g, ' ').trim()
 }
 
-function csvRowsToEvents(rows: string[][]): CalendarEvent[] {
+type ScheduleField = 'course' | 'subject' | 'start' | 'end' | 'time' | 'day' | 'room'
+  | 'instructor' | 'section' | 'classType' | 'students'
+type ColumnMap = Partial<Record<ScheduleField, number>>
+
+const HEADER_ALIASES: Record<ScheduleField, string[]> = {
+  course: ['course', 'coursecode', 'courseno', 'subjectcode', 'codeanddescription'],
+  subject: ['subject', 'description', 'coursetitle', 'title'],
+  start: ['start', 'starttime', 'timefrom', 'from'],
+  end: ['end', 'endtime', 'timeto', 'to'],
+  time: ['time', 'schedule', 'classhours', 'hours'],
+  day: ['day', 'days', 'weekday'],
+  room: ['room', 'venue', 'classroom'],
+  instructor: ['teacher', 'instructor', 'faculty', 'professor', 'name'],
+  section: ['section', 'block', 'classsection'],
+  classType: ['type', 'classtype', 'component', 'lecturelab'],
+  students: ['students', 'studentcount', 'enrolled', 'classsize'],
+}
+
+function normalizedHeader(value: string) {
+  return normalizeField(value).toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function headerField(value: string): ScheduleField | null {
+  const header = normalizedHeader(value)
+  if (!header) return null
+  for (const [field, aliases] of Object.entries(HEADER_ALIASES) as [ScheduleField, string[]][]) {
+    if (aliases.some(alias => header === alias || (alias.length >= 5 && header.includes(alias)))) return field
+  }
+  return null
+}
+
+function detectHeader(rows: string[][]): { rowIndex: number; columns: ColumnMap } | null {
+  let best: { rowIndex: number; columns: ColumnMap; score: number } | null = null
+  rows.slice(0, 50).forEach((row, rowIndex) => {
+    const columns: ColumnMap = {}
+    row.forEach((value, columnIndex) => {
+      const field = headerField(value)
+      if (field && columns[field] === undefined) columns[field] = columnIndex
+    })
+    const score = Object.keys(columns).length
+    const hasTime = columns.time !== undefined || (columns.start !== undefined && columns.end !== undefined)
+    if (score >= 3 && hasTime && (!best || score > best.score)) best = { rowIndex, columns, score }
+  })
+  return best
+}
+
+function normalizeDayCode(value: string): string | null {
+  const compact = normalizeField(value).replace(/[\s,/-]+/g, '').toLowerCase()
+  const names: Record<string, string> = {
+    monday: 'M', mon: 'M', tuesday: 'T', tue: 'T', tues: 'T',
+    wednesday: 'W', wed: 'W', thursday: 'Th', thu: 'Th', thurs: 'Th',
+    friday: 'F', fri: 'F', saturday: 'S', sat: 'S', sunday: 'Su', sun: 'Su',
+  }
+  if (names[compact]) return names[compact]
+  if (/^(?:m|t|w|th|f|s|su)+$/i.test(compact)) {
+    return compact.replace(/th/gi, 'Th').replace(/su/gi, 'Su').replace(/[mtwfs]/gi, match => match.toUpperCase())
+  }
+  return null
+}
+
+function looksLikeClock(value: string) {
+  const compact = normalizeField(value)
+  if (!/^(?:\d{1,2}:?\d{2})(?:\s*[AP]M)?$/i.test(compact)) return false
+  const minutes = parseCsvTime(compact)
+  return minutes !== null && minutes <= 24 * 60
+}
+
+function inferColumns(rows: string[][]): ColumnMap {
+  const width = Math.max(0, ...rows.map(row => row.length))
+  const data = rows.filter(row => row.filter(value => normalizeField(value)).length >= 3)
+  const values = (column: number) => data.map(row => normalizeField(row[column])).filter(Boolean)
+  const ratio = (column: number, predicate: (value: string) => boolean) => {
+    const candidates = values(column)
+    return candidates.length ? candidates.filter(predicate).length / candidates.length : 0
+  }
+  const bestColumn = (predicate: (value: string) => boolean, excluded = new Set<number>()) => {
+    let best = -1
+    let bestScore = 0
+    for (let column = 0; column < width; column += 1) {
+      if (excluded.has(column)) continue
+      const score = ratio(column, predicate)
+      if (score > bestScore) [best, bestScore] = [column, score]
+    }
+    return bestScore >= 0.35 ? best : undefined
+  }
+
+  const columns: ColumnMap = {}
+  columns.time = bestColumn(value => /^\s*\d{1,4}(?::\d{2})?\s*[-–—]\s*\d{1,4}(?::\d{2})?/i.test(value))
+  columns.day = bestColumn(value => normalizeDayCode(value) !== null)
+  columns.course = bestColumn(value => /[A-Za-z]{2,}\s*\d{2,}/.test(value))
+
+  if (columns.time === undefined) {
+    let bestPair: [number, number] | null = null
+    let bestScore = 0
+    for (let start = 0; start < width; start += 1) {
+      for (let end = 0; end < width; end += 1) {
+        if (start === end) continue
+        const comparable = data.filter(row => looksLikeClock(row[start]) && looksLikeClock(row[end]))
+        if (!comparable.length) continue
+        const valid = comparable.filter(row => {
+          const from = parseCsvTime(row[start]) ?? -1
+          const to = parseCsvTime(row[end]) ?? -1
+          return to > from && to - from <= 12 * 60
+        }).length
+        const score = valid / Math.max(comparable.length, data.length * 0.5)
+        if (score > bestScore) [bestPair, bestScore] = [[start, end], score]
+      }
+    }
+    if (bestPair && bestScore >= 0.35) [columns.start, columns.end] = bestPair
+  }
+
+  const excluded = new Set(Object.values(columns).filter((value): value is number => value !== undefined))
+  columns.classType = bestColumn(value => /^(LEC|LAB|LECTURE|LABORATORY|SEM|PRACTICUM)$/i.test(value), excluded)
+  if (columns.classType !== undefined) excluded.add(columns.classType)
+  columns.instructor = bestColumn(value => /^[\p{L}.' -]+,\s*[\p{L}.' -]+$/u.test(value), excluded)
+  if (columns.instructor !== undefined) excluded.add(columns.instructor)
+  columns.section = bestColumn(value => /^(?:(?:BS|AB|BA|B)[A-Z]{1,8}\s*\d+(?:[-–]\d+)?|[A-Z0-9]+(?:-[A-Z0-9]+){2,})$/i.test(value), excluded)
+  if (columns.section !== undefined) excluded.add(columns.section)
+  columns.room = bestColumn(value => /^(?=.*[A-Z])(?=.*\d)[A-Z]{1,10}[A-Z0-9-]{1,12}$/i.test(value), excluded)
+  return columns
+}
+
+function splitTimeRange(value: string): [number | null, number | null] {
+  const [start, end] = normalizeField(value).split(/[-–—]/, 2)
+  return [parseCsvTime(start ?? ''), parseCsvTime(end ?? '')]
+}
+
+function scheduleRowsToEvents(rows: string[][]): ScheduleImportResult {
+  const normalizedRows = rows.map(row => row.map(value => normalizeField(value)))
+  const header = detectHeader(normalizedRows)
+  const inferred = inferColumns(header ? normalizedRows.slice(header.rowIndex + 1) : normalizedRows)
+  const columns: ColumnMap = { ...inferred, ...(header?.columns ?? {}) }
+  const hasTimes = columns.time !== undefined || (columns.start !== undefined && columns.end !== undefined)
+  if (!hasTimes || columns.day === undefined || columns.room === undefined || (columns.course === undefined && columns.subject === undefined)) {
+    return { events: [], tbaSubjects: [] }
+  }
+
   const events: CalendarEvent[] = []
+  const tbaSubjects = new Set<string>()
+  let groupedSection = ''
+  normalizedRows.slice((header?.rowIndex ?? -1) + 1).forEach((row, offset) => {
+    const sectionLabelIndex = row.findIndex(value => normalizedHeader(value) === 'section')
+    if (sectionLabelIndex >= 0) {
+      groupedSection = [...row].reverse().find(value => value && normalizedHeader(value) !== 'section') ?? groupedSection
+      return
+    }
 
-  rows.forEach((columns, index) => {
-    if (columns.length < 14) return
+    let startMinutes: number | null
+    let endMinutes: number | null
+    if (columns.time !== undefined) {
+      [startMinutes, endMinutes] = splitTimeRange(row[columns.time] ?? '')
+    } else {
+      startMinutes = parseCsvTime(row[columns.start!] ?? '')
+      endMinutes = parseCsvTime(row[columns.end!] ?? '')
+    }
 
-    const startMinutes = parseCsvTime(columns[4])
-    const endMinutes = parseCsvTime(columns[5])
-    if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) return
+    const rawDay = normalizeField(row[columns.day!] ?? '')
+    const dayCode = normalizeDayCode(rawDay)
+    const room = normalizeField(row[columns.room!] ?? '')
+    let courseCode = normalizeField(row[columns.course ?? -1] ?? '')
+    let classType = normalizeField(row[columns.classType ?? -1] ?? '')
+    const embeddedType = courseCode.match(/^(.*?)\s+-\s+(LEC|LAB|LECTURE|LABORATORY|SEM|PRACTICUM)$/i)
+    if (embeddedType) {
+      courseCode = normalizeField(embeddedType[1])
+      if (!classType) classType = normalizeField(embeddedType[2])
+    }
 
-    const room = normalizeField(columns[9])
-    const dayCode = normalizeField(columns[6])
-    if (!room || !dayCode) return
+    const isTba = rawDay.toUpperCase() === 'TBA' || room.toUpperCase() === 'TBA'
+      || (startMinutes === 0 && endMinutes === 0)
+    if (courseCode && isTba) {
+      tbaSubjects.add(normalizeField(row[columns.subject ?? -1] ?? '') || courseCode)
+      return
+    }
+    if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes || !dayCode) return
+    if (!courseCode && columns.subject === undefined) return
+    if (!room || room.toUpperCase() === 'TBA') return
 
+    const index = offset + ((header?.rowIndex ?? -1) + 1)
     events.push({
-      id: `csv-${index}-${normalizeField(columns[1])}`,
+      id: `import-${index}-${courseCode}-${dayCode}-${startMinutes}`,
       source: 'csv',
-      stubCode: normalizeField(columns[1]),
-      courseCode: normalizeField(columns[2]),
-      subject: normalizeField(columns[3]),
+      courseCode,
+      subject: normalizeField(row[columns.subject ?? -1] ?? ''),
       startMinutes,
       endMinutes,
       dayCode,
-      classType: normalizeField(columns[7]),
-      section: normalizeField(columns[8]),
+      classType,
+      section: normalizeField(row[columns.section ?? -1] ?? '') || groupedSection,
       room,
-      studentCount: normalizeField(columns[10]),
-      instructorLastName: normalizeField(columns[11]),
+      studentCount: normalizeField(row[columns.students ?? -1] ?? ''),
+      instructorLastName: normalizeField(row[columns.instructor ?? -1] ?? ''),
     })
   })
-
-  return events
+  return { events, tbaSubjects: [...tbaSubjects] }
 }
 
-function matchesSelectedDay(dayCode: string | undefined, date: Date) {
-  if (!dayCode) return false
-  const selectedCode = ['Su', 'M', 'T', 'W', 'Th', 'F', 'S'][date.getDay()]
-  if (dayCode === 'MW') return selectedCode === 'M' || selectedCode === 'W'
-  if (dayCode === 'TTh') return selectedCode === 'T' || selectedCode === 'Th'
-  return dayCode === selectedCode
-}
-
-function loadAdminEvents(): CalendarEvent[] {
-  try {
-    const saved = localStorage.getItem(ADMIN_STORAGE_KEY)
-    return saved ? JSON.parse(saved) as CalendarEvent[] : []
-  } catch {
-    return []
+async function readScheduleFile(file: File): Promise<ScheduleImportResult> {
+  if (/\.csv$/i.test(file.name)) {
+    return scheduleRowsToEvents(parseCsv(await file.text()))
   }
-}
 
-function loadCsvSchedule(): { events: CalendarEvent[]; name: string } {
-  try {
-    const saved = localStorage.getItem(CSV_STORAGE_KEY)
-    if (!saved) return { events: [], name: '' }
-
-    const parsed = JSON.parse(saved) as { events?: CalendarEvent[]; name?: string }
-    return {
-      events: Array.isArray(parsed.events) ? parsed.events : [],
-      name: typeof parsed.name === 'string' ? parsed.name : '',
-    }
-  } catch {
-    return { events: [], name: '' }
+  if (/\.xlsx?$/i.test(file.name)) {
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' })
+    return workbook.SheetNames.reduce<ScheduleImportResult>((result, sheetName) => {
+      const rows = XLSX.utils.sheet_to_json<(string | number | boolean)[]>(workbook.Sheets[sheetName], {
+        header: 1,
+        raw: false,
+        defval: '',
+      })
+      const parsed = scheduleRowsToEvents(rows.map(row => row.map(value => String(value))))
+      result.events.push(...parsed.events)
+      parsed.tbaSubjects.forEach(subject => {
+        if (!result.tbaSubjects.includes(subject)) result.tbaSubjects.push(subject)
+      })
+      return result
+    }, { events: [], tbaSubjects: [] })
   }
+
+  throw new Error('Choose a CSV, XLS, or XLSX schedule file.')
 }
 
-function loadActiveTab(): Tab {
-  const saved = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY)
-  return saved === 'schedule' || saved === 'student-assistant'
-    ? saved
-    : 'schedule'
-}
-
-function loadScheduleDate(): Date {
-  const saved = localStorage.getItem(SCHEDULE_DATE_STORAGE_KEY)
-  if (!saved) return new Date()
-
-  const parsed = new Date(`${saved}T00:00:00`)
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed
-}
 
 function ScheduleCalendar({
   csvEvents,
   adminEvents,
   csvName,
+  tbaSubjects,
   rooms,
   onCsvUpload,
   onCsvRemove,
@@ -242,6 +366,7 @@ function ScheduleCalendar({
   csvEvents: CalendarEvent[]
   adminEvents: CalendarEvent[]
   csvName: string
+  tbaSubjects: string[]
   rooms: string[]
   onCsvUpload: (file: File) => Promise<void>
   onCsvRemove: () => void
@@ -249,6 +374,9 @@ function ScheduleCalendar({
 }) {
   const [selectedDate, setSelectedDate] = useState(loadScheduleDate)
   const [uploadError, setUploadError] = useState('')
+  const [isFullView, setIsFullView] = useState(false)
+  const [fullViewZoom, setFullViewZoom] = useState(1)
+  const [showConflictColors, setShowConflictColors] = useState(true)
   const selectedDateKey = toDateInputValue(selectedDate)
 
   useEffect(() => {
@@ -264,6 +392,57 @@ function ScheduleCalendar({
     ),
     [allEvents, selectedDate, selectedDateKey],
   )
+  const conflicts = useMemo(() => {
+    const detected: ScheduleConflict[] = []
+    for (let firstIndex = 0; firstIndex < visibleEvents.length; firstIndex += 1) {
+      for (let secondIndex = firstIndex + 1; secondIndex < visibleEvents.length; secondIndex += 1) {
+        const first = visibleEvents[firstIndex]
+        const second = visibleEvents[secondIndex]
+        if (first.room !== second.room) continue
+        const overlapStart = Math.max(first.startMinutes, second.startMinutes)
+        const overlapEnd = Math.min(first.endMinutes, second.endMinutes)
+        if (overlapStart < overlapEnd) detected.push({ first, second, overlapStart, overlapEnd })
+      }
+    }
+    return detected
+  }, [visibleEvents])
+  const conflictingEventIds = useMemo(
+    () => new Set(conflicts.flatMap(conflict => [conflict.first.id, conflict.second.id])),
+    [conflicts],
+  )
+  const conflictGroups = useMemo(() => {
+    const groups = new Map<string, Map<string, CalendarEvent>>()
+    conflicts.forEach(conflict => {
+      const roomEvents = groups.get(conflict.first.room) ?? new Map<string, CalendarEvent>()
+      roomEvents.set(conflict.first.id, conflict.first)
+      roomEvents.set(conflict.second.id, conflict.second)
+      groups.set(conflict.first.room, roomEvents)
+    })
+    return [...groups.entries()]
+      .sort(([leftRoom], [rightRoom]) => leftRoom.localeCompare(rightRoom))
+      .map(([room, roomEvents]) => ({
+        room,
+        events: [...roomEvents.values()].sort((left, right) =>
+          left.startMinutes - right.startMinutes
+          || left.endMinutes - right.endMinutes
+          || conflictLabel(left).localeCompare(conflictLabel(right)),
+        ),
+      }))
+  }, [conflicts])
+
+  useEffect(() => {
+    if (conflictGroups.length === 0) return
+
+    const weekday = selectedDate.toLocaleDateString(undefined, { weekday: 'long' })
+    const lines = [`Conflict - ${weekday}`]
+    conflictGroups.forEach(group => {
+      lines.push('', `Room: ${group.room}`)
+      group.events.forEach(event => {
+        lines.push(`- ${conflictLabel(event)}, ${formatTime(event.startMinutes)}–${formatTime(event.endMinutes)}`)
+      })
+    })
+    console.log(lines.join('\n'))
+  }, [conflictGroups, selectedDate])
 
   const { rangeStart, rangeEnd } = useMemo(() => {
     if (allEvents.length === 0) return { rangeStart: DEFAULT_START, rangeEnd: DEFAULT_END }
@@ -285,11 +464,14 @@ function ScheduleCalendar({
     return [...values].filter(value => value >= rangeStart && value <= rangeEnd).sort((a, b) => a - b)
   }, [allEvents, rangeEnd, rangeStart])
 
+  const rowHeight = isFullView
+    ? Math.max(18, Math.floor((window.innerHeight - 130) / Math.max(guideMinutes.length - 1, 1)))
+    : TIME_ROW_HEIGHT
   const positionForMinute = (minute: number) => {
     const index = guideMinutes.indexOf(minute)
-    return Math.max(index, 0) * TIME_ROW_HEIGHT
+    return Math.max(index, 0) * rowHeight
   }
-  const timelineHeight = Math.max((guideMinutes.length - 1) * TIME_ROW_HEIGHT, TIME_ROW_HEIGHT)
+  const timelineHeight = Math.max((guideMinutes.length - 1) * rowHeight, rowHeight)
   const timetableStyle = {
     '--room-count': rooms.length,
     '--timeline-height': `${timelineHeight}px`,
@@ -317,14 +499,17 @@ function ScheduleCalendar({
     try {
       await onCsvUpload(file)
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Unable to read the CSV file.')
+      setUploadError(error instanceof Error ? error.message : 'Unable to read the schedule file.')
     } finally {
       event.target.value = ''
     }
   }
 
   return (
-    <section className="schedule-calendar">
+    <section
+      className={`schedule-calendar${isFullView ? ' calendar-full-view' : ''}${showConflictColors ? '' : ' hide-conflict-colors'}`}
+      style={{ '--full-view-zoom': fullViewZoom } as CSSProperties}
+    >
       <div className="calendar-toolbar">
         <div className="calendar-nav">
           <button type="button" onClick={() => moveDate(-1)} aria-label="Previous date">←</button>
@@ -342,6 +527,32 @@ function ScheduleCalendar({
         </h2>
 
         <div className="calendar-actions">
+          <button
+            className="full-view-button"
+            type="button"
+            onClick={() => setIsFullView(current => !current)}
+          >
+            {isFullView ? 'Exit Full View' : 'Full View'}
+          </button>
+          {isFullView && (
+            <div className="full-view-zoom" aria-label="Full view zoom controls">
+              <button
+                type="button"
+                aria-label="Zoom out"
+                disabled={fullViewZoom <= 0.6}
+                onClick={() => setFullViewZoom(current => Math.max(0.6, current - 0.1))}
+              >−</button>
+              <button type="button" aria-label="Reset zoom" onClick={() => setFullViewZoom(1)}>
+                {Math.round(fullViewZoom * 100)}%
+              </button>
+              <button
+                type="button"
+                aria-label="Zoom in"
+                disabled={fullViewZoom >= 1.4}
+                onClick={() => setFullViewZoom(current => Math.min(1.4, current + 0.1))}
+              >+</button>
+            </div>
+          )}
           <input
             type="date"
             aria-label="Choose schedule date"
@@ -349,8 +560,8 @@ function ScheduleCalendar({
             onChange={event => selectDate(event.target.value)}
           />
           <label className="csv-upload-button">
-            Upload CSV
-            <input type="file" accept=".csv,text/csv" aria-label="Upload schedule CSV" onChange={handleUpload} />
+            Upload Schedule
+            <input type="file" accept=".csv,.xls,.xlsx,text/csv" aria-label="Upload schedule file" onChange={handleUpload} />
           </label>
           <button className="btn-primary" type="button" onClick={onOpenEvents}>
             Add / Manage Events
@@ -367,6 +578,37 @@ function ScheduleCalendar({
         <span>{csvName || 'No CSV uploaded'}</span>
       </div>
       {uploadError && <p className="msg-error">{uploadError}</p>}
+      {showConflictColors && (conflicts.length > 0 || tbaSubjects.length > 0) && (
+        <div className="schedule-notices">
+          {conflicts.length > 0 && (
+            <section className="conflict-panel" aria-label="Schedule conflicts">
+              <h3>Conflict - {selectedDate.toLocaleDateString(undefined, { weekday: 'long' })}</h3>
+              <ul>
+                {conflictGroups.map(group => (
+                  <li key={group.room}>
+                    {group.room}
+                    <ul>
+                      {group.events.map(event => (
+                        <li key={event.id}>
+                          {conflictLabel(event)}, {formatTime(event.startMinutes)}–{formatTime(event.endMinutes)}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {tbaSubjects.length > 0 && (
+            <section className="tba-panel" aria-label="TBA schedules">
+              <h3>TBA Schedules</h3>
+              <ul>
+                {tbaSubjects.map(subject => <li key={subject}>{subject}</li>)}
+              </ul>
+            </section>
+          )}
+        </div>
+      )}
 
       <div className="timetable-scroll">
         <div className="adaptive-timetable" style={timetableStyle}>
@@ -402,7 +644,7 @@ function ScheduleCalendar({
                     .filter(event => event.room === room)
                     .map(event => (
                       <article
-                        className={`calendar-event ${event.source}`}
+                        className={`calendar-event ${event.source}${conflictingEventIds.has(event.id) ? ' conflict' : ''}`}
                         key={event.id}
                         style={{
                           top: positionForMinute(event.startMinutes),
@@ -411,11 +653,15 @@ function ScheduleCalendar({
                             28,
                           ),
                         }}
-                        title={`${event.courseCode} ${event.subject}\n${event.stubCode ? `Stub: ${event.stubCode}\n` : ''}${formatTime(event.startMinutes)}–${formatTime(event.endMinutes)}`}
+                        title={`${event.courseCode} ${event.subject}\n${formatTime(event.startMinutes)}–${formatTime(event.endMinutes)}`}
                       >
+                        <div className="full-view-event-details">
+                          <b>{event.subject || event.courseCode}</b>
+                          {event.section && <span>{event.section}</span>}
+                          {event.instructorLastName && <span>{event.instructorLastName}</span>}
+                        </div>
                         <strong>{event.courseCode || event.subject}</strong>
                         {event.courseCode && event.subject && <span>{event.subject}</span>}
-                        {event.stubCode && <small>Stub: {event.stubCode}</small>}
                         <small>
                           {formatTime(event.startMinutes)}–{formatTime(event.endMinutes)}
                           {event.instructorLastName && ` · ${event.instructorLastName}`}
@@ -433,6 +679,17 @@ function ScheduleCalendar({
           </div>
         </div>
       </div>
+      {(conflicts.length > 0 || tbaSubjects.length > 0) && (
+        <div className="schedule-warning-toggle">
+          <button
+            className="conflict-color-button"
+            type="button"
+            onClick={() => setShowConflictColors(current => !current)}
+          >
+            {showConflictColors ? 'Hide Conflict and TBA' : 'Show Conflict and TBA'}
+          </button>
+        </div>
+      )}
     </section>
   )
 }
@@ -594,35 +851,6 @@ function AdminEventsPanel({
   )
 }
 
-interface UploadedAssistant {
-  id: string
-  label: string
-  fileName: string
-  events: CalendarEvent[]
-}
-
-const ASSISTANT_STORAGE_KEY = 'auto-scheduler-student-assistants'
-
-function loadLocalAssistantData(): {
-  assistants: UploadedAssistant[]
-  result: StudentAssistantResult | null
-} {
-  try {
-    const saved = localStorage.getItem(ASSISTANT_STORAGE_KEY)
-    if (!saved) return { assistants: [], result: null }
-    const parsed = JSON.parse(saved) as {
-      assistants?: UploadedAssistant[]
-      result?: StudentAssistantResult | null
-    }
-    return {
-      assistants: Array.isArray(parsed.assistants) ? parsed.assistants : [],
-      result: parsed.result ?? null,
-    }
-  } catch {
-    return { assistants: [], result: null }
-  }
-}
-
 const DAY_SORT: Record<string, number> = {
   M: 0, T: 1, W: 2, Th: 3, F: 4, S: 5, Su: 6,
 }
@@ -695,7 +923,6 @@ function AssistantWeeklyCalendar({
                 <small className="sa-block-label">Personal Class</small>
                 <strong>{item.courseCode || item.subject || 'Personal class'}</strong>
                 <span>Room: {item.room || 'TBA'}</span>
-                <span>Stub: {item.stubCode || 'N/A'}</span>
                 <small>{formatTime(item.startMinutes)}–{formatTime(item.endMinutes)}</small>
               </article>
             ))}
@@ -712,7 +939,6 @@ function AssistantWeeklyCalendar({
                 <small className="sa-block-label">Duty</small>
                 <strong>{item.courseCode || item.subject || 'Duty'}</strong>
                 <span>Room: {item.room || 'TBA'}</span>
-                <span>Stub: {item.stubCode || 'N/A'}</span>
                 <small>{formatTime(item.startMinutes)}–{formatTime(item.endMinutes)}</small>
               </article>
             ))}
@@ -807,14 +1033,14 @@ function StudentAssistantPanel({
     setError('')
     const additions: UploadedAssistant[] = []
     for (const file of files) {
-      const events = csvRowsToEvents(parseCsv(await file.text()))
+      const { events } = await readScheduleFile(file)
       if (events.length === 0) {
         setError(`${file.name} has no valid schedule rows and was not added.`)
         continue
       }
       additions.push({
         id: crypto.randomUUID(),
-        label: file.name.replace(/\.csv$/i, ''),
+        label: file.name.replace(/\.(csv|xlsx?)$/i, ''),
         fileName: file.name,
         events,
       })
@@ -880,21 +1106,21 @@ function StudentAssistantPanel({
         <strong>Main class schedule</strong>
         <span>
           {mainSchedule.length > 0
-            ? `${mainScheduleName || 'Imported schedule'} · ${mainSchedule.length} CSV rows`
+            ? `${mainScheduleName || 'Imported schedule'} · ${mainSchedule.length} class rows`
             : 'Upload the main class schedule in the Schedule tab first.'}
         </span>
       </div>
       <div className="sa-upload">
         <label className="btn-primary">
-          Add assistant schedule CSVs
-          <input type="file" accept=".csv,text/csv" multiple onChange={uploadAssistants} hidden />
+          Add assistant schedules
+          <input type="file" accept=".csv,.xls,.xlsx,text/csv" multiple onChange={uploadAssistants} hidden />
         </label>
         <span>{assistants.length} assistant{assistants.length === 1 ? '' : 's'} added</span>
       </div>
 
       <div className="sa-file-list">
         {assistants.length === 0 && (
-          <p className="empty-state">Add one CSV per student assistant. The filename is used as the assistant label.</p>
+          <p className="empty-state">Add one schedule file per student assistant. The filename is used as the assistant label.</p>
         )}
         {assistants.map(assistant => (
           <article className="sa-file-card" key={assistant.id}>
@@ -992,6 +1218,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>(loadActiveTab)
   const [csvEvents, setCsvEvents] = useState<CalendarEvent[]>(savedCsvSchedule.events)
   const [csvName, setCsvName] = useState(savedCsvSchedule.name)
+  const [tbaSubjects, setTbaSubjects] = useState(savedCsvSchedule.tbaSubjects)
   const [adminEvents, setAdminEvents] = useState<CalendarEvent[]>(loadAdminEvents)
   const [eventsPanelOpen, setEventsPanelOpen] = useState(false)
   const [, setStorageStatus] = useState('Opening interface…')
@@ -1002,8 +1229,8 @@ export default function App() {
   }, [adminEvents])
 
   useEffect(() => {
-    localStorage.setItem(CSV_STORAGE_KEY, JSON.stringify({ events: csvEvents, name: csvName }))
-  }, [csvEvents, csvName])
+    localStorage.setItem(CSV_STORAGE_KEY, JSON.stringify({ events: csvEvents, name: csvName, tbaSubjects }))
+  }, [csvEvents, csvName, tbaSubjects])
 
   useEffect(() => {
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab)
@@ -1082,14 +1309,14 @@ export default function App() {
   }, [adminEvents, csvEvents])
 
   const uploadCsv = async (file: File) => {
-    const text = await file.text()
-    const parsed = csvRowsToEvents(parseCsv(text))
-    if (parsed.length === 0) throw new Error('No valid schedule rows were found in this CSV.')
-    setCsvEvents(parsed)
+    const parsed = await readScheduleFile(file)
+    if (parsed.events.length === 0) throw new Error('No valid class rows were found in this schedule file.')
+    setCsvEvents(parsed.events)
     setCsvName(file.name)
+    setTbaSubjects(parsed.tbaSubjects)
 
     try {
-      await saveSharedSchedule({ csvEvents: parsed, csvName: file.name })
+      await saveSharedSchedule({ csvEvents: parsed.events, csvName: file.name })
       if (isCloudConfigured) {
         setStorageStatus('Database schedule loaded')
         setStorageStatusClass('api-online')
@@ -1104,6 +1331,7 @@ export default function App() {
   const removeCsv = () => {
     setCsvEvents([])
     setCsvName('')
+    setTbaSubjects([])
 
     void saveSharedSchedule({ csvEvents: [], csvName: '' }).catch(error => {
       console.warn('Could not synchronize CSV removal; the local copy was still removed.', error)
@@ -1170,6 +1398,7 @@ export default function App() {
             csvEvents={csvEvents}
             adminEvents={adminEvents}
             csvName={csvName}
+            tbaSubjects={tbaSubjects}
             rooms={rooms}
             onCsvUpload={uploadCsv}
             onCsvRemove={removeCsv}

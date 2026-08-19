@@ -2,16 +2,13 @@
 
 from collections import defaultdict
 from dataclasses import dataclass
+import re
 from typing import Any
 
 from ortools.sat.python import cp_model
 
 
 DAY_ORDER = {"M": 0, "T": 1, "W": 2, "Th": 3, "F": 4, "S": 5, "Su": 6}
-DAY_EXPANSIONS = {
-    "MW": ("M", "W"),
-    "TTh": ("T", "Th"),
-}
 MINUTES_PER_WEEK = 20 * 60
 MAX_MINUTES_PER_DAY = 6 * 60
 SLOT_MINUTES = 30
@@ -21,7 +18,6 @@ SLOT_MINUTES = 30
 class Meeting:
     occurrence_id: str
     source_id: str
-    stub_code: str
     day: str
     start: int
     end: int
@@ -45,10 +41,9 @@ class CoverageUnit:
 
 def _expand_days(day_code: str) -> tuple[str, ...]:
     normalized = day_code.strip()
-    if normalized in DAY_EXPANSIONS:
-        return DAY_EXPANSIONS[normalized]
-    if normalized in DAY_ORDER:
-        return (normalized,)
+    days = tuple(re.findall(r"Th|Su|M|T|W|F|S", normalized))
+    if days and "".join(days) == normalized and all(day in DAY_ORDER for day in days):
+        return days
     raise ValueError(f"Unsupported weekday code: {day_code!r}")
 
 
@@ -66,7 +61,6 @@ def _parse_meetings(events: list[dict[str, Any]], prefix: str) -> list[Meeting]:
                 Meeting(
                     occurrence_id=f"{source_id}-{day}",
                     source_id=source_id,
-                    stub_code=str(event.get("stubCode", "")).strip(),
                     day=day,
                     start=start,
                     end=end,
@@ -172,7 +166,6 @@ def _assignment_payload(
         "assistantId": assistant_id,
         "assistantLabel": assistant_label,
         "classId": meeting.source_id,
-        "stubCode": meeting.stub_code,
         "day": meeting.day,
         "startMinutes": start,
         "endMinutes": end,
