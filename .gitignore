@@ -18,11 +18,15 @@ dist-ssr
 __pycache__/
 *.pyc
 *.pyo
-python/scheduler.db
+backend/scheduler.db
 database/lite/scheduler.db
-python/__pycache__/
-python/routes/__pycache__/
-python/solver/__pycache__/
+backend/__pycache__/
+backend/routes/__pycache__/
+backend/models/__pycache__/
+backend/services/__pycache__/
+backend/database/__pycache__/
+backend/database/supabase/__pycache__/
+backend/solver/__pycache__/
 
 # Editor directories and files
 .vscode/*

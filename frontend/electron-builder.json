@@ -1,0 +1,20 @@
+{
+  "appId": "com.group27.auto-scheduler",
+  "files": ["dist-electron", "dist-react"],
+  "extraResources": [
+    { "from": "backend", "to": "backend", "filter": ["**/*"] },
+    { "from": ".env", "to": ".env" },
+    "dist-electron/preload.js"
+  ],
+  "icon": "assets/desktopIcon.png",
+  "mac": {
+    "target": "dmg"
+  },
+  "linux": {
+    "target": "AppImage",
+    "category": "Utility"
+  },
+  "win": {
+    "target": ["portable", "msi"]
+  }
+}

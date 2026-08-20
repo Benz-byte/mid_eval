@@ -7,21 +7,20 @@
   "scripts": {
     "postinstall": "node scripts/setup-python.mjs",
     "dev": "npm-run-all --parallel --race dev:react dev:electron dev:flask",
-    "dev:react": "vite",
+    "dev:react": "vite --config frontend/vite.config.ts",
     "dev:electron": "npm run transpile:electron && cross-env NODE_ENV=development electron .",
-    "dev:flask": "python python/app.py",
-    "build": "tsc -b && vite build",
+    "dev:flask": "python backend/app.py",
+    "build": "tsc -b frontend/tsconfig.json && vite build --config frontend/vite.config.ts",
     "lint": "eslint .",
     "test:conflicts": "node scripts/test-conflicts-database.mjs",
     "test:conflicts:sample": "node scripts/test-conflicts.mjs",
-    "preview": "vite preview",
-    "transpile:electron": "tsc --project src/electron/tsconfig.json && tsc --project src/electron/tsconfig.preload.json",
-    "dist:mac": "npm run transpile:electron && npm run build && electron-builder --mac --arm64",
-    "dist:win": "npm run transpile:electron && npm run build && electron-builder --win --x64",
-    "dist:linux": "npm run transpile:electron && npm run build && electron-builder --linux --x64"
+    "preview": "vite preview --config frontend/vite.config.ts",
+    "transpile:electron": "tsc --project frontend/src/desktop/tsconfig.json && tsc --project frontend/src/desktop/tsconfig.preload.json",
+    "dist:mac": "npm run transpile:electron && npm run build && electron-builder --config frontend/electron-builder.json --mac --arm64",
+    "dist:win": "npm run transpile:electron && npm run build && electron-builder --config frontend/electron-builder.json --win --x64",
+    "dist:linux": "npm run transpile:electron && npm run build && electron-builder --config frontend/electron-builder.json --linux --x64"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.110.9",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "xlsx": "^0.18.5"

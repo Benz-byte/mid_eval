@@ -1,0 +1,206 @@
+/* ── Admin events ──────────────────────────────────────────────────────────── */
+
+.event-panel {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.event-drawer-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  background: rgb(0 0 0 / 58%);
+}
+
+.event-drawer {
+  width: min(680px, 94vw);
+  height: 100%;
+  overflow-y: auto;
+  border-left: 1px solid #2d3748;
+  background: #0f1117;
+  box-shadow: -12px 0 32px rgb(0 0 0 / 35%);
+}
+
+.event-drawer-toolbar {
+  position: sticky;
+  z-index: 5;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1.25rem;
+  border-bottom: 1px solid #2d3748;
+  background: #161b27;
+}
+
+.event-drawer-close {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 5px;
+  background: #2d3748;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.event-drawer-close:hover {
+  background: #4a5568;
+}
+
+.event-drawer .event-panel {
+  padding: 1.25rem;
+}
+
+.event-drawer .event-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.event-panel-heading h2,
+.admin-event-list h3 {
+  margin: 0;
+  color: #e2e8f0;
+}
+
+.event-panel-heading p {
+  margin: 0.35rem 0 1rem;
+  color: #718096;
+}
+
+.event-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #2d3748;
+  border-radius: 8px;
+  background: #1a2035;
+}
+
+.event-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: #a0aec0;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.event-form input {
+  min-height: 36px;
+  box-sizing: border-box;
+  border: 1px solid #3a4a63;
+  border-radius: 5px;
+  outline: none;
+  background: #0f1117;
+  color: #e2e8f0;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  color-scheme: dark;
+}
+
+.event-form input:focus {
+  border-color: #90cdf4;
+}
+
+.vacant-room-picker {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.8rem;
+  border: 1px solid #3a4a63;
+  border-radius: 6px;
+}
+
+.vacant-room-picker legend {
+  padding: 0 0.35rem;
+  color: #a0aec0;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.vacant-room-picker p {
+  width: 100%;
+  margin: 0;
+  color: #718096;
+  font-size: 0.8rem;
+}
+
+.vacant-room-picker button {
+  border: 1px solid #3a4a63;
+  border-radius: 5px;
+  background: #0f1117;
+  color: #a0aec0;
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+}
+
+.vacant-room-picker button:hover {
+  border-color: #90cdf4;
+  color: #e2e8f0;
+}
+
+.vacant-room-picker button.selected {
+  border-color: #68d391;
+  background: #1a4731;
+  color: #9ae6b4;
+}
+
+.event-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.6rem;
+}
+
+.admin-event-list {
+  margin-top: 1.25rem;
+}
+
+.admin-event-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.65rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #2d3748;
+  border-radius: 7px;
+  background: #161b27;
+}
+
+.admin-event-card > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.admin-event-card > div:first-child {
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.admin-event-card span,
+.admin-event-card small,
+.empty-state {
+  color: #718096;
+}
+
+.btn-danger {
+  border: none;
+  border-radius: 5px;
+  background: #4a1a1a;
+  color: #fc8181;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background: #642222;
+}
+

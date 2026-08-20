@@ -26,7 +26,7 @@ console.log(`Installing Python packages with ${python.command}...`)
 
 const result = spawnSync(
   python.command,
-  [...python.args, '-m', 'pip', 'install', '-r', 'python/requirements.txt'],
+  [...python.args, '-m', 'pip', 'install', '-r', 'backend/requirements.txt'],
   { stdio: 'inherit' },
 )
 

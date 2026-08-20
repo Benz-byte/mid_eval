@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises'
-import { createClient } from '@supabase/supabase-js'
 
 const DAY_ORDER = ['M', 'T', 'W', 'Th', 'F', 'S', 'Su']
 const DAY_NAMES = {
@@ -77,7 +76,7 @@ function formatTime(minutes) {
 
 function eventLabel(event) {
   const subject = event.subject || event.courseCode || 'Untitled class'
-  const details = [event.section, event.instructorLastName].filter(Boolean)
+  const details = [event.stubCode || event.section, event.instructorLastName].filter(Boolean)
   return details.length ? `${subject} (${details.join(' · ')})` : subject
 }
 
@@ -89,16 +88,13 @@ if (!url || !key) {
   throw new Error('VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are required in .env.')
 }
 
-const supabase = createClient(url, key, {
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-})
-const { data, error } = await supabase
-  .from('shared_schedules')
-  .select('csv_events')
-  .eq('id', 'ccs-main')
-  .maybeSingle()
-
-if (error) throw error
+const response = await fetch(
+  `${url.replace(/\/$/, '')}/rest/v1/shared_schedules?id=eq.ccs-main&select=csv_events`,
+  { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+)
+if (!response.ok) throw new Error(`Supabase request failed (${response.status}).`)
+const rows = await response.json()
+const data = rows[0]
 if (!data) throw new Error('No uploaded shared schedule was found.')
 
 const events = Array.isArray(data.csv_events) ? data.csv_events : []
