@@ -164,7 +164,7 @@ def infer_columns(rows: list[list[str]]) -> dict[str, int]:
     return columns
 
 
-def parse_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
+def _parse_legacy_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
     if not isinstance(raw_rows, list):
         raise ValueError("Schedule rows must be a list.")
     rows = [[clean(value) for value in row] for row in raw_rows if isinstance(row, list)]
@@ -208,3 +208,115 @@ def parse_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
             instructor = f"{instructor}, {instructor_first[0].upper()}"
         events.append({"id": f"import-{index}-{course}-{day}-{start}", "source": "csv", "stubCode": value(row, "stubCode"), "courseCode": course, "subject": value(row, "subject"), "startMinutes": start, "endMinutes": end, "dayCode": day, "classType": class_type, "section": value(row, "section") or grouped_section, "room": room, "studentCount": value(row, "students"), "instructorLastName": instructor})
     return {"events": events, "tbaSubjects": tba}
+
+
+OFFICIAL_HEADER_LABELS = {
+    "StubCode": "stubCode",
+    "Subject": "subject",
+    "SubjectTitle": "subjectTitle",
+    "StartTime": "startTime",
+    "EndTime": "endTime",
+    "Day": "day",
+    "RoomType": "roomType",
+    "Room": "room",
+    "StudentAmount": "studentAmount",
+    "LastName": "lastName",
+    "FirstName": "firstName",
+    "MiddleName": "middleName",
+}
+OFFICIAL_HEADERS = {header_key(label): field for label, field in OFFICIAL_HEADER_LABELS.items()}
+
+
+def _parse_official_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
+    if not isinstance(raw_rows, list):
+        raise ValueError("Schedule rows must be a list.")
+    rows = [[clean(value) for value in row] for row in raw_rows if isinstance(row, list)]
+    rows = [row for row in rows if any(row)]
+    if not rows:
+        raise ValueError("The schedule file is empty.")
+
+    header_indexes: dict[str, int] = {}
+    duplicates: list[str] = []
+    for index, label in enumerate(rows[0]):
+        key = header_key(label)
+        field = OFFICIAL_HEADERS.get(key)
+        if not field:
+            continue
+        if field in header_indexes:
+            duplicates.append(label)
+        else:
+            header_indexes[field] = index
+
+    if duplicates:
+        raise ValueError(f"Duplicate schedule labels: {', '.join(duplicates)}.")
+    missing = [label for label, field in OFFICIAL_HEADER_LABELS.items() if field not in header_indexes]
+    if missing:
+        raise ValueError(
+            "Invalid schedule format. Missing required labels: "
+            + ", ".join(missing)
+            + "."
+        )
+
+    def value(row: list[str], field: str) -> str:
+        index = header_indexes[field]
+        return clean(row[index]) if index < len(row) else ""
+
+    events: list[dict[str, Any]] = []
+    tba: list[str] = []
+    invalid_rows: list[int] = []
+    for row_number, row in enumerate(rows[1:], start=2):
+        subject = value(row, "subject")
+        subject_title = value(row, "subjectTitle")
+        raw_day = value(row, "day")
+        room = value(row, "room")
+        start = parse_time(value(row, "startTime"))
+        end = parse_time(value(row, "endTime"))
+
+        is_tba = raw_day.upper() == "TBA" or room.upper() == "TBA" or (start == 0 and end == 0)
+        if is_tba:
+            label = subject or subject_title
+            if label and label not in tba:
+                tba.append(label)
+            continue
+
+        day = normalize_day(raw_day)
+        if not subject or start is None or end is None or end <= start or not day or not room:
+            invalid_rows.append(row_number)
+            continue
+
+        last_name = value(row, "lastName")
+        first_name = value(row, "firstName")
+        middle_name = value(row, "middleName")
+        events.append({
+            "id": f"import-{row_number}-{subject}-{day}-{start}",
+            "source": "csv",
+            "stubCode": value(row, "stubCode"),
+            "courseCode": subject,
+            "subject": subject_title,
+            "startMinutes": start,
+            "endMinutes": end,
+            "dayCode": day,
+            "classType": value(row, "roomType"),
+            "section": "",
+            "room": room,
+            "studentCount": value(row, "studentAmount"),
+            "lastName": last_name,
+            "firstName": first_name,
+            "middleName": middle_name,
+        })
+
+    if invalid_rows:
+        preview = ", ".join(str(row) for row in invalid_rows[:10])
+        suffix = "…" if len(invalid_rows) > 10 else ""
+        raise ValueError(f"Invalid schedule data in row(s): {preview}{suffix}.")
+    if not events and not tba:
+        raise ValueError("The schedule contains no valid class rows.")
+    return {"events": events, "tbaSubjects": tba}
+
+
+def parse_schedule_rows(raw_rows: Any, format_name: str = "legacy") -> dict[str, list[Any]]:
+    if format_name == "official":
+        return _parse_official_schedule_rows(raw_rows)
+    if format_name == "legacy":
+        return _parse_legacy_schedule_rows(raw_rows)
+    raise ValueError("Unknown schedule format.")

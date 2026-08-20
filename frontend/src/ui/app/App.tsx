@@ -114,7 +114,7 @@ export default function App() {
   }, [adminEvents, csvEvents])
 
   const uploadCsv = async (file: File) => {
-    const parsed = await readScheduleFile(file)
+    const parsed = await readScheduleFile(file, 'official')
     if (parsed.events.length === 0) throw new Error('No valid class rows were found in this schedule file.')
     setCsvEvents(parsed.events)
     setCsvName(file.name)
@@ -200,6 +200,7 @@ export default function App() {
       <main className="app-main">
         {activeTab === 'schedule' && (
           <ScheduleCalendar
+            key={`${csvName}:${csvEvents.length}:${csvEvents[0]?.id ?? ''}`}
             csvEvents={csvEvents}
             adminEvents={adminEvents}
             csvName={csvName}

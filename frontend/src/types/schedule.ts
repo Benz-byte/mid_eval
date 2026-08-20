@@ -15,7 +15,10 @@ export interface CalendarEvent {
   section: string
   room: string
   studentCount: string
-  instructorLastName: string
+  instructorLastName?: string
+  lastName?: string
+  firstName?: string
+  middleName?: string
 }
 
 export interface ScheduleImportResult {

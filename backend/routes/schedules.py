@@ -11,7 +11,8 @@ def parse_schedule():
     payload = request.get_json(silent=True)
     try:
         rows = payload.get("rows") if isinstance(payload, dict) else None
-        return jsonify(parse_schedule_rows(rows))
+        format_name = payload.get("format", "legacy") if isinstance(payload, dict) else "legacy"
+        return jsonify(parse_schedule_rows(rows, format_name))
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
 

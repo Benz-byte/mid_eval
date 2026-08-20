@@ -11,7 +11,7 @@ def validate_shared_schedule(value: Any) -> dict[str, Any]:
     allowed_fields = {
         "id", "source", "stubCode", "courseCode", "subject", "startMinutes",
         "endMinutes", "dayCode", "classType", "room", "studentCount",
-        "instructorLastName",
+        "instructorLastName", "lastName", "firstName", "middleName",
     }
     cleaned_events = [
         {field: event[field] for field in allowed_fields if field in event}

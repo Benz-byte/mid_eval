@@ -4,6 +4,7 @@ import type { CalendarEvent, ScheduleConflict } from '../../types/schedule'
 import { matchesSelectedDay, toDateInputValue } from '../../formatters/dateFormatter'
 import { formatTime } from '../../formatters/timeFormatter'
 import { SCHEDULE_DATE_STORAGE_KEY, loadScheduleDate } from '../../storage/preferenceStorage'
+import { ScheduleFilter, type ScheduleFilterOption } from './ScheduleFilter'
 
 const DEFAULT_START = 7 * 60
 const DEFAULT_END = 21 * 60
@@ -18,6 +19,13 @@ function conflictLabel(event: CalendarEvent) {
   const courseCode = event.courseCode || event.subject || 'Untitled class'
   const stubCode = scheduleIdentifier(event)
   return stubCode ? `${courseCode}(${stubCode})` : courseCode
+}
+
+function teacherKey(event: CalendarEvent) {
+  return [event.lastName, event.firstName, event.middleName]
+    .filter(Boolean)
+    .join('|')
+    .toLocaleLowerCase()
 }
 
 export function ScheduleCalendar({
@@ -44,6 +52,9 @@ export function ScheduleCalendar({
   const [isFullView, setIsFullView] = useState(false)
   const [fullViewZoom, setFullViewZoom] = useState(1)
   const [showConflictColors, setShowConflictColors] = useState(true)
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [selectedTeachers, setSelectedTeachers] = useState<Set<string>>(() => new Set())
+  const [selectedRooms, setSelectedRooms] = useState<Set<string>>(() => new Set())
   const selectedDateKey = toDateInputValue(selectedDate)
   const visibleTbaSubjects = useMemo(
     () => tbaSubjects.filter(subject => !/^0{1,4}\s*[-–—]\s*0{1,4}$/.test(subject.trim())),
@@ -54,15 +65,31 @@ export function ScheduleCalendar({
     localStorage.setItem(SCHEDULE_DATE_STORAGE_KEY, selectedDateKey)
   }, [selectedDateKey])
 
-  const allEvents = useMemo(() => [...csvEvents, ...adminEvents], [csvEvents, adminEvents])
-  const visibleEvents = useMemo(
-    () => allEvents.filter(event =>
-      event.source === 'csv'
-        ? matchesSelectedDay(event.dayCode, selectedDate)
-        : event.date === selectedDateKey,
-    ),
-    [allEvents, selectedDate, selectedDateKey],
+  const teachers = useMemo(() => {
+    const unique = new Map<string, ScheduleFilterOption>()
+    csvEvents.forEach(event => {
+      const key = teacherKey(event)
+      if (!key || !event.lastName || unique.has(key)) return
+      unique.set(key, { key, label: event.lastName })
+    })
+    return [...unique.values()].sort((left, right) => left.label.localeCompare(right.label))
+  }, [csvEvents])
+
+  const displayedRooms = useMemo(
+    () => selectedRooms.size === 0 ? rooms : rooms.filter(room => selectedRooms.has(room)),
+    [rooms, selectedRooms],
   )
+
+  const allEvents = useMemo(() => [...csvEvents, ...adminEvents], [csvEvents, adminEvents])
+  const visibleEvents = useMemo(() => allEvents.filter(event => {
+    const matchesDate = event.source === 'csv'
+      ? matchesSelectedDay(event.dayCode, selectedDate)
+      : event.date === selectedDateKey
+    if (!matchesDate) return false
+    if (selectedRooms.size > 0 && !selectedRooms.has(event.room)) return false
+    if (event.source === 'csv' && selectedTeachers.size > 0 && !selectedTeachers.has(teacherKey(event))) return false
+    return true
+  }), [allEvents, selectedDate, selectedDateKey, selectedRooms, selectedTeachers])
   const conflicts = useMemo(() => {
     const detected: ScheduleConflict[] = []
     for (let firstIndex = 0; firstIndex < visibleEvents.length; firstIndex += 1) {
@@ -144,10 +171,20 @@ export function ScheduleCalendar({
   }
   const timelineHeight = Math.max((guideMinutes.length - 1) * rowHeight, rowHeight)
   const timetableStyle = {
-    '--room-count': rooms.length,
+    '--room-count': displayedRooms.length,
     '--timeline-height': `${timelineHeight}px`,
-    '--timetable-width': `${96 + rooms.length * 145}px`,
+    '--timetable-width': `${96 + displayedRooms.length * 145}px`,
   } as CSSProperties
+
+  const openFilters = () => {
+    setFilterOpen(true)
+  }
+
+  const applyFilters = (teachersToShow: Set<string>, roomsToShow: Set<string>) => {
+    setSelectedTeachers(teachersToShow)
+    setSelectedRooms(roomsToShow)
+    setFilterOpen(false)
+  }
 
   const moveDate = (days: number) => {
     setSelectedDate(current => {
@@ -237,6 +274,16 @@ export function ScheduleCalendar({
           <button className="btn-primary" type="button" onClick={onOpenEvents}>
             Add / Manage Events
           </button>
+          <button
+            className={`schedule-filter-button${selectedTeachers.size > 0 || selectedRooms.size > 0 ? ' active' : ''}`}
+            type="button"
+            aria-label="Filter schedule"
+            onClick={openFilters}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
+          </button>
           {csvName && (
             <button className="remove-csv-button" type="button" onClick={onCsvRemove}>
               Remove CSV
@@ -285,7 +332,7 @@ export function ScheduleCalendar({
         <div className="adaptive-timetable" style={timetableStyle}>
           <div className="adaptive-header">
             <div className="timetable-corner">Time</div>
-            {rooms.map(room => <div className="room-header" key={room}>{room}</div>)}
+            {displayedRooms.map(room => <div className="room-header" key={room}>{room}</div>)}
           </div>
 
           <div className="timeline-body">
@@ -302,7 +349,7 @@ export function ScheduleCalendar({
             </div>
 
             <div className="room-lanes">
-              {rooms.map(room => (
+              {displayedRooms.map(room => (
                 <div className="room-lane" key={room}>
                   {guideMinutes.map(minute => (
                     <span
@@ -329,11 +376,11 @@ export function ScheduleCalendar({
                         <div className="full-view-event-details">
                           <b>{event.courseCode || event.subject}</b>
                           {scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}
-                          {event.instructorLastName && <span>{event.instructorLastName}</span>}
+                          {instructorName(event) && <span>{instructorName(event)}</span>}
                         </div>
                         <strong>{event.courseCode || event.subject}</strong>
                         {scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}
-                        {event.instructorLastName && <small>{event.instructorLastName}</small>}
+                        {instructorName(event) && <small>{instructorName(event)}</small>}
                       </article>
                     ))}
                 </div>
@@ -353,7 +400,21 @@ export function ScheduleCalendar({
           </button>
         </div>
       )}
+      {filterOpen && (
+        <ScheduleFilter
+          teachers={teachers}
+          rooms={rooms}
+          selectedTeachers={selectedTeachers}
+          selectedRooms={selectedRooms}
+          onApply={applyFilters}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
     </section>
   )
 }
 
+function instructorName(event: CalendarEvent) {
+  const officialName = [event.lastName, event.firstName, event.middleName].filter(Boolean).join(', ')
+  return officialName || event.instructorLastName || ''
+}

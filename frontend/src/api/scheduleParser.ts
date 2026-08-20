@@ -47,9 +47,12 @@ async function rowsFromFile(file: File): Promise<string[][]> {
   throw new Error('Choose a CSV, XLS, or XLSX schedule file.')
 }
 
-export async function readScheduleFile(file: File): Promise<ScheduleImportResult> {
+export async function readScheduleFile(
+  file: File,
+  format: 'official' | 'legacy' = 'legacy',
+): Promise<ScheduleImportResult> {
   return requestJson<ScheduleImportResult>('/api/schedules/parse', {
     method: 'POST',
-    body: JSON.stringify({ rows: await rowsFromFile(file) }),
+    body: JSON.stringify({ rows: await rowsFromFile(file), format }),
   })
 }

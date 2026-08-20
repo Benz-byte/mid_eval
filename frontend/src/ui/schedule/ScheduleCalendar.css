@@ -152,6 +152,33 @@
   border-color: #9b2c2c;
 }
 
+.schedule-filter-button {
+  width: 38px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #3a4a63;
+  border-radius: 6px;
+  background: #1a2035;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.schedule-filter-button:hover,
+.schedule-filter-button.active {
+  border-color: #4299e1;
+  color: #90cdf4;
+}
+
+.schedule-filter-button svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
 .timetable-scroll {
   overflow-x: auto;
   overflow-y: visible;
