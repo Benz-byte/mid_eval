@@ -10,8 +10,7 @@ import {
 } from '../../api/studentAssistantApi'
 import { readScheduleFile } from '../../api/scheduleParser'
 import { ASSISTANT_STORAGE_KEY, loadLocalAssistantData } from '../../storage/studentAssistantStorage'
-import type { CalendarEvent } from '../../types/schedule'
-import type { UploadedAssistant } from '../../types/studentAssistant'
+import type { CalendarEvent, UploadedAssistant } from '../../types'
 import { AssistantWeeklyCalendar } from './AssistantWeeklyCalendar'
 
 const DAY_SORT: Record<string, number> = {

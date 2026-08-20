@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { DutyAssignment } from '../../api/studentAssistantApi'
-import type { UploadedAssistant } from '../../types/studentAssistant'
+import type { UploadedAssistant } from '../../types'
 import { formatTime } from '../../formatters/timeFormatter'
 
 const DEFAULT_START = 7 * 60

@@ -1,4 +1,4 @@
-import type { Tab } from '../types/schedule'
+import type { Tab } from '../types'
 
 export const ACTIVE_TAB_STORAGE_KEY = 'auto-scheduler-active-tab'
 export const SCHEDULE_DATE_STORAGE_KEY = 'auto-scheduler-selected-date'

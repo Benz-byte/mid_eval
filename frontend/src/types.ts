@@ -32,3 +32,26 @@ export interface ScheduleConflict {
   overlapStart: number
   overlapEnd: number
 }
+
+export interface AdminEventForm {
+  title: string
+  date: string
+  room: string
+  startTime: string
+  endTime: string
+}
+
+export interface UploadedAssistant {
+  id: string
+  label: string
+  fileName: string
+  events: CalendarEvent[]
+}
+
+declare global {
+  interface Window {
+    electron: {
+      flaskUrl: string
+    }
+  }
+}

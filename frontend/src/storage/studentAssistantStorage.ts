@@ -1,5 +1,5 @@
 import type { StudentAssistantResult } from '../api/studentAssistantApi'
-import type { UploadedAssistant } from '../types/studentAssistant'
+import type { UploadedAssistant } from '../types'
 
 export const ASSISTANT_STORAGE_KEY = 'auto-scheduler-student-assistants'
 

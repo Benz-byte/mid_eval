@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, ChangeEvent } from 'react'
-import type { CalendarEvent, ScheduleConflict } from '../../types/schedule'
+import type { CalendarEvent, ScheduleConflict } from '../../types'
 import { matchesSelectedDay, toDateInputValue } from '../../formatters/dateFormatter'
 import { formatTime } from '../../formatters/timeFormatter'
 import { SCHEDULE_DATE_STORAGE_KEY, loadScheduleDate } from '../../storage/preferenceStorage'

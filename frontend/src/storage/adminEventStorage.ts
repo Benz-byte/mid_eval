@@ -1,4 +1,4 @@
-import type { CalendarEvent } from '../types/schedule'
+import type { CalendarEvent } from '../types'
 
 export const ADMIN_STORAGE_KEY = 'auto-scheduler-admin-events'
 

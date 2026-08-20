@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import type { AdminEventForm } from '../../types/adminEvent'
-import type { CalendarEvent } from '../../types/schedule'
+import type { AdminEventForm, CalendarEvent } from '../../types'
 import { matchesSelectedDay, toDateInputValue } from '../../formatters/dateFormatter'
 import { formatTime, parseInputTime } from '../../formatters/timeFormatter'
 

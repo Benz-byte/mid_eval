@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx'
-import type { ScheduleImportResult } from '../types/schedule'
+import type { ScheduleImportResult } from '../types'
 import { requestJson } from './apiClient'
 
 function parseCsvRows(text: string): string[][] {

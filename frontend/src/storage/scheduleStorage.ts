@@ -1,4 +1,4 @@
-import type { CalendarEvent } from '../types/schedule'
+import type { CalendarEvent } from '../types'
 
 export const CSV_STORAGE_KEY = 'auto-scheduler-imported-schedule'
 
