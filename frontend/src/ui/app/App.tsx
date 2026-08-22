@@ -6,16 +6,15 @@ import { parseInputTime } from '../../formatters/timeFormatter'
 import { ADMIN_STORAGE_KEY, loadAdminEvents } from '../../storage/adminEventStorage'
 import { ACTIVE_TAB_STORAGE_KEY, loadActiveTab } from '../../storage/preferenceStorage'
 import { CSV_STORAGE_KEY, loadCsvSchedule } from '../../storage/scheduleStorage'
-import type { AdminEventForm, CalendarEvent, Tab } from '../../types'
+import type { AdminEventForm, BookingEditScope, CalendarEvent, RoomBookingForm, Tab } from '../../types'
 import { AdminEventsPanel } from '../admin-events/AdminEventsPanel'
+import type { BookingDateSchedule } from '../admin-events/AdminEventsPanel'
 import { ScheduleCalendar } from '../schedule/ScheduleCalendar'
 import { StudentAssistantPanel } from '../student-assistants/StudentAssistantPanel'
 import './App.css'
 import '../schedule/ScheduleCalendar.css'
 import '../admin-events/AdminEventsPanel.css'
 import '../student-assistants/StudentAssistant.css'
-
-const DEFAULT_ROOMS = ['MT102', 'MTAVR1', 'MTAVR2', 'MTCL1', 'MTCL2', 'MTCL3', 'MTCL4', 'MTCL5', 'MTCL6', 'MTCL7', 'MTCL8', 'SHSCL1', 'SHSCL2']
 
 export default function App() {
   const savedCsvSchedule = useMemo(() => loadCsvSchedule(), [])
@@ -25,6 +24,7 @@ export default function App() {
   const [tbaSubjects, setTbaSubjects] = useState(savedCsvSchedule.tbaSubjects)
   const [adminEvents, setAdminEvents] = useState<CalendarEvent[]>(loadAdminEvents)
   const [eventsPanelOpen, setEventsPanelOpen] = useState(false)
+  const [eventEditRequest, setEventEditRequest] = useState<{ eventId: string, scope?: BookingEditScope } | null>(null)
   const [, setStorageStatus] = useState('Opening interface…')
   const [, setStorageStatusClass] = useState('api-connecting')
 
@@ -109,7 +109,7 @@ export default function App() {
     const importedRooms = [...new Set(csvEvents.map(event => event.room))]
     const adminRooms = adminEvents.map(event => event.room)
     const combined = [...new Set([...importedRooms, ...adminRooms])].filter(Boolean)
-    return combined.length > 0 ? combined : DEFAULT_ROOMS
+    return combined
   }, [adminEvents, csvEvents])
 
   const uploadCsv = async (file: File) => {
@@ -171,11 +171,56 @@ export default function App() {
     })
   }
 
+  const saveRoomBooking = (form: RoomBookingForm, schedules: BookingDateSchedule[]) => {
+    const seriesId = crypto.randomUUID()
+    const bookingEvents: CalendarEvent[] = schedules.flatMap(({ date, rooms, timeRanges }) => rooms.flatMap((room, roomIndex) => timeRanges.map((range, timeIndex) => ({
+      id: `booking_${seriesId}_${roomIndex}_${timeIndex}_${date}`,
+      source: 'admin',
+      courseCode: form.title.trim(),
+      subject: '',
+      date,
+      startMinutes: parseInputTime(range.startTime),
+      endMinutes: parseInputTime(range.endTime),
+      classType: 'BOOKING',
+      section: '',
+      room: room.trim(),
+      studentCount: '',
+      instructorLastName: '',
+    }))))
+
+    setAdminEvents(current => [...current, ...bookingEvents])
+    bookingEvents.forEach(event => {
+      void saveSharedAdminEvent(event).catch(error => {
+        console.warn('Could not synchronize the room booking; the local copy remains available.', error)
+      })
+    })
+  }
+
   const deleteAdminEvent = (id: string) => {
     setAdminEvents(current => current.filter(event => event.id !== id))
     void deleteSharedAdminEvent(id).catch(error => {
       console.warn('Could not synchronize the deletion.', error)
     })
+  }
+
+  const deleteAdminEvents = (ids: string[]) => {
+    const idsToDelete = new Set(ids)
+    setAdminEvents(current => current.filter(event => !idsToDelete.has(event.id)))
+    ids.forEach(id => {
+      void deleteSharedAdminEvent(id).catch(error => {
+        console.warn('Could not synchronize the booking deletion.', error)
+      })
+    })
+  }
+
+  const updateAdminEvents = (ids: string[], forms: AdminEventForm[]) => {
+    deleteAdminEvents(ids)
+    forms.forEach(form => saveAdminEvent(form, null))
+  }
+
+  const updateRoomBooking = (ids: string[], form: RoomBookingForm, schedules: BookingDateSchedule[]) => {
+    deleteAdminEvents(ids)
+    saveRoomBooking(form, schedules)
   }
 
   return (
@@ -207,7 +252,9 @@ export default function App() {
             rooms={rooms}
             onCsvUpload={uploadCsv}
             onCsvRemove={removeCsv}
-            onOpenEvents={() => setEventsPanelOpen(true)}
+            onOpenEvents={() => { setEventEditRequest(null); setEventsPanelOpen(true) }}
+            onEditEvent={(eventId, scope) => { setEventEditRequest({ eventId, scope }); setEventsPanelOpen(true) }}
+            onDeleteEvent={deleteAdminEvent}
           />
         )}
         {activeTab === 'student-assistant' && (
@@ -228,7 +275,7 @@ export default function App() {
         >
           <aside className="event-drawer" role="dialog" aria-modal="true" aria-label="Add and manage events">
             <div className="event-drawer-toolbar">
-              <strong>Schedule Events</strong>
+              <strong>{eventEditRequest ? 'Move Event' : 'Add Event'}</strong>
               <button
                 type="button"
                 className="event-drawer-close"
@@ -243,7 +290,12 @@ export default function App() {
               csvEvents={csvEvents}
               rooms={rooms}
               onSave={saveAdminEvent}
-              onDelete={deleteAdminEvent}
+              onUpdateEvents={updateAdminEvents}
+              onBook={saveRoomBooking}
+              onUpdateBooking={updateRoomBooking}
+              onDeleteMany={deleteAdminEvents}
+              editRequest={eventEditRequest}
+              onClose={() => { setEventsPanelOpen(false); setEventEditRequest(null) }}
             />
           </aside>
         </div>

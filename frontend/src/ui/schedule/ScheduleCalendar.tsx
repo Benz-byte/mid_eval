@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, ChangeEvent } from 'react'
-import type { CalendarEvent, ScheduleConflict } from '../../types'
+import type { BookingEditScope, CalendarEvent, ScheduleConflict } from '../../types'
 import { matchesSelectedDay, toDateInputValue } from '../../formatters/dateFormatter'
 import { formatTime } from '../../formatters/timeFormatter'
 import { SCHEDULE_DATE_STORAGE_KEY, loadScheduleDate } from '../../storage/preferenceStorage'
@@ -37,6 +37,8 @@ export function ScheduleCalendar({
   onCsvUpload,
   onCsvRemove,
   onOpenEvents,
+  onEditEvent,
+  onDeleteEvent,
 }: {
   csvEvents: CalendarEvent[]
   adminEvents: CalendarEvent[]
@@ -46,6 +48,8 @@ export function ScheduleCalendar({
   onCsvUpload: (file: File) => Promise<void>
   onCsvRemove: () => void
   onOpenEvents: () => void
+  onEditEvent: (eventId: string, scope?: BookingEditScope) => void
+  onDeleteEvent: (eventId: string) => void
 }) {
   const [selectedDate, setSelectedDate] = useState(loadScheduleDate)
   const [uploadError, setUploadError] = useState('')
@@ -53,9 +57,15 @@ export function ScheduleCalendar({
   const [fullViewZoom, setFullViewZoom] = useState(1)
   const [showConflictColors, setShowConflictColors] = useState(true)
   const [filterOpen, setFilterOpen] = useState(false)
+  const [selectedCalendarEvent, setSelectedCalendarEvent] = useState<CalendarEvent | null>(null)
+  const [confirmCardDelete, setConfirmCardDelete] = useState(false)
   const [selectedTeachers, setSelectedTeachers] = useState<Set<string>>(() => new Set())
   const [selectedRooms, setSelectedRooms] = useState<Set<string>>(() => new Set())
   const selectedDateKey = toDateInputValue(selectedDate)
+  const openEventEditor = (eventId: string) => {
+    setSelectedCalendarEvent(null)
+    onEditEvent(eventId, 'day-time')
+  }
   const visibleTbaSubjects = useMemo(
     () => tbaSubjects.filter(subject => !/^0{1,4}\s*[-–—]\s*0{1,4}$/.test(subject.trim())),
     [tbaSubjects],
@@ -81,7 +91,8 @@ export function ScheduleCalendar({
   )
 
   const allEvents = useMemo(() => [...csvEvents, ...adminEvents], [csvEvents, adminEvents])
-  const visibleEvents = useMemo(() => allEvents.filter(event => {
+  const visibleEvents = useMemo(() => {
+    const eventsForDate = allEvents.filter(event => {
     const matchesDate = event.source === 'csv'
       ? matchesSelectedDay(event.dayCode, selectedDate)
       : event.date === selectedDateKey
@@ -89,7 +100,14 @@ export function ScheduleCalendar({
     if (selectedRooms.size > 0 && !selectedRooms.has(event.room)) return false
     if (event.source === 'csv' && selectedTeachers.size > 0 && !selectedTeachers.has(teacherKey(event))) return false
     return true
-  }), [allEvents, selectedDate, selectedDateKey, selectedRooms, selectedTeachers])
+    })
+    const bookings = eventsForDate.filter(event => event.id.startsWith('booking_'))
+    return eventsForDate.filter(event => event.source !== 'csv' || !bookings.some(booking =>
+      booking.room === event.room
+      && booking.startMinutes < event.endMinutes
+      && booking.endMinutes > event.startMinutes,
+    ))
+  }, [allEvents, selectedDate, selectedDateKey, selectedRooms, selectedTeachers])
   const conflicts = useMemo(() => {
     const detected: ScheduleConflict[] = []
     for (let firstIndex = 0; firstIndex < visibleEvents.length; firstIndex += 1) {
@@ -271,12 +289,16 @@ export function ScheduleCalendar({
             Upload Schedule
             <input type="file" accept=".csv,.xls,.xlsx,text/csv" aria-label="Upload schedule file" onChange={handleUpload} />
           </label>
-          <button className="btn-primary" type="button" onClick={onOpenEvents}>
-            Add / Manage Events
+          <button className="btn-primary" type="button" disabled={!csvName} onClick={onOpenEvents}>
+            Add Event
+          </button>
+          <button className="remove-csv-button" type="button" disabled={!csvName} onClick={onCsvRemove}>
+            Remove CSV
           </button>
           <button
             className={`schedule-filter-button${selectedTeachers.size > 0 || selectedRooms.size > 0 ? ' active' : ''}`}
             type="button"
+            disabled={!csvName}
             aria-label="Filter schedule"
             onClick={openFilters}
           >
@@ -284,17 +306,14 @@ export function ScheduleCalendar({
               <path d="M4 6h16M7 12h10M10 18h4" />
             </svg>
           </button>
-          {csvName && (
-            <button className="remove-csv-button" type="button" onClick={onCsvRemove}>
-              Remove CSV
-            </button>
-          )}
         </div>
       </div>
 
-      <div className="calendar-summary">
-        <span>{csvName || 'No CSV uploaded'}</span>
-      </div>
+      {csvName && (
+        <div className="calendar-summary">
+          <span>{csvName}</span>
+        </div>
+      )}
       {uploadError && <p className="msg-error">{uploadError}</p>}
       {showConflictColors && (conflicts.length > 0 || visibleTbaSubjects.length > 0) && (
         <div className="schedule-notices">
@@ -329,7 +348,10 @@ export function ScheduleCalendar({
       )}
 
       <div className="timetable-scroll">
-        <div className="adaptive-timetable" style={timetableStyle}>
+        {displayedRooms.length === 0 ? (
+          <div className="timetable-empty">No file uploaded</div>
+        ) : (
+          <div className="adaptive-timetable" style={timetableStyle}>
           <div className="adaptive-header">
             <div className="timetable-corner">Time</div>
             {displayedRooms.map(room => <div className="room-header" key={room}>{room}</div>)}
@@ -362,7 +384,7 @@ export function ScheduleCalendar({
                     .filter(event => event.room === room)
                     .map(event => (
                       <article
-                        className={`calendar-event ${event.source}${conflictingEventIds.has(event.id) ? ' conflict' : ''}`}
+                        className={`calendar-event ${event.source}${event.id.startsWith('booking_') ? ' booking' : ''}${conflictingEventIds.has(event.id) ? ' conflict' : ''}`}
                         key={event.id}
                         style={{
                           top: positionForMinute(event.startMinutes),
@@ -372,6 +394,10 @@ export function ScheduleCalendar({
                           ),
                         }}
                         title={`${event.courseCode} ${event.subject}\n${formatTime(event.startMinutes)}–${formatTime(event.endMinutes)}`}
+                        role={event.source === 'admin' ? 'button' : undefined}
+                        tabIndex={event.source === 'admin' ? 0 : undefined}
+                        onClick={() => { if (event.source === 'admin') { setSelectedCalendarEvent(event); setConfirmCardDelete(false) } }}
+                        onKeyDown={keyEvent => { if (event.source === 'admin' && (keyEvent.key === 'Enter' || keyEvent.key === ' ')) { setSelectedCalendarEvent(event); setConfirmCardDelete(false) } }}
                       >
                         <div className="full-view-event-details">
                           <b>{event.courseCode || event.subject}</b>
@@ -381,13 +407,15 @@ export function ScheduleCalendar({
                         <strong>{event.courseCode || event.subject}</strong>
                         {scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}
                         {instructorName(event) && <small>{instructorName(event)}</small>}
+                        {event.source === 'admin' && <em className="calendar-edit-hint">click to edit</em>}
                       </article>
                     ))}
                 </div>
               ))}
             </div>
           </div>
-        </div>
+          </div>
+        )}
       </div>
       {(conflicts.length > 0 || visibleTbaSubjects.length > 0) && (
         <div className="schedule-warning-toggle">
@@ -398,6 +426,23 @@ export function ScheduleCalendar({
           >
             {showConflictColors ? 'Hide Conflict and TBA' : 'Show Conflict and TBA'}
           </button>
+        </div>
+      )}
+
+      {selectedCalendarEvent && (
+        <div className="calendar-event-dialog-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setSelectedCalendarEvent(null) }}>
+          <section className="calendar-event-dialog" role="dialog" aria-modal="true" aria-labelledby="calendar-event-dialog-title">
+            {!confirmCardDelete ? <>
+              <div className="calendar-event-dialog-heading"><h3 id="calendar-event-dialog-title">{selectedCalendarEvent.id.startsWith('booking_') ? 'Booking details' : 'Event details'}</h3><button type="button" onClick={() => setSelectedCalendarEvent(null)}>Close</button></div>
+              <strong>{selectedCalendarEvent.courseCode}</strong>
+              <dl><div><dt>Date</dt><dd>{selectedCalendarEvent.date}</dd></div><div><dt>Time</dt><dd>{formatTime(selectedCalendarEvent.startMinutes)}–{formatTime(selectedCalendarEvent.endMinutes)}</dd></div><div><dt>Room</dt><dd>{selectedCalendarEvent.room}</dd></div></dl>
+              <div className="calendar-event-dialog-actions"><button className="btn-danger" type="button" onClick={() => setConfirmCardDelete(true)}>Delete</button><button className="btn-primary" type="button" onClick={() => openEventEditor(selectedCalendarEvent.id)}>Edit</button></div>
+            </> : <>
+              <div className="calendar-event-dialog-heading"><h3 id="calendar-event-dialog-title">Delete this card</h3></div>
+              <p>Do you want to delete only this event card?</p>
+              <div className="calendar-event-dialog-actions"><button className="btn-secondary" type="button" onClick={() => setConfirmCardDelete(false)}>No</button><button className="btn-danger" type="button" onClick={() => { onDeleteEvent(selectedCalendarEvent.id); setSelectedCalendarEvent(null); setConfirmCardDelete(false) }}>Yes</button></div>
+            </>}
+          </section>
         </div>
       )}
       {filterOpen && (

@@ -41,6 +41,20 @@ export interface AdminEventForm {
   endTime: string
 }
 
+export type BookingRepeat = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly'
+export type BookingEditScope = 'room-date' | 'all-rooms-date' | 'entire-booking' | 'day-time' | 'time-only'
+
+export interface RoomBookingForm {
+  title: string
+  startDate: string
+  endDate: string
+  startTime: string
+  endTime: string
+  rooms: string[]
+  repeat: BookingRepeat
+  weekdays: number[]
+}
+
 export interface UploadedAssistant {
   id: string
   label: string
