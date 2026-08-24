@@ -97,7 +97,7 @@ export function StudentAssistantPanel({
     setError('')
     const additions: UploadedAssistant[] = []
     for (const file of files) {
-      const { events } = await readScheduleFile(file)
+      const { events } = await readScheduleFile(file, 'assistant')
       if (events.length === 0) {
         setError(`${file.name} has no valid schedule rows and was not added.`)
         continue
@@ -154,6 +154,12 @@ export function StudentAssistantPanel({
   const selectedAssignments = assignments.filter(
     assignment => assignment.assistantId === effectiveSelectedAssistantId,
   )
+  const selectedAssistantTotal = result?.assistantTotals?.find(
+    total => total.assistantId === effectiveSelectedAssistantId,
+  )
+  const selectedAssignedHours = selectedAssistantTotal?.hours ?? 0
+  const selectedRemainingHours = selectedAssistantTotal?.remainingHours
+    ?? Math.max(0, 20 - selectedAssignedHours)
   const visibleDiagnostics = (result?.diagnostics ?? []).filter(
     message => !message.includes('classes remain unassigned because test coverage is optional'),
   )
@@ -248,7 +254,11 @@ export function StudentAssistantPanel({
               <div className="sa-calendar-switcher">
                 <div>
                   <h3>Weekly Schedule</h3>
-                  <p>Switch assistants to view personal classes and assigned duties.</p>
+                  <p>
+                    {selectedAssistantTotal
+                      ? `${selectedAssignedHours.toFixed(1).replace(/\.0$/, '')} hours assigned · ${selectedRemainingHours.toFixed(1).replace(/\.0$/, '')} hours remaining capacity`
+                      : 'Switch assistants to view personal classes and assigned duties.'}
+                  </p>
                 </div>
                 <label>
                   Student assistant

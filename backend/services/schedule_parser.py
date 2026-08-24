@@ -226,6 +226,70 @@ OFFICIAL_HEADER_LABELS = {
 }
 OFFICIAL_HEADERS = {header_key(label): field for label, field in OFFICIAL_HEADER_LABELS.items()}
 
+ASSISTANT_HEADER_LABELS = {
+    "SubjectCode": "course",
+    "Title": "subject",
+    "Start": "start",
+    "End": "end",
+    "Days": "day",
+}
+ASSISTANT_HEADERS = {
+    header_key(label): field for label, field in ASSISTANT_HEADER_LABELS.items()
+}
+
+
+def _parse_assistant_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
+    """Parse personal class schedules using headers rather than column positions."""
+    if not isinstance(raw_rows, list):
+        raise ValueError("Schedule rows must be a list.")
+    rows = [[clean(value) for value in row] for row in raw_rows if isinstance(row, list)]
+    rows = [row for row in rows if any(row)]
+    if not rows:
+        raise ValueError("The schedule file is empty.")
+
+    header_indexes: dict[str, int] = {}
+    header_row_index = -1
+    for row_index, row in enumerate(rows[:50]):
+        candidate: dict[str, int] = {}
+        for column_index, label in enumerate(row):
+            field = ASSISTANT_HEADERS.get(header_key(label))
+            if field and field not in candidate:
+                candidate[field] = column_index
+        if {"start", "end", "day"} <= candidate.keys():
+            header_indexes = candidate
+            header_row_index = row_index
+            break
+
+    if header_row_index < 0:
+        return _parse_legacy_schedule_rows(raw_rows)
+
+    def value(row: list[str], field: str) -> str:
+        column_index = header_indexes.get(field)
+        return clean(row[column_index]) if column_index is not None and column_index < len(row) else ""
+
+    events: list[dict[str, Any]] = []
+    for row_number, row in enumerate(rows[header_row_index + 1:], start=header_row_index + 2):
+        start = parse_time(value(row, "start"))
+        end = parse_time(value(row, "end"))
+        day = normalize_day(value(row, "day"))
+        if start is None or end is None or end <= start or not day:
+            continue
+        course = value(row, "course")
+        events.append({
+            "id": f"assistant-{row_number}-{day}-{start}",
+            "source": "csv",
+            "courseCode": course,
+            "subject": value(row, "subject"),
+            "startMinutes": start,
+            "endMinutes": end,
+            "dayCode": day,
+            "classType": "",
+            "section": "",
+            "room": "",
+            "studentCount": "",
+        })
+    return {"events": events, "tbaSubjects": []}
+
 
 def _parse_official_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
     if not isinstance(raw_rows, list):
@@ -319,4 +383,6 @@ def parse_schedule_rows(raw_rows: Any, format_name: str = "legacy") -> dict[str,
         return _parse_official_schedule_rows(raw_rows)
     if format_name == "legacy":
         return _parse_legacy_schedule_rows(raw_rows)
+    if format_name == "assistant":
+        return _parse_assistant_schedule_rows(raw_rows)
     raise ValueError("Unknown schedule format.")

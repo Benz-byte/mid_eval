@@ -1,0 +1,218 @@
+[
+  {
+    "fileName": "BSCS_Year1_Student.xlsx",
+    "studentId": "26-0001-01",
+    "program": "BSCS",
+    "year": 1,
+    "creditUnits": 6,
+    "selectedSubjects": [
+      "CCS 1001 [806]",
+      "CCS 1400 [813]"
+    ],
+    "rowCount": 4
+  },
+  {
+    "fileName": "BSCS_Year2_Student.xlsx",
+    "studentId": "26-0002-02",
+    "program": "BSCS",
+    "year": 2,
+    "creditUnits": 15,
+    "selectedSubjects": [
+      "CCS 2100 [828]",
+      "CS 2111 [950]",
+      "CCS 2110 [836]",
+      "CCS 2200 [842]",
+      "CCS 2800 [930]"
+    ],
+    "rowCount": 7
+  },
+  {
+    "fileName": "BSCS_Year3_Student.xlsx",
+    "studentId": "26-0003-03",
+    "program": "BSCS",
+    "year": 3,
+    "creditUnits": 18,
+    "selectedSubjects": [
+      "CCS 3001 [848]",
+      "CCS 3010 [857]",
+      "CCS 3020 [858]",
+      "CCS 3030 [904]",
+      "CCS 3100 [907]",
+      "CS 3120 [952]"
+    ],
+    "rowCount": 6
+  },
+  {
+    "fileName": "BSCS_Year4_Student.xlsx",
+    "studentId": "26-0004-04",
+    "program": "BSCS",
+    "year": 4,
+    "creditUnits": 6,
+    "selectedSubjects": [
+      "CS 4110 [957]",
+      "CCS 4300 [936]"
+    ],
+    "rowCount": 3
+  },
+  {
+    "fileName": "BSIT_Year1_Student.xlsx",
+    "studentId": "26-0005-01",
+    "program": "BSIT",
+    "year": 1,
+    "creditUnits": 6,
+    "selectedSubjects": [
+      "CCS 1001 [806]",
+      "CCS 1400 [813]"
+    ],
+    "rowCount": 4
+  },
+  {
+    "fileName": "BSIT_Year2_Student.xlsx",
+    "studentId": "26-0006-02",
+    "program": "BSIT",
+    "year": 2,
+    "creditUnits": 15,
+    "selectedSubjects": [
+      "CCS 2100 [828]",
+      "CCS 2200 [842]",
+      "CCS 2110 [837]",
+      "CCS 2800 [930]",
+      "IT 2110 [1028]"
+    ],
+    "rowCount": 7
+  },
+  {
+    "fileName": "BSIT_Year3_Student.xlsx",
+    "studentId": "26-0007-03",
+    "program": "BSIT",
+    "year": 3,
+    "creditUnits": 18,
+    "selectedSubjects": [
+      "CCS 3100 [906]",
+      "CCS 3010 [851]",
+      "CCS 3020 [858]",
+      "CCS 3030 [904]",
+      "IT 3121 [1037]",
+      "IT 3131 [1063]"
+    ],
+    "rowCount": 8
+  },
+  {
+    "fileName": "BSIT_Year4_Student.xlsx",
+    "studentId": "26-0008-04",
+    "program": "BSIT",
+    "year": 4,
+    "creditUnits": 9,
+    "selectedSubjects": [
+      "CCS 4300 [936]",
+      "IT 4120 [1068]",
+      "IT 4130 [1071]"
+    ],
+    "rowCount": 3
+  },
+  {
+    "fileName": "BSIS_Year1_Student.xlsx",
+    "studentId": "26-0009-01",
+    "program": "BSIS",
+    "year": 1,
+    "creditUnits": 6,
+    "selectedSubjects": [
+      "CCS 1001 [806]",
+      "CCS 1400 [813]"
+    ],
+    "rowCount": 4
+  },
+  {
+    "fileName": "BSIS_Year2_Student.xlsx",
+    "studentId": "26-0010-02",
+    "program": "BSIS",
+    "year": 2,
+    "creditUnits": 6,
+    "selectedSubjects": [
+      "IS 2130 [202]",
+      "CCS 2100 [828]"
+    ],
+    "rowCount": 3
+  },
+  {
+    "fileName": "BSIS_Year3_Student.xlsx",
+    "studentId": "26-0011-03",
+    "program": "BSIS",
+    "year": 3,
+    "creditUnits": 9,
+    "selectedSubjects": [
+      "CCS 3010 [857]",
+      "CCS 3100 [907]",
+      "CCS 3030 [904]"
+    ],
+    "rowCount": 3
+  },
+  {
+    "fileName": "BSIS_Year4_Student.xlsx",
+    "studentId": "26-0012-04",
+    "program": "BSIS",
+    "year": 4,
+    "creditUnits": 6,
+    "selectedSubjects": [
+      "CCS 4300 [936]",
+      "CCS 3020 [858]"
+    ],
+    "rowCount": 2
+  },
+  {
+    "fileName": "DMA_Year1_Student.xlsx",
+    "studentId": "26-0013-01",
+    "program": "DMA",
+    "year": 1,
+    "creditUnits": 7,
+    "selectedSubjects": [
+      "DMIA 1101 [970]",
+      "DMIA 1102 [977]",
+      "DMIA 1103 [978]"
+    ],
+    "rowCount": 4
+  },
+  {
+    "fileName": "DMA_Year2_Student.xlsx",
+    "studentId": "26-0014-02",
+    "program": "DMA",
+    "year": 2,
+    "creditUnits": 13,
+    "selectedSubjects": [
+      "DMIA 2102 [983]",
+      "DMIA 2103 [986]",
+      "DMIA 2104 [989]",
+      "CCS 1400 [813]",
+      "DMIA 2205 [994]"
+    ],
+    "rowCount": 8
+  },
+  {
+    "fileName": "DMA_Year3_Student.xlsx",
+    "studentId": "26-0015-03",
+    "program": "DMA",
+    "year": 3,
+    "creditUnits": 8,
+    "selectedSubjects": [
+      "DMIA 3110 [997]",
+      "DMBD 3101 [1006]",
+      "DMBD 3103 [1001]",
+      "CCS 3030 [904]"
+    ],
+    "rowCount": 4
+  },
+  {
+    "fileName": "DMA_Year4_Student.xlsx",
+    "studentId": "26-0016-04",
+    "program": "DMA",
+    "year": 4,
+    "creditUnits": 12,
+    "selectedSubjects": [
+      "DMIA 4102 [1020]",
+      "DMIA 4103 [1023]",
+      "DMIA 4100 [1019]",
+      "CCS 4300 [936]"
+    ],
+    "rowCount": 4
+  }
+]

@@ -49,7 +49,7 @@ async function rowsFromFile(file: File): Promise<string[][]> {
 
 export async function readScheduleFile(
   file: File,
-  format: 'official' | 'legacy' = 'legacy',
+  format: 'official' | 'legacy' | 'assistant' = 'legacy',
 ): Promise<ScheduleImportResult> {
   return requestJson<ScheduleImportResult>('/api/schedules/parse', {
     method: 'POST',

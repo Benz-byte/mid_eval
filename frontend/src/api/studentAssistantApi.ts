@@ -21,6 +21,7 @@ export interface AssistantTotal {
   assistantId: string
   assistantLabel: string
   hours: number
+  remainingHours?: number
 }
 
 export interface StudentAssistantResult {
@@ -31,7 +32,7 @@ export interface StudentAssistantResult {
   summary?: {
     assistantCount: number
     coverageHours: number
-    requiredHours?: number
+    capacityHours?: number
     assignmentCount?: number
     assignedClassCount?: number
     unassignedClassCount?: number
@@ -42,10 +43,11 @@ export async function solveStudentAssistantSchedule<EventType>(
   mainSchedule: EventType[],
   assistants: StudentAssistantInput<EventType>[],
 ): Promise<StudentAssistantResult> {
+  const randomSeed = crypto.getRandomValues(new Uint32Array(1))[0] & 0x7fffffff
   const response = await fetch(`${window.electron.flaskUrl}/api/student-assistant/solve`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mainSchedule, assistants }),
+    body: JSON.stringify({ mainSchedule, assistants, randomSeed }),
   })
 
   const result = await response.json() as StudentAssistantResult
