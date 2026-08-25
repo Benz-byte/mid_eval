@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
@@ -43,15 +43,6 @@ function bookingSeriesKey(id: string) {
 
 function formatSelectedDate(date: string) {
   return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(`${date}T12:00:00`))
-}
-
-function sameTimeRanges(left: EventTimeRange[], right: EventTimeRange[]) {
-  const normalize = (ranges: EventTimeRange[]) => ranges.map(range => `${range.startTime}-${range.endTime}`).sort()
-  return JSON.stringify(normalize(left)) === JSON.stringify(normalize(right))
-}
-
-function sameRooms(left: string[], right: string[]) {
-  return JSON.stringify([...left].sort()) === JSON.stringify([...right].sort())
 }
 
 function adminFormFromEvent(event: CalendarEvent): AdminEventForm {
@@ -167,10 +158,28 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
   ))
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   const [applyDatesOpen, setApplyDatesOpen] = useState<'times' | 'rooms' | null>(null)
-  const [appliedTimeDates, setAppliedTimeDates] = useState<string[]>([])
-  const [appliedRoomDates, setAppliedRoomDates] = useState<string[]>([])
-  const [timeApplySnapshots, setTimeApplySnapshots] = useState<Record<string, EventTimeRange[]>>({})
-  const [roomApplySnapshots, setRoomApplySnapshots] = useState<Record<string, string[]>>({})
+  const [applyDateTargets, setApplyDateTargets] = useState<string[]>([])
+  const applyDatesDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!applyDatesOpen) return
+    const cancelApply = () => {
+      setApplyDateTargets([])
+      setApplyDatesOpen(null)
+    }
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!applyDatesDropdownRef.current?.contains(event.target as Node)) cancelApply()
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') cancelApply()
+    }
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [applyDatesOpen])
 
   const parsedEventTimes = useMemo(() => eventTimes.map(range => ({ ...range, start: parseInputTime(range.startTime), end: parseInputTime(range.endTime) })), [eventTimes])
   const hasValidTimeRange = parsedEventTimes.length > 0 && parsedEventTimes.every(range => range.end > range.start)
@@ -285,26 +294,14 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
     })
   }
 
-  const discardTimeApplyUndo = (date: string) => {
-    setAppliedTimeDates(current => current.filter(value => value !== date))
-    setTimeApplySnapshots(current => { const next = { ...current }; delete next[date]; return next })
-  }
-
-  const discardRoomApplyUndo = (date: string) => {
-    setAppliedRoomDates(current => current.filter(value => value !== date))
-    setRoomApplySnapshots(current => { const next = { ...current }; delete next[date]; return next })
-  }
-
   const updateBookingTime = (id: string, field: 'startTime' | 'endTime', value: string) => {
     if (!activeSelectedDate) return
-    discardTimeApplyUndo(activeSelectedDate)
     const source = effectiveTimesForDate(activeSelectedDate)
     setBookingTimesByDate(current => ({ ...current, [activeSelectedDate]: source.map(range => range.id === id ? { ...range, [field]: value } : range) }))
   }
 
   const addBookingTime = () => {
     if (!activeSelectedDate) return
-    discardTimeApplyUndo(activeSelectedDate)
     const source = effectiveTimesForDate(activeSelectedDate)
     const next = { id: crypto.randomUUID(), startTime: '13:00', endTime: '14:00' }
     setBookingTimesByDate(current => ({ ...current, [activeSelectedDate]: [...source, next] }))
@@ -313,7 +310,6 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
 
   const removeBookingTime = () => {
     if (!activeSelectedDate || !selectedBookingTimeId) return
-    discardTimeApplyUndo(activeSelectedDate)
     const source = effectiveTimesForDate(activeSelectedDate)
     const remaining = source.filter(range => range.id !== selectedBookingTimeId)
     setBookingTimesByDate(current => ({ ...current, [activeSelectedDate]: remaining }))
@@ -329,10 +325,7 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
     setActiveSelectedDate(today)
     setSelectedBookingTimeId(resetTime.id)
     setBooking(current => ({ ...current, rooms: [] }))
-    setAppliedTimeDates([])
-    setAppliedRoomDates([])
-    setTimeApplySnapshots({})
-    setRoomApplySnapshots({})
+    setApplyDateTargets([])
     setApplyDatesOpen(null)
   }
 
@@ -362,8 +355,7 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
       setBooking(current => ({ ...current, rooms: [] }))
     }
     if (removing) {
-      discardTimeApplyUndo(key)
-      discardRoomApplyUndo(key)
+      setApplyDateTargets(current => current.filter(date => date !== key))
       const promotedRooms = key === defaultDate && nextDates[0] ? effectiveRoomsForDate(nextDates[0]) : null
       if (promotedRooms) setBooking(current => ({ ...current, rooms: [...promotedRooms] }))
       setRoomsByDate(current => { const next = { ...current }; delete next[key]; if (key === defaultDate && nextDates[0]) delete next[nextDates[0]]; return next })
@@ -406,38 +398,16 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
 
   const applyTimesToDates = (targetDates: string[]) => {
     if (!activeSelectedDate) return
-    const newTargets = targetDates.filter(date => !appliedTimeDates.includes(date))
-    if (newTargets.length === 0) return
     const sourceTimes = effectiveTimesForDate(activeSelectedDate)
-    setTimeApplySnapshots(current => ({ ...current, ...Object.fromEntries(newTargets.map(date => [date, effectiveTimesForDate(date).map(range => ({ ...range }))])) }))
-    setBookingTimesByDate(current => ({ ...current, ...Object.fromEntries(newTargets.map(date => [date, sourceTimes.map(range => ({ ...range, id: crypto.randomUUID() }))])) }))
-    setAppliedTimeDates(current => [...new Set([...current, ...newTargets])])
-  }
-
-  const undoAppliedTimes = (targetDates: string[]) => {
-    const restorableDates = targetDates.filter(date => timeApplySnapshots[date])
-    setBookingTimesByDate(current => ({ ...current, ...Object.fromEntries(restorableDates.map(date => [date, timeApplySnapshots[date].map(range => ({ ...range }))])) }))
-    setAppliedTimeDates(current => current.filter(date => !restorableDates.includes(date)))
-    setTimeApplySnapshots(current => { const next = { ...current }; restorableDates.forEach(date => delete next[date]); return next })
+    setBookingTimesByDate(current => ({ ...current, ...Object.fromEntries(targetDates.map(date => [date, sourceTimes.map(range => ({ ...range, id: crypto.randomUUID() }))])) }))
   }
 
   const applyRoomsToDates = (targetDates: string[]) => {
     if (!activeSelectedDate) return
-    const newTargets = targetDates.filter(date => !appliedRoomDates.includes(date))
-    if (newTargets.length === 0) return
     const sourceRooms = effectiveRoomsForDate(activeSelectedDate)
-    setRoomApplySnapshots(current => ({ ...current, ...Object.fromEntries(newTargets.map(date => [date, [...effectiveRoomsForDate(date)]])) }))
-    setRoomsByDate(current => ({ ...current, ...Object.fromEntries(newTargets.filter(date => date !== defaultDate).map(date => [date, [...sourceRooms]])) }))
-    if (newTargets.includes(defaultDate)) setBooking(current => ({ ...current, rooms: [...sourceRooms] }))
-    setAppliedRoomDates(current => [...new Set([...current, ...newTargets])])
-  }
-
-  const undoAppliedRooms = (targetDates: string[]) => {
-    const restorableDates = targetDates.filter(date => roomApplySnapshots[date])
-    setRoomsByDate(current => ({ ...current, ...Object.fromEntries(restorableDates.filter(date => date !== defaultDate).map(date => [date, [...roomApplySnapshots[date]]])) }))
-    if (restorableDates.includes(defaultDate)) setBooking(current => ({ ...current, rooms: [...roomApplySnapshots[defaultDate]] }))
-    setAppliedRoomDates(current => current.filter(date => !restorableDates.includes(date)))
-    setRoomApplySnapshots(current => { const next = { ...current }; restorableDates.forEach(date => delete next[date]); return next })
+    if (sourceRooms.length === 0) return
+    setRoomsByDate(current => ({ ...current, ...Object.fromEntries(targetDates.filter(date => date !== defaultDate).map(date => [date, [...sourceRooms]])) }))
+    if (targetDates.includes(defaultDate)) setBooking(current => ({ ...current, rooms: [...sourceRooms] }))
   }
 
   const submitEvent = (event: FormEvent) => {
@@ -501,15 +471,11 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
     setEditingBookingIds([])
     setEditingScope(undefined)
     setShowBookingWarning(false)
-    setAppliedTimeDates([])
-    setAppliedRoomDates([])
-    setTimeApplySnapshots({})
-    setRoomApplySnapshots({})
+    setApplyDateTargets([])
     setApplyDatesOpen(null)
   }
 
   const selectBookingRoom = (room: string) => {
-    if (activeSelectedDate) discardRoomApplyUndo(activeSelectedDate)
     if (!activeSelectedDate || activeSelectedDate === defaultDate) {
       updateBooking('rooms', booking.rooms.includes(room) ? booking.rooms.filter(value => value !== room) : [...booking.rooms, room])
       return
@@ -521,7 +487,6 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
 
   const clearActiveRooms = () => {
     if (!activeSelectedDate) return
-    discardRoomApplyUndo(activeSelectedDate)
     if (activeSelectedDate === defaultDate) setBooking(current => ({ ...current, rooms: [] }))
     else setRoomsByDate(current => ({ ...current, [activeSelectedDate]: [] }))
   }
@@ -588,15 +553,24 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
   const isManagerEdit = editingEventIds.length > 0 || editingBookingIds.length > 0
   const selectedBookingTime = bookingTimes.find(range => range.id === selectedBookingTimeId)
   const otherDates = dates.filter(date => date !== activeSelectedDate)
+  const openApplyDatesDropdown = (kind: 'times' | 'rooms') => {
+    setApplyDateTargets([])
+    setApplyDatesOpen(kind)
+  }
+  const cancelApplyDatesDropdown = () => {
+    setApplyDateTargets([])
+    setApplyDatesOpen(null)
+  }
+  const applySelectedDatesAndClose = (kind: 'times' | 'rooms') => {
+    if (kind === 'times') applyTimesToDates(applyDateTargets)
+    else applyRoomsToDates(applyDateTargets)
+    setApplyDateTargets([])
+    setApplyDatesOpen(null)
+  }
   const renderApplyDatesDropdown = (kind: 'times' | 'rooms') => {
     if (applyDatesOpen !== kind) return null
-    const appliedDates = kind === 'times' ? appliedTimeDates : appliedRoomDates
-    const apply = kind === 'times' ? applyTimesToDates : applyRoomsToDates
-    const undo = kind === 'times' ? undoAppliedTimes : undoAppliedRooms
-    const matchesSource = (date: string) => kind === 'times'
-      ? sameTimeRanges(effectiveTimesForDate(date), effectiveTimesForDate(activeSelectedDate))
-      : sameRooms(effectiveRoomsForDate(date), effectiveRoomsForDate(activeSelectedDate))
-    return <div className="apply-dates-dropdown"><button className="apply-dates-close" type="button" aria-label="Close" onClick={() => setApplyDatesOpen(null)}>×</button><label><input type="checkbox" checked={otherDates.every(matchesSource)} onChange={event => { if (event.target.checked) apply(otherDates); else undo(otherDates.filter(date => appliedDates.includes(date))) }} />All</label>{otherDates.map(date => { const matching = matchesSource(date); const canUndo = appliedDates.includes(date); return <label key={date}><input type="checkbox" checked={matching} disabled={matching && !canUndo} onChange={event => { if (event.target.checked) apply([date]); else undo([date]) }} />{new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric' }).format(new Date(`${date}T12:00:00`))}</label> })}</div>
+    const allSelected = otherDates.length > 0 && otherDates.every(date => applyDateTargets.includes(date))
+    return <div className="apply-dates-dropdown" ref={applyDatesDropdownRef}><div className="apply-dates-header"><label><input type="checkbox" checked={allSelected} onChange={event => setApplyDateTargets(event.target.checked ? otherDates : [])} />All</label><button className="apply-dates-submit" type="button" disabled={applyDateTargets.length === 0} onClick={() => applySelectedDatesAndClose(kind)}>Apply</button><button className="apply-dates-close" type="button" aria-label="Cancel" title="Cancel" onClick={cancelApplyDatesDropdown}>×</button></div><div className="apply-dates-list">{otherDates.map(date => <label key={date}><input type="checkbox" checked={applyDateTargets.includes(date)} onChange={event => setApplyDateTargets(current => event.target.checked ? [...new Set([...current, date])] : current.filter(value => value !== date))} />{new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric' }).format(new Date(`${date}T12:00:00`))}</label>)}</div></div>
   }
 
   return (
@@ -636,11 +610,11 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
               <legend>Time slots</legend>
               <label>Stored time<select value={selectedBookingTimeId} onChange={event => setSelectedBookingTimeId(event.target.value)}>{bookingTimes.map((range, index) => <option value={range.id} key={range.id}>Time {index + 1}: {formatTime(parseInputTime(range.startTime))} to {formatTime(parseInputTime(range.endTime))}</option>)}</select></label>
               <div className="event-time-row"><label>Start time<input required disabled={!selectedBookingTime} type="time" value={selectedBookingTime?.startTime ?? ''} onChange={event => { if (selectedBookingTime) updateBookingTime(selectedBookingTime.id, 'startTime', event.target.value) }} /></label><label>End time<input required disabled={!selectedBookingTime} type="time" value={selectedBookingTime?.endTime ?? ''} onChange={event => { if (selectedBookingTime) updateBookingTime(selectedBookingTime.id, 'endTime', event.target.value) }} /></label></div>
-              <div className="time-slot-actions"><button className="btn-secondary" disabled={!activeSelectedDate} type="button" onClick={addBookingTime}>Add Time Slot</button><button className="btn-secondary" disabled={bookingTimes.length <= 1 || !selectedBookingTime} type="button" onClick={removeBookingTime}>Remove Time Slot</button><div className="apply-dates-control"><button className="btn-secondary" disabled={!activeSelectedDate || dates.length < 2} type="button" onClick={() => setApplyDatesOpen(current => current === 'times' ? null : 'times')}>Apply Times</button>{renderApplyDatesDropdown('times')}</div></div>
+              <div className="time-slot-actions"><button className="btn-secondary" disabled={!activeSelectedDate} type="button" onClick={addBookingTime}>Add Time Slot</button><button className="btn-secondary" disabled={bookingTimes.length <= 1 || !selectedBookingTime} type="button" onClick={removeBookingTime}>Remove Time Slot</button><div className="apply-dates-control"><button className="btn-secondary" disabled={!activeSelectedDate || dates.length < 2} type="button" onClick={() => openApplyDatesDropdown('times')}>Apply Times</button>{renderApplyDatesDropdown('times')}</div></div>
             </fieldset>
             <fieldset className="vacant-room-picker booking-room-picker">
               <legend>Room availability</legend>
-              <div className="room-apply-actions"><div className="apply-dates-control"><button className="btn-secondary" disabled={!activeSelectedDate || dates.length < 2} type="button" onClick={() => setApplyDatesOpen(current => current === 'rooms' ? null : 'rooms')}>Apply Rooms</button>{renderApplyDatesDropdown('rooms')}</div><button className="btn-secondary" disabled={activeBookingRooms.length === 0} type="button" onClick={clearActiveRooms}>Clear Rooms</button></div>
+              <div className="room-apply-actions"><div className="apply-dates-control"><button className="btn-secondary" disabled={!activeSelectedDate || dates.length < 2 || activeBookingRooms.length === 0} type="button" onClick={() => openApplyDatesDropdown('rooms')}>Apply Rooms</button>{renderApplyDatesDropdown('rooms')}</div><button className="btn-secondary" disabled={activeBookingRooms.length === 0} type="button" onClick={clearActiveRooms}>Clear Rooms</button></div>
               {!bookingHasValidRange && <p>Enter a valid date range and time to view rooms.</p>}
               {bookingHasValidRange && rooms.length === 0 && <p>No rooms are listed. Upload a schedule first.</p>}
               {bookingHasValidRange && rooms.map(room => {
@@ -649,7 +623,7 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
                 return <button disabled={editingScope === 'time-only'} className={`${activeBookingRooms.includes(room) ? 'selected ' : ''}${statusClass}`.trim()} type="button" key={room} onClick={() => selectBookingRoom(room)}><span>{room}</span><small>{status}</small></button>
               })}
             </fieldset>
-            <div className="event-form-actions"><button className="btn-primary" type="submit">{editingBookingIds.length > 0 ? 'Save Changes' : 'Add Event'}</button><button className="btn-secondary" type="button" onClick={() => { const today = toDateInputValue(new Date()); const resetTime = { id: crypto.randomUUID(), startTime: '07:00', endTime: '08:00' }; setBooking(createEmptyBookingForm(today)); setSelectedDates([today]); setBookingTimesByDate({ [today]: [resetTime] }); setRoomsByDate({}); setActiveSelectedDate(today); setSelectedBookingTimeId(resetTime.id); setAppliedTimeDates([]); setAppliedRoomDates([]); setTimeApplySnapshots({}); setRoomApplySnapshots({}); setApplyDatesOpen(null); setEditingBookingIds([]); setEditingScope(undefined) }}>Clear</button></div>
+            <div className="event-form-actions"><button className="btn-primary" type="submit">{editingBookingIds.length > 0 ? 'Save Changes' : 'Add Event'}</button><button className="btn-secondary" type="button" onClick={() => { const today = toDateInputValue(new Date()); const resetTime = { id: crypto.randomUUID(), startTime: '07:00', endTime: '08:00' }; setBooking(createEmptyBookingForm(today)); setSelectedDates([today]); setBookingTimesByDate({ [today]: [resetTime] }); setRoomsByDate({}); setActiveSelectedDate(today); setSelectedBookingTimeId(resetTime.id); setApplyDateTargets([]); setApplyDatesOpen(null); setEditingBookingIds([]); setEditingScope(undefined) }}>Clear</button></div>
           </form>
         </>
       )}

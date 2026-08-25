@@ -152,6 +152,42 @@
   border-color: #9b2c2c;
 }
 
+.calendar-nav button.active {
+  border-color: #63b3ed;
+  background: #1a365d;
+  color: #bee3f8;
+}
+
+.weekly-room-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.weekly-room-navigation strong {
+  min-width: 150px;
+  color: #bee3f8;
+  text-align: center;
+}
+
+.weekly-room-navigation button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #3a4a63;
+  border-radius: 6px;
+  background: #161b27;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.weekly-room-navigation button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
 .remove-csv-button:disabled,
 .remove-csv-button:disabled:hover {
   border-color: #3a4a63;
@@ -452,6 +488,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 2px;
   padding: 5px 6px;
   border: 1px solid #2b6cb0;
@@ -460,6 +497,54 @@
   background: #1a365d;
   color: #e2e8f0;
   font-size: 0.69rem;
+  text-align: left;
+}
+
+.weekly-timetable {
+  width: max-content;
+  min-width: max(100%, var(--timetable-width));
+}
+
+.weekly-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 96px repeat(7, minmax(145px, 1fr));
+  min-width: var(--timetable-width);
+}
+
+.weekly-header .timetable-corner,
+.weekly-header .room-header {
+  position: static;
+  min-height: 46px;
+  box-sizing: border-box;
+}
+
+.weekly-header .timetable-corner {
+  position: sticky;
+  left: 0;
+  z-index: 12;
+}
+
+.weekly-header .room-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+}
+
+.weekly-header .room-header small {
+  color: #718096;
+  font-size: 0.66rem;
+  font-weight: 400;
+}
+
+.weekly-day-lanes {
+  display: grid;
+  min-width: calc(var(--timetable-width) - 96px);
+  height: var(--timeline-height);
+  grid-template-columns: repeat(7, minmax(145px, 1fr));
 }
 
 .calendar-event.admin {
@@ -577,6 +662,29 @@
 
 .calendar-event small {
   color: #a0c8e8;
+}
+
+.calendar-event .calendar-instructor-name {
+  width: 100%;
+  align-self: flex-start;
+  text-align: left;
+}
+
+.calendar-event .calendar-assistant-name {
+  width: 100%;
+  align-self: flex-start;
+  margin-top: 2px;
+  padding-top: 2px;
+  border-top: 1px solid rgb(79 209 197 / 42%);
+  color: #81e6d9;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.calendar-full-view .full-view-event-details .calendar-assistant-name {
+  color: #81e6d9;
+  font-size: 0.58rem;
 }
 
 .calendar-edit-hint {

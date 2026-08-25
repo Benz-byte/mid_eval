@@ -4,11 +4,21 @@ import type { BookingEditScope, CalendarEvent, ScheduleConflict } from '../../ty
 import { matchesSelectedDay, toDateInputValue } from '../../formatters/dateFormatter'
 import { formatTime } from '../../formatters/timeFormatter'
 import { SCHEDULE_DATE_STORAGE_KEY, loadScheduleDate } from '../../storage/preferenceStorage'
+import { loadLocalAssistantData } from '../../storage/studentAssistantStorage'
 import { ScheduleFilter, type ScheduleFilterOption } from './ScheduleFilter'
 
 const DEFAULT_START = 7 * 60
 const DEFAULT_END = 21 * 60
 const TIME_ROW_HEIGHT = 48
+const WEEKDAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+function startOfWeek(date: Date) {
+  const start = new Date(date)
+  const day = start.getDay()
+  start.setDate(start.getDate() - (day === 0 ? 6 : day - 1))
+  start.setHours(0, 0, 0, 0)
+  return start
+}
 
 function scheduleIdentifier(event: CalendarEvent) {
   if (event.stubCode) return event.stubCode
@@ -26,6 +36,13 @@ function teacherKey(event: CalendarEvent) {
     .filter(Boolean)
     .join('|')
     .toLocaleLowerCase()
+}
+
+function abbreviatedAssistantName(name: string) {
+  const [lastName, firstName] = name.split(',').map(part => part.trim())
+  if (!lastName || !firstName) return name
+  const initial = Array.from(firstName).find(character => /\p{L}/u.test(character))
+  return initial ? `${lastName}, ${initial.toLocaleUpperCase()}.` : lastName
 }
 
 export function ScheduleCalendar({
@@ -61,6 +78,14 @@ export function ScheduleCalendar({
   const [confirmCardDelete, setConfirmCardDelete] = useState(false)
   const [selectedTeachers, setSelectedTeachers] = useState<Set<string>>(() => new Set())
   const [selectedRooms, setSelectedRooms] = useState<Set<string>>(() => new Set())
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily')
+  const [selectedWeeklyRoom, setSelectedWeeklyRoom] = useState('')
+  const assistantData = useMemo(() => loadLocalAssistantData(), [])
+  const dutyAssignments = assistantData.result?.assignments ?? []
+  const assistantForEvent = (event: CalendarEvent) => {
+    const assignment = dutyAssignments.find(value => value.classId === event.id)
+    return assignment ? { shortName: abbreviatedAssistantName(assignment.assistantLabel), fullName: assignment.assistantLabel } : null
+  }
   const selectedDateKey = toDateInputValue(selectedDate)
   const openEventEditor = (eventId: string) => {
     setSelectedCalendarEvent(null)
@@ -90,6 +115,8 @@ export function ScheduleCalendar({
     [rooms, selectedRooms],
   )
 
+  const weeklyRoom = displayedRooms.includes(selectedWeeklyRoom) ? selectedWeeklyRoom : displayedRooms[0] ?? ''
+
   const allEvents = useMemo(() => [...csvEvents, ...adminEvents], [csvEvents, adminEvents])
   const visibleEvents = useMemo(() => {
     const eventsForDate = allEvents.filter(event => {
@@ -108,6 +135,43 @@ export function ScheduleCalendar({
       && booking.endMinutes > event.startMinutes,
     ))
   }, [allEvents, selectedDate, selectedDateKey, selectedRooms, selectedTeachers])
+  const weekDates = useMemo(() => {
+    const first = startOfWeek(selectedDate)
+    return WEEKDAY_LABELS.map((_, index) => {
+      const date = new Date(first)
+      date.setDate(first.getDate() + index)
+      return date
+    })
+  }, [selectedDate])
+  const weeklyEvents = useMemo(() => weekDates.map(date => {
+    const dateKey = toDateInputValue(date)
+    const eventsForDate = allEvents.filter(event => {
+      const matchesDate = event.source === 'csv' ? matchesSelectedDay(event.dayCode, date) : event.date === dateKey
+      if (!matchesDate || event.room !== weeklyRoom) return false
+      if (event.source === 'csv' && selectedTeachers.size > 0 && !selectedTeachers.has(teacherKey(event))) return false
+      return true
+    })
+    const bookings = eventsForDate.filter(event => event.id.startsWith('booking_'))
+    return eventsForDate.filter(event => event.source !== 'csv' || !bookings.some(booking =>
+      booking.startMinutes < event.endMinutes && booking.endMinutes > event.startMinutes,
+    ))
+  }), [allEvents, selectedTeachers, weeklyRoom, weekDates])
+  const weeklyConflictingEventIds = useMemo(() => {
+    const ids = new Set<string>()
+    weeklyEvents.forEach(dayEvents => {
+      for (let firstIndex = 0; firstIndex < dayEvents.length; firstIndex += 1) {
+        for (let secondIndex = firstIndex + 1; secondIndex < dayEvents.length; secondIndex += 1) {
+          const first = dayEvents[firstIndex]
+          const second = dayEvents[secondIndex]
+          if (first.startMinutes < second.endMinutes && first.endMinutes > second.startMinutes) {
+            ids.add(first.id)
+            ids.add(second.id)
+          }
+        }
+      }
+    })
+    return ids
+  }, [weeklyEvents])
   const conflicts = useMemo(() => {
     const detected: ScheduleConflict[] = []
     for (let firstIndex = 0; firstIndex < visibleEvents.length; firstIndex += 1) {
@@ -193,6 +257,10 @@ export function ScheduleCalendar({
     '--timeline-height': `${timelineHeight}px`,
     '--timetable-width': `${96 + displayedRooms.length * 145}px`,
   } as CSSProperties
+  const weeklyTimetableStyle = {
+    '--timeline-height': `${timelineHeight}px`,
+    '--timetable-width': `${96 + WEEKDAY_LABELS.length * 145}px`,
+  } as CSSProperties
 
   const openFilters = () => {
     setFilterOpen(true)
@@ -210,6 +278,13 @@ export function ScheduleCalendar({
       next.setDate(next.getDate() + days)
       return next
     })
+  }
+
+  const moveWeeklyRoom = (direction: number) => {
+    if (displayedRooms.length < 2) return
+    const currentIndex = Math.max(displayedRooms.indexOf(weeklyRoom), 0)
+    const nextIndex = (currentIndex + direction + displayedRooms.length) % displayedRooms.length
+    setSelectedWeeklyRoom(displayedRooms[nextIndex])
   }
 
   const selectDate = (value: string) => {
@@ -238,13 +313,14 @@ export function ScheduleCalendar({
     >
       <div className="calendar-toolbar">
         <div className="calendar-nav">
-          <button type="button" onClick={() => moveDate(-1)} aria-label="Previous date">←</button>
-          <button type="button" onClick={() => setSelectedDate(new Date())}>Today</button>
-          <button type="button" onClick={() => moveDate(1)} aria-label="Next date">→</button>
+          <button type="button" onClick={() => moveDate(viewMode === 'weekly' ? -7 : -1)} aria-label={viewMode === 'weekly' ? 'Previous week' : 'Previous date'}>←</button>
+          <button className={viewMode === 'daily' ? 'active' : ''} type="button" onClick={() => setViewMode('daily')}>Daily</button>
+          <button className={viewMode === 'weekly' ? 'active' : ''} type="button" onClick={() => setViewMode('weekly')}>Weekly</button>
+          <button type="button" onClick={() => moveDate(viewMode === 'weekly' ? 7 : 1)} aria-label={viewMode === 'weekly' ? 'Next week' : 'Next date'}>→</button>
         </div>
 
         <h2>
-          {selectedDate.toLocaleDateString(undefined, {
+          {viewMode === 'weekly' ? `${weekDates[0].toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}–${weekDates[6].toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}` : selectedDate.toLocaleDateString(undefined, {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
@@ -256,6 +332,7 @@ export function ScheduleCalendar({
           <button
             className="full-view-button"
             type="button"
+            disabled={!csvName}
             onClick={() => setIsFullView(current => !current)}
           >
             {isFullView ? 'Exit Full View' : 'Full View'}
@@ -315,7 +392,7 @@ export function ScheduleCalendar({
         </div>
       )}
       {uploadError && <p className="msg-error">{uploadError}</p>}
-      {showConflictColors && (conflicts.length > 0 || visibleTbaSubjects.length > 0) && (
+      {csvName && showConflictColors && (conflicts.length > 0 || visibleTbaSubjects.length > 0) && (
         <div className="schedule-notices">
           {conflicts.length > 0 && (
             <section className="conflict-panel" aria-label="Schedule conflicts">
@@ -347,9 +424,21 @@ export function ScheduleCalendar({
         </div>
       )}
 
+      {csvName && viewMode === 'weekly' && displayedRooms.length > 0 && <div className="weekly-room-navigation"><button type="button" disabled={displayedRooms.length < 2} onClick={() => moveWeeklyRoom(-1)} aria-label="Previous room">‹</button><strong>{weeklyRoom}</strong><button type="button" disabled={displayedRooms.length < 2} onClick={() => moveWeeklyRoom(1)} aria-label="Next room">›</button></div>}
+
       <div className="timetable-scroll">
-        {displayedRooms.length === 0 ? (
-          <div className="timetable-empty">No file uploaded</div>
+        {!csvName ? (
+          <div className="timetable-empty">No CSV file uploaded</div>
+        ) : displayedRooms.length === 0 ? (
+          <div className="timetable-empty">No rooms available</div>
+        ) : viewMode === 'weekly' ? (
+          <div className="weekly-timetable" style={weeklyTimetableStyle}>
+            <div className="weekly-header"><div className="timetable-corner">Time</div>{weekDates.map((date, index) => <div className="room-header" key={toDateInputValue(date)}><strong>{WEEKDAY_LABELS[index]}</strong><small>{date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</small></div>)}</div>
+            <div className="timeline-body">
+              <div className="time-axis">{guideMinutes.map(minute => <span className={`time-axis-label${minute === rangeStart ? ' first' : ''}${minute === rangeEnd ? ' last' : ''}`} key={minute} style={{ top: positionForMinute(minute) }}>{formatTime(minute)}</span>)}</div>
+              <div className="weekly-day-lanes">{weekDates.map((date, dayIndex) => <div className="room-lane" key={toDateInputValue(date)}>{guideMinutes.map(minute => <span className="time-guide" key={minute} style={{ top: positionForMinute(minute) }} />)}{weeklyEvents[dayIndex].map(event => <article className={`calendar-event ${event.source}${event.id.startsWith('booking_') ? ' booking' : ''}${weeklyConflictingEventIds.has(event.id) ? ' conflict' : ''}`} key={`${toDateInputValue(date)}-${event.id}`} style={{ top: positionForMinute(event.startMinutes), height: Math.max(positionForMinute(event.endMinutes) - positionForMinute(event.startMinutes), 28) }} title={`${event.courseCode} ${event.subject}\n${formatTime(event.startMinutes)}–${formatTime(event.endMinutes)}`} role={event.source === 'admin' ? 'button' : undefined} tabIndex={event.source === 'admin' ? 0 : undefined} onClick={() => { if (event.source === 'admin') { setSelectedCalendarEvent(event); setConfirmCardDelete(false) } }} onKeyDown={keyEvent => { if (event.source === 'admin' && (keyEvent.key === 'Enter' || keyEvent.key === ' ')) { setSelectedCalendarEvent(event); setConfirmCardDelete(false) } }}><div className="full-view-event-details"><b>{event.courseCode || event.subject}</b>{scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}{instructorName(event) && <span className="calendar-instructor-name">{instructorName(event)}</span>}{assistantForEvent(event) && <small className="calendar-assistant-name" title={assistantForEvent(event)?.fullName}>SA: {assistantForEvent(event)?.shortName}</small>}</div><strong>{event.courseCode || event.subject}</strong>{scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}{instructorName(event) && <small className="calendar-instructor-name">{instructorName(event)}</small>}{assistantForEvent(event) && <small className="calendar-assistant-name" title={assistantForEvent(event)?.fullName}>SA: {assistantForEvent(event)?.shortName}</small>}{event.source === 'admin' && <em className="calendar-edit-hint">click to edit</em>}</article>)}</div>)}</div>
+            </div>
+          </div>
         ) : (
           <div className="adaptive-timetable" style={timetableStyle}>
           <div className="adaptive-header">
@@ -402,11 +491,13 @@ export function ScheduleCalendar({
                         <div className="full-view-event-details">
                           <b>{event.courseCode || event.subject}</b>
                           {scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}
-                          {instructorName(event) && <span>{instructorName(event)}</span>}
+                          {instructorName(event) && <span className="calendar-instructor-name">{instructorName(event)}</span>}
+                          {assistantForEvent(event) && <small className="calendar-assistant-name" title={assistantForEvent(event)?.fullName}>SA: {assistantForEvent(event)?.shortName}</small>}
                         </div>
                         <strong>{event.courseCode || event.subject}</strong>
                         {scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}
-                        {instructorName(event) && <small>{instructorName(event)}</small>}
+                        {instructorName(event) && <small className="calendar-instructor-name">{instructorName(event)}</small>}
+                        {assistantForEvent(event) && <small className="calendar-assistant-name" title={assistantForEvent(event)?.fullName}>SA: {assistantForEvent(event)?.shortName}</small>}
                         {event.source === 'admin' && <em className="calendar-edit-hint">click to edit</em>}
                       </article>
                     ))}
@@ -417,7 +508,7 @@ export function ScheduleCalendar({
           </div>
         )}
       </div>
-      {(conflicts.length > 0 || visibleTbaSubjects.length > 0) && (
+      {csvName && (conflicts.length > 0 || visibleTbaSubjects.length > 0) && (
         <div className="schedule-warning-toggle">
           <button
             className="conflict-color-button"
@@ -460,6 +551,16 @@ export function ScheduleCalendar({
 }
 
 function instructorName(event: CalendarEvent) {
-  const officialName = [event.lastName, event.firstName, event.middleName].filter(Boolean).join(', ')
-  return officialName || event.instructorLastName || ''
+  const lastName = event.lastName?.trim()
+  const firstName = event.firstName?.trim()
+  if (lastName && firstName) {
+    const initial = Array.from(firstName).find(character => /\p{L}/u.test(character))
+    return initial ? `${lastName}, ${initial.toLocaleUpperCase()}.` : lastName
+  }
+
+  const importedName = event.instructorLastName?.trim() ?? ''
+  const [importedLastName, importedFirstName] = importedName.split(',').map(part => part.trim())
+  if (!importedLastName || !importedFirstName) return importedName
+  const initial = Array.from(importedFirstName).find(character => /\p{L}/u.test(character))
+  return initial ? `${importedLastName}, ${initial.toLocaleUpperCase()}.` : importedLastName
 }

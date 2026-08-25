@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { ChangeEvent } from 'react'
+import type { FormEvent } from 'react'
 import { isCloudConfigured } from '../../api/scheduleApi'
 import {
   loadSharedStudentAssistantData,
@@ -17,6 +17,15 @@ const DAY_SORT: Record<string, number> = {
   M: 0, T: 1, W: 2, Th: 3, F: 4, S: 5, Su: 6,
 }
 
+function assistantDisplayName(assistant: UploadedAssistant) {
+  if (assistant.lastName && assistant.firstName) {
+    return `${assistant.lastName}, ${Array.from(assistant.firstName.trim())[0]?.toLocaleUpperCase() ?? ''}.`
+  }
+  return assistant.label || assistant.fileName
+}
+
+const EMPTY_PROFILE = { lastName: '', firstName: '', middleName: '' }
+
 export function StudentAssistantPanel({
   mainSchedule,
   mainScheduleName,
@@ -30,6 +39,11 @@ export function StudentAssistantPanel({
   const [error, setError] = useState('')
   const [solving, setSolving] = useState(false)
   const [selectedAssistantId, setSelectedAssistantId] = useState('')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [addProfileOpen, setAddProfileOpen] = useState(false)
+  const [profileForm, setProfileForm] = useState(EMPTY_PROFILE)
+  const [profileFile, setProfileFile] = useState<File | null>(null)
+  const [profileError, setProfileError] = useState('')
   const [, setSyncMessage] = useState('Loading saved assistants…')
 
   useEffect(() => {
@@ -89,30 +103,68 @@ export function StudentAssistantPanel({
     })
   }
 
-  const uploadAssistants = async (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? [])
-    event.target.value = ''
-    if (files.length === 0) return
+  const closeAddProfile = () => {
+    setAddProfileOpen(false)
+    setProfileForm(EMPTY_PROFILE)
+    setProfileFile(null)
+    setProfileError('')
+  }
 
-    setError('')
-    const additions: UploadedAssistant[] = []
-    for (const file of files) {
-      const { events } = await readScheduleFile(file, 'assistant')
-      if (events.length === 0) {
-        setError(`${file.name} has no valid schedule rows and was not added.`)
-        continue
-      }
-      additions.push({
-        id: crypto.randomUUID(),
-        label: file.name.replace(/\.(csv|xlsx?)$/i, ''),
-        fileName: file.name,
-        events,
-      })
+  useEffect(() => {
+    if (!sidebarOpen && !addProfileOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      if (addProfileOpen) closeAddProfile()
+      else setSidebarOpen(false)
     }
-    const nextAssistants = [...assistants, ...additions]
-    setAssistants(nextAssistants)
-    setResult(null)
-    saveAssistantData(nextAssistants, null)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [addProfileOpen, sidebarOpen])
+
+  const addStudentAssistant = async (event: FormEvent) => {
+    event.preventDefault()
+    setProfileError('')
+    const lastName = profileForm.lastName.trim()
+    const firstName = profileForm.firstName.trim()
+    const middleName = profileForm.middleName.trim()
+    if (!lastName || !firstName || !profileFile) {
+      setProfileError('Enter the student’s first and last name and choose a class schedule file.')
+      return
+    }
+    try {
+      const parsed = await readScheduleFile(profileFile, 'assistant')
+      const studentId = parsed.studentId?.trim() ?? ''
+      if (!studentId) {
+        setProfileError('Student ID could not be found in the uploaded schedule.')
+        return
+      }
+      if (assistants.some(assistant => assistant.studentId?.trim().toLocaleLowerCase() === studentId.toLocaleLowerCase())) {
+        setProfileError(`Student ID ${studentId} has already been added.`)
+        return
+      }
+      if (parsed.events.length === 0) {
+        setProfileError('The uploaded file has no valid schedule rows.')
+        return
+      }
+      const assistant: UploadedAssistant = {
+        id: crypto.randomUUID(),
+        label: [lastName, firstName, middleName].filter(Boolean).join(', '),
+        fileName: profileFile.name,
+        events: parsed.events,
+        studentId,
+        lastName,
+        firstName,
+        middleName: middleName || undefined,
+      }
+      const nextAssistants = [...assistants, assistant]
+      setAssistants(nextAssistants)
+      setSelectedAssistantId(assistant.id)
+      setResult(null)
+      saveAssistantData(nextAssistants, null)
+      closeAddProfile()
+    } catch (uploadFailure) {
+      setProfileError(uploadFailure instanceof Error ? uploadFailure.message : 'Could not read the class schedule file.')
+    }
   }
 
   const runSolver = async () => {
@@ -166,123 +218,61 @@ export function StudentAssistantPanel({
 
   return (
     <section className="sa-panel">
-      <div className="section-heading">
-        <div>
-          <h2>Student Assistant Scheduler</h2>
+      <header className="sa-schedule-toolbar">
+        <button className="sa-menu-button" type="button" aria-label="Open student assistants" onClick={() => setSidebarOpen(true)}>☰</button>
+        <div className="sa-selected-heading">
+          <h2>{selectedAssistant ? assistantDisplayName(selectedAssistant) : 'Student Assistant Scheduler'}</h2>
+          <span>{selectedAssistant?.studentId || (assistants.length > 0 ? 'Student ID unavailable' : 'No student assistants added')}</span>
         </div>
-      </div>
-
-      <div className={`sa-main-status ${mainSchedule.length > 0 ? 'ready' : ''}`}>
-        <strong>Main class schedule</strong>
-        <span>
-          {mainSchedule.length > 0
-            ? `${mainScheduleName || 'Imported schedule'} · ${mainSchedule.length} class rows`
-            : 'Upload the main class schedule in the Schedule tab first.'}
-        </span>
-      </div>
-      <div className="sa-upload">
-        <label className="btn-primary">
-          Add assistant schedules
-          <input type="file" accept=".csv,.xls,.xlsx,text/csv" multiple onChange={uploadAssistants} hidden />
-        </label>
-        <span>{assistants.length} assistant{assistants.length === 1 ? '' : 's'} added</span>
-      </div>
-
-      <div className="sa-file-list">
-        {assistants.length === 0 && (
-          <p className="empty-state">Add one schedule file per student assistant. The filename is used as the assistant label.</p>
-        )}
-        {assistants.map(assistant => (
-          <article className="sa-file-card" key={assistant.id}>
-            <div>
-              <input
-                aria-label={`Name for ${assistant.fileName}`}
-                value={assistant.label}
-                onChange={event => {
-                  const nextAssistants = assistants.map(item =>
-                    item.id === assistant.id ? { ...item, label: event.target.value } : item,
-                  )
-                  setAssistants(nextAssistants)
-                  setResult(null)
-                  saveAssistantData(nextAssistants, null)
-                }}
-              />
-              <small>{assistant.fileName}</small>
-            </div>
-            <button
-              className="btn-danger"
-              type="button"
-              onClick={() => {
-                const nextAssistants = assistants.filter(item => item.id !== assistant.id)
-                setAssistants(nextAssistants)
-                setResult(null)
-                saveAssistantData(nextAssistants, null)
-              }}
-            >
-              Remove
-            </button>
-          </article>
-        ))}
-      </div>
+        <div className="sa-toolbar-actions">
+          <span className={mainSchedule.length > 0 ? 'ready' : ''}>{mainSchedule.length > 0 ? mainScheduleName || 'Main schedule uploaded' : 'No main schedule uploaded'}</span>
+          <button className="btn-primary" type="button" disabled={solving || mainSchedule.length === 0 || assistants.length === 0} onClick={() => void runSolver()}>{solving ? 'Creating schedule…' : 'Create optimized schedule'}</button>
+        </div>
+      </header>
 
       {error && <p className="form-error">{error}</p>}
-      <button
-        className="btn-primary sa-solve"
-        type="button"
-        disabled={solving || mainSchedule.length === 0 || assistants.length === 0}
-        onClick={() => void runSolver()}
-      >
-        {solving ? 'Creating schedule…' : 'Create optimized schedule'}
-      </button>
+      {result && <div className={`sa-result-status ${result.status.toLowerCase()}`}><strong>{result.status === 'OPTIMAL' || result.status === 'FEASIBLE' ? 'Schedule created' : 'No valid schedule found'}</strong></div>}
+      {visibleDiagnostics.length > 0 && <ul className="sa-diagnostics">{visibleDiagnostics.map(message => <li key={message}>{message}</li>)}</ul>}
 
-      {result && (
-        <div className="sa-results">
-          <div className={`sa-result-status ${result.status.toLowerCase()}`}>
-            <strong>{result.status === 'OPTIMAL' || result.status === 'FEASIBLE'
-              ? 'Schedule created'
-              : 'No valid schedule found'}</strong>
-          </div>
-
-          {visibleDiagnostics.length > 0 && (
-            <ul className="sa-diagnostics">
-              {visibleDiagnostics.map(message => <li key={message}>{message}</li>)}
-            </ul>
-          )}
-
-          {selectedAssistant && (
-            <div className="sa-calendar-section">
-              <div className="sa-calendar-switcher">
-                <div>
-                  <h3>Weekly Schedule</h3>
-                  <p>
-                    {selectedAssistantTotal
-                      ? `${selectedAssignedHours.toFixed(1).replace(/\.0$/, '')} hours assigned · ${selectedRemainingHours.toFixed(1).replace(/\.0$/, '')} hours remaining capacity`
-                      : 'Switch assistants to view personal classes and assigned duties.'}
-                  </p>
-                </div>
-                <label>
-                  Student assistant
-                  <select
-                    value={effectiveSelectedAssistantId}
-                    onChange={event => setSelectedAssistantId(event.target.value)}
-                  >
-                    {assistants.map(assistant => (
-                      <option value={assistant.id} key={assistant.id}>
-                        {assistant.label || assistant.fileName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <AssistantWeeklyCalendar
-                assistant={selectedAssistant}
-                assignments={selectedAssignments}
-              />
+      {selectedAssistant ? (
+        <div className="sa-calendar-section">
+          <div className="sa-calendar-switcher">
+            <div>
+              <h3>Weekly Schedule</h3>
+              <p>{selectedAssistantTotal ? `${selectedAssignedHours.toFixed(1).replace(/\.0$/, '')} hours assigned · ${selectedRemainingHours.toFixed(1).replace(/\.0$/, '')} hours remaining capacity` : 'Personal class schedule'}</p>
             </div>
-          )}
-
+          </div>
+          <AssistantWeeklyCalendar assistant={selectedAssistant} assignments={selectedAssignments} />
         </div>
+      ) : (
+        <div className="sa-empty-schedule"><strong>No student assistants added</strong><button className="btn-primary" type="button" onClick={() => setAddProfileOpen(true)}>Add Student Assistant</button></div>
       )}
+
+      {sidebarOpen && <div className="sa-sidebar-backdrop" role="presentation" onMouseDown={() => setSidebarOpen(false)}><aside className="sa-sidebar" aria-label="Student assistants" onMouseDown={event => event.stopPropagation()}>
+        <button className="sa-sidebar-selected" type="button">
+          <span className="sa-avatar">{selectedAssistant?.firstName?.[0]?.toLocaleUpperCase() ?? 'SA'}</span>
+          <span><strong>{selectedAssistant ? assistantDisplayName(selectedAssistant) : 'Student Assistants'}</strong><small>{selectedAssistant?.studentId || 'No student selected'}</small></span>
+          <b>⌄</b>
+        </button>
+        <button className="sa-add-assistant" type="button" onClick={() => { setSidebarOpen(false); setAddProfileOpen(true) }}><span>＋</span>Add Student Assistant</button>
+        <h3>Student Assistants</h3>
+        <div className="sa-sidebar-list">
+          {assistants.length === 0 && <p>No student assistants added.</p>}
+          {assistants.map(assistant => <button className={assistant.id === effectiveSelectedAssistantId ? 'selected' : ''} type="button" key={assistant.id} onClick={() => { setSelectedAssistantId(assistant.id); setSidebarOpen(false) }}><span className="sa-avatar">{assistant.firstName?.[0]?.toLocaleUpperCase() ?? assistant.label[0]?.toLocaleUpperCase() ?? 'SA'}</span><span><strong>{assistantDisplayName(assistant)}</strong><small>{assistant.studentId || 'Student ID unavailable'}</small></span></button>)}
+        </div>
+        <button className="sa-sidebar-settings" type="button"><span aria-hidden="true">⚙</span><strong>Scheduling Settings</strong><b aria-hidden="true">›</b></button>
+      </aside></div>}
+
+      {addProfileOpen && <div className="sa-profile-backdrop" role="presentation" onMouseDown={closeAddProfile}><form className="sa-profile-form" onSubmit={addStudentAssistant} onMouseDown={event => event.stopPropagation()}>
+        <div className="sa-profile-heading"><h3>Add Student Assistant</h3><button type="button" aria-label="Close" onClick={closeAddProfile}>×</button></div>
+        {profileError && <p className="form-error">{profileError}</p>}
+        <label>Last name *<input value={profileForm.lastName} onChange={event => setProfileForm(current => ({ ...current, lastName: event.target.value }))} /></label>
+        <label>First name *<input value={profileForm.firstName} onChange={event => setProfileForm(current => ({ ...current, firstName: event.target.value }))} /></label>
+        <label>Middle name<input value={profileForm.middleName} onChange={event => setProfileForm(current => ({ ...current, middleName: event.target.value }))} /></label>
+        <label>Class schedule *<input type="file" accept=".csv,.xls,.xlsx,text/csv" onChange={event => setProfileFile(event.target.files?.[0] ?? null)} /></label>
+        {profileFile && <small className="sa-selected-file">{profileFile.name}</small>}
+        <div className="sa-profile-actions"><button className="btn-secondary" type="button" onClick={closeAddProfile}>Cancel</button><button className="btn-primary" type="submit">Add Student</button></div>
+      </form></div>}
     </section>
   )
 }

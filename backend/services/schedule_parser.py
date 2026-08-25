@@ -238,6 +238,20 @@ ASSISTANT_HEADERS = {
 }
 
 
+def extract_student_id(rows: list[list[str]]) -> str:
+    labels = {"studentid", "studentnumber", "studentno", "idnumber"}
+    for row_index, row in enumerate(rows[:50]):
+        for column_index, cell in enumerate(row):
+            if header_key(cell) not in labels:
+                continue
+            same_row = next((clean(value) for value in row[column_index + 1:] if clean(value)), "")
+            if same_row:
+                return same_row
+            if row_index + 1 < len(rows) and column_index < len(rows[row_index + 1]):
+                return clean(rows[row_index + 1][column_index])
+    return ""
+
+
 def _parse_assistant_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
     """Parse personal class schedules using headers rather than column positions."""
     if not isinstance(raw_rows, list):
@@ -261,7 +275,9 @@ def _parse_assistant_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
             break
 
     if header_row_index < 0:
-        return _parse_legacy_schedule_rows(raw_rows)
+        result = _parse_legacy_schedule_rows(raw_rows)
+        result["studentId"] = extract_student_id(rows)
+        return result
 
     def value(row: list[str], field: str) -> str:
         column_index = header_indexes.get(field)
@@ -288,7 +304,7 @@ def _parse_assistant_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
             "room": "",
             "studentCount": "",
         })
-    return {"events": events, "tbaSubjects": []}
+    return {"events": events, "tbaSubjects": [], "studentId": extract_student_id(rows)}
 
 
 def _parse_official_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:

@@ -24,6 +24,7 @@ export interface CalendarEvent {
 export interface ScheduleImportResult {
   events: CalendarEvent[]
   tbaSubjects: string[]
+  studentId?: string
 }
 
 export interface ScheduleConflict {
@@ -60,6 +61,10 @@ export interface UploadedAssistant {
   label: string
   fileName: string
   events: CalendarEvent[]
+  studentId?: string
+  lastName?: string
+  firstName?: string
+  middleName?: string
 }
 
 declare global {
