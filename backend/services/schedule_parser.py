@@ -239,10 +239,18 @@ ASSISTANT_HEADERS = {
 
 
 def extract_student_id(rows: list[list[str]]) -> str:
-    labels = {"studentid", "studentnumber", "studentno", "idnumber"}
+    labels = {"studentid", "studentnumber", "studentno", "idnumber", "idno"}
     for row_index, row in enumerate(rows[:50]):
         for column_index, cell in enumerate(row):
-            if header_key(cell) not in labels:
+            label = header_key(cell)
+            if label not in labels:
+                continue
+            if label == "idno":
+                for following_row in rows[row_index + 1:]:
+                    if column_index < len(following_row):
+                        student_id = clean(following_row[column_index])
+                        if student_id:
+                            return student_id
                 continue
             same_row = next((clean(value) for value in row[column_index + 1:] if clean(value)), "")
             if same_row:

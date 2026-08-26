@@ -1,0 +1,304 @@
+P0010	[normal]	Central Philippine University
+P0011	[normal]	College of Computer Studies
+P0012	[normal]	Lopez Jaena St., Jaro Iloilo City
+P0014	[normal]	Automated Laboratory Scheduling System for the College of Computer Studies Using Lexicographic Multi-Criteria Sorting and Constraint-Based CP-SAT Solver
+P0017	[normal]	Submitted By:
+P0018	[normal]	Vincent Kitkat A. Bertulfo
+P0019	[normal]	Ben Antonio B. Belga
+P0020	[normal]	Franc Jirah J. Besa
+P0021	[normal]	Christian G. Hautea
+P0023	[normal]	TABLE OF CONTENTS
+P0024	[normal]	Chapter 1
+P0025	[normal]	Overview of the current system............................................................................... 3
+P0026	[normal]	Statement of the Problem........................................................................................ 4
+P0027	[normal]	General Objective.................................................................................................... 5
+P0028	[normal]	Theoretical Framework of the Study........................................................................ 6
+P0029	[normal]	Conceptual Framework of the Study........................................................................ 9
+P0030	[normal]	Scope and Limitations of the Study........................................................................ 11
+P0031	[normal]	Significance of the Study....................................................................................... 12
+P0032	[normal]	Chapter 2
+P0033	[normal]	Review of Related Literature.................................................................................. 13
+P0034	[normal]	Chapter 3
+P0035	[normal]	Methodology...........................................................................................................19
+P0036	[normal]	Reference..................................................................................................................... 21
+P0041	[normal]	Chapter 1
+P0043	[normal]	Overview of the current system
+P0045	[normal]	The scheduling of laboratory assistants has become increasingly important due` to the growing complexity of academic programs and the need to efficiently meet course requirements and student availability (Shelar et al., 2025). In many higher education institutions, including the College of Computer Studies at Central Philippine University (CPU), manual scheduling methods using spreadsheets remain the primary approach. Department administrators and administrative staff manually input assistant availability, assign shifts, and resolve scheduling conflicts through Microsoft Excel. This traditional approach heavily depends on personal judgment and experience, which often leads to human errors, overlapping assignments, and unequal workload distribution. Similar laboratory requirements and overlapping time slots increase the difficulty of producing accurate and balanced schedules (Shelar et al., 2025).
+P0046	[normal]	The key feature of this system is its ability to directly address the specific problems caused by manual scheduling at CPU's College of Computer Studies. Overlapping assignments are eliminated through hard constraints enforced by the CP-SAT solver, which ensures that no instructor or student assistant is scheduled in two places at the same time and that no room is double booked during the same period. Unequal workload distribution is addressed in the student assistant scheduling phase, where the system first maximizes the number of sessions covered and then distributes the remaining workload evenly across available assistants based on their class schedules, room qualifications, and weekly hour limits. Human error is reduced by removing manual input from the scheduling process entirely. Administrators configure the rules once and the system generates a schedule that satisfies all constraints automatically. When sudden changes occur such as a student assistant withdrawal, administrators can update the availability and regenerate the schedule without having to manually check every affected slot.
+P0047	[normal]	Statement of the problem
+P0048	[normal]	The College of Computer Science uses laboratory assistants to open the laboratories used in classes and provide technical assistance during laboratory-based classes.  Currently, the process of matching class schedules with the availability of laboratory assistants is handled through manual methods.
+P0050	[normal]	However, the process of manually scheduling is plagued by several issues:
+P0052	[normal]	Laboratory room and assistant scheduling at the College of Computer Studies in Central Philippine University (CPU) is done manually using spreadsheets, which can lead to errors such as overlapping schedules and incorrect assignments.
+P0053	[normal]	The current scheduling process does not automatically enforce constraints such as assistant availability and maximum workload limits, which may result in an unequal distribution of laboratory duties among assistants.
+P0054	[normal]	It is difficult to quickly arrange a replacement schedule when a laboratory assistant is absent, since there is no system that automatically identifies and assigns an available reliever for the duty hours.
+P0055	[normal]	Identifying vacant rooms for special events, examinations, and other school activities, including the proper assignment of work students, is challenging due to the lack of a centralized scheduling system.
+P0056	[normal]	There is no automated scheduling system that applies rules and priorities to create balanced and efficient laboratory assistant schedules and room assignments.
+P0058	[normal]	General Objective
+P0060	[normal]	To develop an Automated Laboratory Scheduling System for the College of Computer Studies using Lexicographic Multi-Criteria Sorting and Constraint-Based Scheduling to generate optimized, conflict-free, fair, and efficient schedules for laboratory rooms, instructors, and student assistants.
+P0062	[normal]	Specific Objective
+P0065	[normal]	To design and develop an automated scheduling system for laboratory assistants for the College of Computer Studies.
+P0067	[normal]	To design a workload-balancing and constraint-management module to enforce scheduling constraints on work students/laboratory assistants' availability, maximum workload, and equitable distribution of laboratory duties.
+P0069	[normal]	To develop a reliever assignment and schedule adjustment module to identify available laboratory assistants and generate replacement schedules when an assigned assistant is absent.
+P0071	[normal]	To design an event management module that will identify the vacant rooms available for an event, manage schedules, and assign available laboratory assistants.
+P0073	[normal]	To integrate the Constraint-Based CP-SAT Solver algorithm to provide a balanced workload and schedule for laboratory assistants.
+P0078	[normal]	Theoretical Framework of the Study
+P0081	[normal]	Figure 1. Theoretical Framework
+P0082	[Heading 3]	Task-Technology Fit (TTF) framework offers insight into how technology gets adopted and used by their users with the emphasis on which the features of the system assist in the accomplishment of the tasks that users should complete. The utilization of this framework with regard to the laboratory assistant scheduling with reference to how useful an automated scheduling system can be when developed to suit the distinct tasks, operation rules, and constraints of the College of Computer Studies.
+P0085	[Heading 3]	Task Characteristics
+P0086	[Heading 3]	The task characteristics in laboratory assistant scheduling involve important activities that ensure smooth laboratory operations.  Ensuring that every lab session has staff members, by appointing the lab assistants in classes. Scheduling conflicts and overlaps can be avoided and make sure that lab assistants are present when they are required and there are no time conflicts. Fairly allocating the work to the assistants ensures that each one has the same amount of work to be done making them more pleasant and responsible. It is worth working in accordance with the university requirements regarding working hours and duties, and the recent research supports this point. To illustrate, Joe (2025) demonstrated that academic scheduling is a semi-structured issue which must consider a series of constraints and priorities in an attempt to develop workable and effective schedules.
+P0088	[Heading 3]	Technology Characteristics
+P0089	[Heading 3]	The technological characteristics features of the proposed system are centered on those features that directly assist in these scheduling functions. Lexicographic Multi-Criteria Sorting (LMCS) is aimed at prioritizing the scheduling requirements like specialization, workload balancing and availability. One of the most popular is Constraint-Based Scheduling (CBS) that pays attention to any assignments that avoid conflicts or do not cross the limits of work hours. Overlapping schedules are found and fixed by Automated Conflict Resolution. The application has a user-friendly interface enabling the administrators, assistants and instructors access schedules easily. Recent studies believe that the efficiency and the flexibility of automated scheduling systems are enhanced by multi-criteria decision-making and constraint-based approaches when applied to academic environments (Thenarasu et al., 2023; Bashab et al., 2023). These, when combined, provide a precise and systematic method of scheduling of the lab that reduces the amount of manual work.
+P0091	[Heading 3]	Performance Impact
+P0092	[Heading 3]	A combination of technological and task characteristics produces quantifiable changes in the functions of the laboratories. Less human error ensures the accuracy of schedules. Administrators create conflict free schedules with reduced time. Increased openness and equity translate to equal distribution of work. As offers are dynamic, you will have more flexibilities to work on changes on short notice like an absentee who has announced their absence or changing of a schedule. Better management is achieved through improved efficiency of operations in the laboratory as a whole.
+P0094	[Heading 3]	Utilization
+P0095	[Heading 3]	Users can improve the work of laboratories through the engagement with the system. The system is efficient in enabling administrators to create, modify and monitor schedules. Laboratory assistants have free access to schedules and this ensures accountability, openness and understandability. This will benefit the faculty members as there will be enough staffing of the laboratories.
+P0097	[Heading 3]	Conceptual Framework of the Study
+P0099	[normal]	Figure 2. Conceptual Framework
+P0100	[normal]	The proposed framework of this study integrates automated scheduling, lexicographic multi-criteria sorting, and constraint-based scheduling to generate optimized, conflict-free, and fair laboratory assistant schedules in the College of Computer Studies. The system prioritizes scheduling criteria and enables communication among administrators, professors, and student assistants for efficient laboratory operations (Shelar et al., 2025; Zhang et al., 2024; Deris et al., 1999).
+P0102	[normal]	Admin
+P0103	[normal]	The administrator functions as the highest-level authority within the system. In information systems theory, administrative roles are responsible for defining system policies, enforcing constraints, and managing user access controls.
+P0104	[normal]	In this study, the administrator can input the schedule.
+P0106	[normal]	Professor
+P0107	[normal]	Professors act as system stakeholders who provide scheduling requirements and coordinate laboratory support. In workflow-based systems, role-specific users interact with operational modules to submit structured requirements and monitor assigned resources.
+P0108	[normal]	In this study, professors can ping students to request assistance as well as cancel class, which removes the student assistant from the current schedule.
+P0110	[normal]	Student Assistants
+P0111	[normal]	Student Assistants are operational end-users within the scheduling environment. In workforce management systems, employees provide availability data and receive optimized task assignments based on system constraints.
+P0112	[normal]	In this study, student assistants submit availability and preferences, view assigned shifts, monitor accumulated hours, and initiate swap requests. Their interaction data becomes input to the scheduling optimization process.
+P0114	[normal]	Lexicographic Multi-Criteria Sorting
+P0115	[normal]	Lexicographic optimization ranks feasible solutions according to strictly ordered priorities, ensuring that higher-level objectives are satisfied before considering lower-level ones (Bärmann et al., 2024).
+P0116	[normal]	In this study, scheduling objectives are prioritized as follows:
+P0117	[normal]	Availability
+P0118	[normal]	Workload
+P0119	[normal]	Scheduled preference
+P0120	[normal]	This ensures equitable and academically continuous scheduling outcomes.
+P0122	[normal]	Constraint-Scheduling
+P0123	[normal]	Constraint-based scheduling models scheduling as a Constraint Satisfaction Problem (CSP). Hard constraints filter out infeasible solutions, while soft constraints guide optimization to produce feasible, fair, and prioritized schedules (Barták, 2003).
+P0124	[normal]	Database
+P0125	[normal]	The database stores structured data such as user profiles, availability, lab schedules, swap history, and messaging logs. It enables secure storage, data retrieval, historical review, and multi-user access (Elmasri & Navathe, 2016).
+P0128	[normal]	Scope and Limitations of the Study
+P0129	[normal]	The study will be focusing on assigning laboratory assistants to laboratory classes  in the College of Computer Studies. and uses Constraint-Based Scheduling method to avoid schedule conflicts and ensure that there are no overlapping schedules.
+P0130	[normal]	The system allows administrators to view the availability of laboratory assistants at specific time slots; it aims to improve the current manual scheduling process by providing a more organized, accurate, and efficient scheduling system for the college.
+P0131	[normal]	The system depends on the accuracy of the data entered by the administrator. Any sudden changes, such as unexpected absences, must be handled manually. Additionally, the system follows predefined scheduling rules and constraints.
+P0132	[normal]	Significance of the Study
+P0133	[normal]	The proposed Automated Laboratory Assistant Scheduling System for the College of Computer Studies at Central Philippine University is significant to the following:
+P0134	[normal]	The College of Computer Studies -  The system offers more organized and manageable scheduling for laboratory assistants. The college can save time and effort by using the system to automatically create schedules rather than doing everything  manually. Furthermore, it can help prevent scheduling conflicts and ensure that tasks are distributed properly among laboratory assistants, which will improve the efficiency of laboratory operations as a whole.
+P0135	[normal]	Laboratory Administrators and Faculty - The system makes it easier for administrators to make schedules that are well-organized and free of conflicts. It automatically arranges assignments according to important requirements and guidelines using automated scheduling techniques. This saves time, prevents errors from manual scheduling, and facilitates checking and updating schedules as needed.
+P0136	[normal]	Laboratory Assistants - The system helps in making sure everyone's work is distributed fairly and transparently. Lab assistants have easy access to their schedules and their completed hours. This prevents misunderstandings and ensures that tasks are distributed fairly.
+P0137	[normal]	Future Researchers and Developers -  Future researchers and developers who are interested in researching automated scheduling systems and automated decision-making tools can use this study as a guide. It demonstrates how different scheduling guidelines and sorting techniques can be applied to address actual issues in schools, especially when it comes to scheduling laboratory assistants.
+P0139	[normal]	Chapter 2
+P0140	[normal]	Review of Related Literature
+P0141	[normal]	Keh and Sarmiento (2025) proposed an automatic scheduling system for Aemilianum College Inc. that allows for effective management of faculty loads and creation of balanced timetables while detecting any conflict. The software was designed to replace the college’s manual scheduling processes and includes various features for effective scheduling. The study supports the idea of implementing automated scheduling, as it shows the inefficiency of the manual process due to the complexity of managing and balancing schedules and the benefits of using automated scheduling.
+P0143	[normal]	Brenndoerfer (2025) presented a guide on applying Google OR-Tools’ CP-SAT solver to workforce rostering problems. The guide showcased how using complex employee scheduling can be modeled using binary decision-making for assigning shifts alongside taking hard and soft constraints into account. It showed how CP-SAT combines constraint programming with SAT solvers to produce a solution to employee shift scheduling and assignment. The guide also highlighted that CP-SAT is suited for rostering problems, as it can handle feasibility and optimization simultaneously. The literature shows that using CP-SAT to efficiently solve scheduling problems can be applied to effectively scheduling lab assistants with constraints.
+P0145	[normal]	Lozano and Contreras (2022) examined the problem of resource allocation and utilized a lexicographic goal programming approach to solve this issue. The researchers applied this system using the Spanish public university system. In applying this model and system, the researchers found that their lexGP approach led to solutions that were better able to meet the goals of the college and the individuals within each unit compared to those that utilized non-centralized approaches. This supports the study's use of lexicographic multi-criteria sorting, as it demonstrates how prioritizing objectives in a strict hierarchical sequence produces fairer and effective allocations in scheduling.
+P0147	[normal]	Sungur and Yilmaz (2023) proposed an integrated lexicographic goal programming and dynamic function model to address the nurse scheduling problem. The model was designed to provide a balanced and fair automated schedule by considering two aspects, such as a dynamic aspect that allows for adjustment for unexpected changes and a satisfaction aspect that accounts for decision-maker preferences when assigning a surplus or shortage of staff to shifts. The goal of the model is to ensure the workloads were evenly and fairly distributed while still complying with hospital regulations. It shows that the approach successfully produced fair and balanced schedules. This study supports the use of lexicographic multi-criteria sorting, as it shows the effectiveness of lexicographic goal programming for personnel scheduling multiple competing  criteria, directly applicable to scheduling laboratory assistants where fair workload distribution must be satisfied in a strict priority order.
+P0149	[normal]	Abdulov et al. (2024) developed an automated scheduling system designed to generate optimized timetables without conflicts for academic institutions. The system uses algorithms combined with multi-objective optimization to assign faculty, courses, and rooms to available time slots while avoiding schedule conflicts such as faculty being assigned to multiple classes at the same time. The system considered multiple constraints, including room availability, instructor availability, and student preferences, to produce balanced and efficient timetables. Results showed that automating the creation of timetables reduced the time and effort used by staff while improving the overall quality and fairness of the schedules. This study supports the present study's goal of replacing manual scheduling with an automated system, as it shows how applying optimization algorithms and constraint handling in academic scheduling effectively eliminates conflicts and improves resource allocation.
+P0151	[normal]	Wang et al. (2024) conducted a study to use an approach to solve the employee scheduling problem that uses hard and soft constraints in assigning employee shifts. The study used a hard constraint control mechanism to enforce scheduling rules such as maximum working days and a strategy to accommodate soft constraints related to individual work time preferences and workload demands. The approach used a pairwise allocation strategy to find suitable employee combinations while following scheduling rules. Results showed that the method was more effective and efficient than existing baseline approaches in producing balanced schedules. This information is relevant to the study as it supports the idea of using hard and soft constraints in automated scheduling, which is the same method used in the proposed system.
+P0152	[normal]	Summary
+P0153	[normal]	The researchers want to apply the following algorithms for the system: lexicographic multi-criteria sorting to prioritize scheduling criteria in a strict hierarchical order and constraint-based scheduling to enforce hard and soft constraints to generate conflict-free laboratory assistant schedules.
+P0154	[normal]	Table 1. Matrix of the Studies and System
+P0157	[normal]	Legend:
+P0158	[normal]	A – Automated Class Scheduling System for Aemilianum College Inc.
+P0159	[normal]	B – CP-SAT Rostering: Complete Guide to Constraint Programming for Workforce Scheduling
+P0160	[normal]	C – Centralised Resource Allocation Using Lexicographic Goal Programming: Application to the Spanish Public University System
+P0161	[normal]	D – An Integrated Lexicographic Goal Programming and Dynamic Satisfaction Function Model for Effective Nurse Scheduling
+P0162	[normal]	E – Optimizing the Scheduling of Teaching Activities in a Faculty
+P0163	[normal]	F – A Fast-Flexible Strategy Based Approach to Solving Employee Scheduling Problem Considering Soft Work Time
+P0164	[normal]	G – Proposed System: Automated Laboratory Assistant Scheduling System
+P0166	[normal]	The table shows that the studies selected contain systems that feature functions such as Fair work load distribution and automatic scheduling. However only a handful of systems contain crucial components such as lexicographical sorting and constraint based schedule.
+P0167	[normal]	The proposed system stands out by integrating all seven features combining lexicographic sorting and constraint scheduling with dynamic adjustment and workload balancing to deliver a comprehensive, conflict-free scheduling solution for laboratory assistant management.
+P0172	[normal]	Chapter 3
+P0173	[normal]	Methodology
+P0175	[normal]	Figure 3. Kanban Methodology
+P0176	[normal]	In this study we will use Kanban methodology. Kanban is a visual workflow management system designed to help teams manage and organize their development tasks by providing full transparency of work and real-time communication capacity (Radigan, n.d.). It is a continuous flow-based model that allows tasks to be moved if there is an available capacity. Its primary objective is to improve software development cycles through workflow visualization and optimizing the flow of tasks from start to completion (Ahmed et al. 2024).
+P0178	[normal]	The Kanban methodology enables teams to divide tasks into smaller and manageable tasks (Adobe, n.d.). This allows small teams to manage tasks as efficiently as possible due to tasks being divided for each member and due to the fact that it has no time constraints. This methodology was selected by the researchers as it best fits the small team composition of this study, ensuring that development tasks are distributed effectively, progress remains transparent, and the system is delivered continuously and incrementally throughout the development process (Ahmed et al., 2024).
+P0180	[normal]	To Do
+P0181	[normal]	Establish a database to categorize laboratory assistance.
+P0182	[normal]	Polish UI for system
+P0183	[normal]	Create local storage to contain schedules and to store messages
+P0184	[normal]	Creating logic for scheduling
+P0185	[normal]	Lexicographic Multi-Criteria Sorting implementation
+P0186	[normal]	Constraint-Based Scheduling implementation
+P0187	[normal]	Bug fixing and final revisions
+P0188	[normal]	Doing
+P0189	[normal]	-	UI planning and design
+P0190	[normal]	Done
+P0191	[normal]	-   System planning
+P0195	[normal]	Use-Case Diagram of the Proposed System
+P0196	[normal]	Figure 4. Use-Case Diagram
+P0197	[normal]	The use case diagram presents the interaction between the system and its three primary actors which is the Admin, Instructor, and Student Assistant. Each actor has a defined set of functions based on their role in the automated laboratory scheduling system.
+P0199	[normal]	The Admin is the central user of the system and is responsible for all data management and scheduling operations. The Admin logs in and manages subjects, rooms, and room type classifications to configure the scheduling environment. The Admin manages instructors, which extends to setting instructor availability windows, applying floor restrictions for instructors who cannot access upper floors, assigning subjects to instructors, and setting a preferred start time per assignment. These extensions mean that managing an instructor is not just adding a name, it covers all the constraints the solver needs to generate a valid and preference-aware schedule. The Admin also manages student assistants, which extends to setting SA blocked timeslots based on their existing class schedule so the solver knows when they are unavailable. When all data is configured, the Admin runs the solver, which includes viewing the full schedule as a direct result and also includes dynamic rescheduling as a follow-on action when changes need to be applied. The Admin can also clear the schedule at any time to allow a fresh solver run.
+P0201	[normal]	The Instructor logs in and can view their own schedule, which was generated based on their configured availability and preferred time. The Instructor can also message a Student Assistant directly through the system to coordinate session coverage when needed.
+P0203	[normal]	The Student Assistant logs in and views their assigned schedule. Their assignments are produced by the solver after checking their blocked timeslots, verifying they are within their weekly hour limit, and distributing duties fairly across all available assistants.
+P0204	[normal]	Sequence Diagram of the Proposed System 
+                                Figure 5. Sequence Diagram
+P0205	[normal]	The sequence diagram presents the step-by-step interaction between the Admin, Instructor, Student Assistant, Frontend, Flask API, Database, and CP-SAT Solver across five main processes.
+P0207	[normal]	Authentication
+P0208	[normal]	The process begins when the Admin, Instructor, or Student Assistant logs into the system through the frontend. The frontend sends the credentials to the Flask API, which checks them against the database. Once validated, the user role is returned and the user is redirected to their respective dashboard.
+P0210	[normal]	Configuration
+P0211	[normal]	After authentication, the Admin configures all scheduling data by adding subjects, rooms, instructors, and student assistants through the frontend. The frontend sends each entry to the Flask API, which stores the data in the database and confirms that it was saved successfully.
+P0213	[normal]	Phase 1: Instructor Scheduling
+P0214	[normal]	The Admin triggers the solver by clicking Run Solver. The frontend sends a request to the Flask API, which fetches all required data from the database and passes it to the CP-SAT Solver. The solver generates candidate blocks, applies constraints such as room type, capacity, floor restrictions, and availability, then runs in two stages. Stage 1 finds a feasible solution and Stage 2 minimizes deviation from the instructor's preferred time. The resulting assignments are returned to the API and saved to the database.
+P0216	[normal]	Phase 2: SA Assignment
+P0217	[normal]	Immediately after Phase 1, the API triggers the SA assignment pass. The solver runs lexicographic multi-criteria sorting in two stages — Stage 1 maximizes the number of sessions covered by available student assistants, and Stage 2 balances the workload evenly among them. The SA assignments are returned, saved to the database, and the complete schedule is displayed to the Admin.
+P0219	[normal]	Schedule Viewing
+P0220	[normal]	The Instructor logs in and requests their schedule. The frontend fetches only the sessions assigned to that instructor from the API and displays them. The Student Assistant logs in and requests their assigned sessions. The frontend fetches only the SA assignments linked to that student assistant and displays them.
+P0224	[normal]	Dynamic Rescheduling
+P0225	[normal]	When a change occurs, the Admin updates the relevant data and triggers a rerun. The frontend clears the existing schedule and sends a new solver request. The API repeats Phase 1 and Phase 2 with the updated data and returns a new conflict-free schedule for display.
+P0227	[normal]	Activity Diagram of the Proposed System
+P0228	[normal]	Figure 6. Activity Diagram(Administrator)
+P0229	[normal]	Figure illustrates the activity flow for the Admin, who is responsible for all data configuration and schedule generation. The process starts when the Admin logs in and is authenticated. Once inside, the Admin configures subjects, rooms, room types, instructors with their availability and floor restrictions, and student assistants with their blocked timeslots. After configuration, the Admin runs the solver. The system first validates the data and returns an error if something is missing or incorrect. If valid, Phase 1 generates the instructor and room schedule through the CP-SAT solver, checking feasibility first and then optimizing for preferred times. Phase 2 follows automatically, assigning student assistants using lexicographic sorting by maximizing session coverage first and then balancing workload. The Admin reviews the result and can clear and rerun if changes are needed.
+P0237	[normal]	Figure 7. Activity Diagram(Instructor)
+P0238	[normal]	Figure illustrates the activity flow for the Instructor, which covers schedule viewing and assistant coordination. The process starts when the Instructor logs in and is authenticated. Once inside, the Instructor views their generated schedule which was already built around their configured availability and preferred time. If the Instructor needs to coordinate with an assigned student assistant, they can send a message directly through the system before ending the session.
+P0243	[normal]	Figure 8. Activity Diagram(Student Assistant)
+P0244	[normal]	Figure illustrates the activity flow for the Student Assistant, which focuses on viewing assigned laboratory duties. The process starts when the Student Assistant logs in and is authenticated. Once inside, the Student Assistant views the sessions they have been assigned to. The assignments shown were already verified by the solver against their blocked timeslots, weekly hour limit, and workload distribution before the schedule was finalized.
+P0250	[normal]	Chapter IV
+P0255	[normal]	Automated Laboratory Scheduling System for the College of Computer Studies Using Lexicographic Multi-Criteria Sorting and Constraint-Based CP-SAT Solver
+P0258	[normal]	System Overview
+P0260	[normal]	Laboratory room and assistant scheduling at the College of Computer Studies is done manually using spreadsheets. This often leads to errors like overlapping schedules, wrong room assignments, and uneven workloads among assistants. There is no system that automatically checks rules like assistant availability or workload limits. Everything depends on the coordinator to catch mistakes.
+P0262	[normal]	The problems this causes are real. A scheduling conflict can disrupt an entire laboratory session. An overloaded assistant affects the quality of help that students receive. When an assistant is absent, finding a replacement means manually checking who is free, with no guarantee it gets resolved quickly. The current process is slow, error-prone, and puts too much pressure on the people managing it.
+P0264	[normal]	This system was built to fix that. It automatically assigns instructors, subjects, rooms, and student assistants to a weekly schedule. All rules are applied by the system. No instructor gets double-booked. Rooms are matched to the correct subject type. Sessions are placed within the instructor's available hours. Assistant workload is spread evenly across all assignments.
+P0266	[normal]	The system runs in two phases. The first phase builds the instructor and room schedule. It uses a CP-SAT solver from Google OR-Tools to apply hard rules and find the best match for each instructor's preferred time. The second phase assigns student assistants to the finished schedule. It uses lexicographic multi-criteria sorting, which means it first tries to cover as many sessions as possible, then spreads the workload fairly among assistants based on their class schedules, room qualifications, and hour limits.
+P0268	[normal]	The system is a desktop application built with Electron, React, TypeScript, Flask, and SQLite. It is designed to replace the spreadsheet process at CPU's College of Computer Studies with something faster, more reliable, and easier to manage.
+P0271	[normal]	The System
+P0273	[normal]	Figure 9. Subjects Page
+P0274	[normal]	The Subjects page allows the administrator to manage the subjects that will be included in the generated schedule. The user can add a subject by entering its code, name, hours per week, number of students, and room type. The room type determines what kind of room the subject will be assigned to during scheduling. Added subjects are displayed in a table below the form and can be removed at any time using the delete button.
+P0276	[normal]	Figure 10. Rooms Page
+P0278	[normal]	The Rooms page handles the management of rooms available for scheduling. A room is added by entering its name, seating capacity, selecting a room type, and selecting its floor, either Ground Floor or 2nd Floor. The floor information is used by the solver to respect instructor floor restrictions during room assignment. All added rooms are listed in a table showing the name, capacity, type, and floor. The lower section of the page manages room type classifications. Administrators can add new room types through a form, and each type is listed in a table with a delete button. A room type cannot be deleted if it is still assigned to an existing room or subject. .
+P0280	[normal]	Figure 11. Instructors Page
+P0281	[normal]	The Instructors page manages the instructors assigned to subjects in the schedule. An instructor is added by entering their name and selecting a floor restriction if applicable. Selecting ground floor only means the solver will only assign that instructor to rooms located on the ground floor, which accommodates instructors who are unable to access upper floors. Each instructor can be assigned one or more subjects with an optional preferred start time that the solver will try to match. Availability windows can also be set per instructor, either for all days or for a specific day, and these are enforced as hard constraints during schedule generation. The table displays each instructor's name, floor restriction, assigned subjects, and availability windows.
+P0283	[normal]	Figure 12. Schedule Page
+P0284	[normal]	The Schedule page is where the generated schedule is viewed and managed. Clicking the Run Solver button triggers the CP-SAT solver, which processes all configured data to produce a conflict-free schedule. The solver enforces room type matching, capacity requirements, floor restrictions, instructor availability, and no-overlap rules for both instructors and rooms. The result is displayed as a timetable grid organized by day, with time slots as rows and rooms as columns. Each filled cell shows the subject code, subject name, and assigned instructor. The schedule can be cleared at any time to allow a fresh run.
+P0288	[normal]	Physical Environment
+P0290	[normal]	The system is a desktop application, so it does not need an internet connection or a remote server to work. Everything runs on the local machine.
+P0292	[normal]	Electron holds the whole application together. It packages the React frontend and the Flask backend into a single program that can be installed and opened like any regular desktop app. When the application starts, Electron automatically launches Flask in the background so the scheduling logic and database operations are ready to go. Closing the application also shuts Flask down cleanly. The database is just a SQLite file sitting on the same machine, so there is nothing extra to install or configure on that side.
+P0294	[normal]	To get the project running during development, the machine needs Node.js and npm for the frontend, Python 3 and pip for the backend, and three Python packages that can be installed from the included requirements file. Those packages are Flask 3.0.3, Flask-CORS 4.0.1, and OR-Tools 9.10.4067. The OR-Tools package is what powers the CP-SAT solver.
+P0296	[normal]	The application can be built for Windows, macOS, and Linux. Windows produces a portable executable and an MSI installer, macOS produces a DMG file, and Linux produces an AppImage. The way Flask is shut down differs slightly between platforms. Windows uses a force kill command while macOS and Linux use a termination signal. Outside of that the codebase works the same across all three.
+P0298	[normal]	Hardware Specifications
+P0302	[normal]	Software Specifications
+P0304	[normal]	The software specifications identify the tools and technologies used in the development and deployment of the Automated Laboratory Scheduling System. These technologies support the desktop interface, backend data management, scheduling logic, and constraint-based optimization.
+P0308	[normal]	Table 2. Software Specifications
+P0311	[normal]	Operating System: Windows 10 or later, macOS 11 or later, Linux x64
+P0313	[normal]	The system is built using Electron, which supports Windows, macOS, and Linux out of the box. The build scripts in the project produce a portable executable and MSI installer for Windows, a DMG file for macOS running on Apple Silicon, and an AppImage for Linux. Since all core technologies used in the system are cross-platform, the application can be developed and run on any of the three operating systems without requiring changes to the codebase.
+P0315	[normal]	Desktop Framework: Electron 42.0.1
+P0317	[normal]	Electron is an open-source framework developed by GitHub that allows developers to build cross-platform desktop applications using web technologies . It combines a Chromium-based renderer with a Node.js runtime, enabling the use of HTML, CSS, JavaScript, and TypeScript for building native desktop interfaces.
+P0319	[normal]	In this system, Electron serves as the application shell that bundles the React frontend and the Flask backend into a single installable program. When the application is launched in production, Electron automatically spawns the Flask server as a background process and shuts it down cleanly when the application is closed. This setup removes the need for users to manually start or configure any backend service.
+P0321	[normal]	Front-End: Vite, React 19.2.5, TypeScript 6.0.2
+P0323	[normal]	React is an open-source JavaScript library developed by Meta for building user interfaces through a component-based architecture. TypeScript is a statically typed superset of JavaScript developed by Microsoft that adds type safety and improved tooling to JavaScript projects . Vite is a modern frontend build tool that provides fast development server startup and optimized production builds.
+P0325	[normal]	The frontend of the system is built using React and TypeScript, with Vite handling the development server and build process. The interface is organized into four main tabs covering subjects, rooms, instructors, and the generated schedule. All data is fetched from the Flask backend through a typed API client, and the schedule results are displayed as an interactive timetable grid.
+P0327	[normal]	Back-End: Python, Flask 3.0.3, Flask-CORS 4.0.1
+P0329	[normal]	Flask is a lightweight web framework for Python developed by Armin Ronacher that follows a minimalist design philosophy and provides the tools needed to build web applications and REST APIs . Flask-CORS is an extension that handles cross-origin resource sharing between the Electron renderer process and the Flask server during development.
+P0331	[normal]	The Flask backend serves as the bridge between the frontend and the scheduling logic. It exposes REST API endpoints for managing subjects, rooms, instructors, availability windows, room types, and schedules. All data is read from and written to a local SQLite database, and the solver is triggered through a dedicated endpoint that passes all required data to the CP-SAT model.
+P0333	[normal]	Constraint Solver: Google OR-Tools 9.10.4067, CP-SAT
+P0335	[normal]	Google OR-Tools is an open-source software suite developed by Google for solving combinatorial optimization problems, including constraint programming, linear programming, and vehicle routing. The CP-SAT solver within OR-Tools uses a combination of constraint propagation and branch-and-bound search to find optimal or near-optimal solutions efficiently.
+P0337	[normal]	The CP-SAT solver is the core of the scheduling system. It receives all configured data including subjects, rooms, instructors, availability windows, floor restrictions, and preferred times, and produces a conflict-free schedule that satisfies all hard constraints. The solver operates in two stages, first finding any feasible solution and then minimizing deviation from each instructor's preferred start time.
+P0340	[normal]	Application Packaging: electron-builder 24.7.0
+P0342	[normal]	electron-builder is an open-source tool for packaging and distributing Electron applications across multiple platforms. It handles code signing, installer generation, and platform-specific build configurations.
+P0344	[normal]	In this system, electron-builder is configured to produce platform-specific distributable files for Windows, macOS, and Linux. The Python backend files are included as extra resources in the packaged application, ensuring the Flask server and all required scripts are available when the installed application is launched on an end user's machine.
+P0346	[normal]	Database: SQLite
+P0348	[normal]	SQLite is a self-contained, serverless, and zero-configuration relational database engine that stores the entire database as a single file on disk . It is widely used in desktop and embedded applications where a lightweight and portable database solution is needed.
+P0350	[normal]	SQLite was chosen for this system because it requires no separate installation or server configuration. The database file is created automatically when the application is first launched and stores all scheduling data including subjects, rooms, instructors, availability windows, room types, and generated schedules. This makes the system easy to set up and portable across machines.
+P0353	[normal]	Cost of Development
+P0355	[normal]	The cost of development presents the estimated expenses associated with the development of the Automated Laboratory Scheduling System. This includes the hardware resources used for development and the estimated software development cost based on the roles involved in building the system.
+P0357	[normal]	Hardware Development Cost
+P0358	[normal]	The hardware development cost includes the computer equipment and accessories needed to develop and test the system.
+P0360	[normal]	Software Development Cost
+P0361	[normal]	Every tool used to build this system was free. Electron, React, Flask, Python, OR-Tools, and SQLite are all open-source and required no licensing fees. The real cost of developing this system comes from the time and effort of the team members who were responsible for programming, interface design, system analysis, and project management. That work cannot be automated or skipped, and it is what the software development cost in the table reflects.
+P0365	[normal]	System Depreciation
+P0367	[normal]	Hardware Depreciation
+P0369	[normal]	The estimated hardware cost is PHP 48,000.00. Using the straight-line depreciation method over five years with no salvage value, the annual depreciation is PHP 9,600.00.
+P0371	[normal]	Hardware Depreciation: PHP 48,000.00 ÷ 5 years
+P0372	[normal]	Annual Depreciation Provision: PHP 9,600.00
+P0376	[normal]	Software Decepriation
+P0377	[normal]	The estimated software development cost is PHP 145,000.00. Using the straight-line depreciation method over ten years with no salvage value, the annual depreciation is PHP 14,500.00.
+P0379	[normal]	Software Depreciation: PHP 145,000.00 ÷ 10 years
+P0380	[normal]	Annual Depreciation Provision: PHP 14,500.00
+P0384	[normal]	Tangible and Intangible Benefits
+P0386	[normal]	Tangible Benefits
+P0388	[normal]	The system reduces the time required to manually create and manage laboratory schedules. The system automatically assigns instructors, rooms, and student assistants to sessions based on configured constraints, removing the need for manual spreadsheet-based scheduling. The system enforces hard constraints such as no instructor overlap, no room double-booking, room type and capacity matching, and instructor availability, ensuring that every generated schedule is conflict-free. The system stores all scheduling data and generated schedules in a centralized local database, making records easy to access and manage.
+P0390	[normal]	Intangible Benefits
+P0392	[normal]	The system improves the overall efficiency of laboratory scheduling at the College of Computer Studies. It reduces the likelihood of human error that comes with manual spreadsheet-based scheduling. The system supports fair distribution of student assistant workload, which reduces the risk of overburdening individual assistants. It also supports better coordination between instructors and student assistants through the built-in messaging feature and improves transparency by giving each user role access to the schedule information relevant to them.
+P0394	[normal]	Design and Implementation Issues
+P0396	[normal]	The development of the Automated Laboratory Scheduling System may encounter several design and implementation issues. First, the accuracy of the generated schedule depends entirely on the quality of the data entered by the administrator. Incomplete availability windows, missing room type assignments, or incorrect student counts may cause the solver to return an infeasible result or produce a schedule that does not reflect actual requirements.
+P0398	[normal]	Second, the CP-SAT solver operates within a 30-second time limit per run. For larger datasets with many instructor-subject pairs and tight availability constraints, the solver may return a feasible but not fully optimized solution within that time limit.
+P0400	[normal]	Third, the student assistant assignment phase depends on the instructor schedule being generated first. If Phase 1 fails, Phase 2 cannot run. This means all data must be correctly configured before a complete schedule can be produced.
+P0402	[normal]	Fourth, the system currently runs as a desktop application on a single machine. Since SQLite is a file-based database with no network access, instructors and student assistants cannot view their schedules from their own devices until a login system and role-based access are implemented in the final version.
+P0404	[normal]	Fifth, dynamic rescheduling currently requires the administrator to manually clear the existing schedule and rerun the solver. Partial rescheduling that locks confirmed sessions and only reassigns affected ones is planned for future implementation.
+P0406	[normal]	Lastly, system performance may be affected by the number of instructor-subject pairs, the complexity of availability constraints, and the available hardware resources of the machine running the application. Machines with limited processing power may experience longer solver run times, particularly when the model has many candidate blocks to evaluate.
+P0412	[normal]	References:
+P0413	[normal]	Abdulov, A., et al. (2024). Optimizing the scheduling of teaching activities in a faculty. Applied Sciences, 14(20), 9554. https://doi.org/10.3390/app14209554
+P0414	[normal]	Barták, R. (2003). Constraint-based scheduling: An introduction for newcomers. IFAC Proceedings Volumes, 36(3), 75–80. https://doi.org/10.1016/S1474-6670(17)37738-8
+P0415	[normal]	Bashab, K., et al. (2023). Optimization techniques in university timetabling problem: Constraints, methodologies, benchmarks, and open issues. Computers, Materials & Continua, 74(3), 6461–6484. https://www.techscience.com/cmc/v74n3/50939
+P0416	[normal]	Brenndoerfer, M. (2025). CP-SAT rostering: Complete guide to constraint programming for workforce scheduling. https://mbrenndoerfer.com/writing/cp-sat-rostering-constraint-programming-workforce-scheduling
+P0417	[normal]	Deris, S., Omatu, S., & Ohta, H. (2000). Timetable planning using constraint-based reasoning. Computers & Operations Research, 27(9), 819–840. https://doi.org/10.1016/S0305-0548(99)00051-9
+P0418	[normal]	Elmasri, R. (2016). Fundamentals of database systems. Pearson. https://www.cs.purdue.edu/homes/bb/cs448_Fall2017/lpdf/Chapter20.pdf
+P0419	[normal]	Joe, R. (2025). Automated timetable generation system using constraint-based approaches. iManager’s Journal of Software Engineering, 20(1). https://doi.org/10.26634/jse.20.1.22527
+P0420	[normal]	Keh, A. M., & Sarmiento, J. R. (2025). Automated class scheduling system for Aemilianum College Inc. Global Scientific Journal, 13(2), 545–556. https://www.globalscientificjournal.com/researchpaper/AUTOMATED_CLASS_SCHEDULING_SYSTEM_FOR_AEMILIANUM_COLLEGE_INC_.pdf
+P0421	[normal]	Lozano, S., & Contreras, I. (2022). Centralised resource allocation using lexicographic goal programming: Application to the Spanish public university system. Socio-Economic Planning Sciences, 83, 101325. https://doi.org/10.1016/j.seps.2022.101325
+P0422	[normal]	Shelar, A., Gurav, M., Masaye, R., & Bodke, M. (2025). Time table management in educational institutions: Challenges and practices. International Journal for Multidisciplinary Research, 7(4). https://doi.org/10.36948/ijfmr.2025.v07i04.52696
+P0423	[normal]	Sungur, B., & Yilmaz, Y. (2023). An integrated lexicographic goal programming and dynamic satisfaction function model for effective nurse scheduling. Healthcare Analytics, 4, 100239. https://doi.org/10.1016/j.health.2023.100239
+P0424	[normal]	Thenarasu, R., et al. (2023). Multi-criteria scheduling with simulation in flexible job shop environments. arXiv. https://arxiv.org/abs/2308.03379
+P0425	[normal]	Wang, X., et al. (2024). A fast-flexible strategy-based approach to solving employee scheduling problems considering soft work time. Scientific Reports, 14, 56745. https://doi.org/10.1038/s41598-024-56745-4
+P0426	[normal]	Zhang, Z., Li, Z., & Yu, W. (2024). Lexicographic optimization-based approaches to learning a representative model for multi-criteria sorting with non-monotonic criteria. Computers & Operations Research, 175, 106917. https://doi.org/10.1016/j.cor.2024.106917
+P0428	[normal]	Adobe Business. (n.d.). Kanban — a complete beginner's guide. https://business.adobe.com/blog/basics/what-is-kanban
+P0429	[normal]	Ahmed, I., Munir, F., Nafees, F., Mahmood, J., Javaid, M., & Batool, K. (2024). The Influence of Kanban Agile Methodology on Software Project Management: A Survey Method. 2024 International Conference on Engineering and Emerging Technologies (ICEET). IEEE. https://www.researchgate.net/publication/389803226
+P0431	[normal]	Radigan, D. (n.d.). Kanban: How the Kanban methodology applies to software development. Atlassian. https://www.atlassian.com/agile/kanban
+TABLE 1
+T01R001	Features	A	B	C	D	E	F	G
+T01R002	Automated Scheduling	✓				✓		✓
+T01R003	Lexicographic Multi-Criteria Sorting			✓	✓			✓
+T01R004	Constraint-Based Scheduling		✓				✓	✓
+T01R005	Hard and Soft Constraints		✓				✓	✓
+T01R006	Conflict Detection and Resolution	✓				✓		✓
+T01R007	Fair Workload Distribution			✓	✓	✓	✓	✓
+T01R008	Dynamic				✓			✓
+TABLE 2
+T02R001	Hardware Type	Hardware Specifications
+T02R002	CPU Type/Model	Intel Core i5 8th Generation / AMD Ryzen 5 or equivalent, multi-core recommended
+T02R003	Input Device	Keyboard and mouse or touchpad
+T02R004	Operating System	Windows 10 x64 or later, macOS with Apple Silicon (arm64), or Linux x64
+T02R005	Output Devices	Full HD monitor or laptop display
+T02R006	Storage Device	2 GB available storage minimum for development setup
+T02R007	Memory	4 GB RAM minimum, 8 GB RAM recommended
+TABLE 3
+T03R001	Software Type	Software Name
+T03R002	Operating System	Windows 10 or later, macOS 11 or later, Linux x64
+T03R003	Desktop Framework	Electron 42.0.1
+T03R004	Front-End	Vite 8.0.10, React 19.2.5, TypeScript 6.0.2
+T03R005	Back-End	Python 3.9 or higher, Flask 3.0.3
+T03R006	Cross-Origin Handling	Flask-CORS 4.0.1
+T03R007	Constraint Solver	Google OR-Tools 9.10.4067, CP-SAT
+T03R008	Database	SQLite (built-in)
+T03R009	Application Packaging	electron-builder 24.7.0
+TABLE 4
+T04R001	Equipment	Amount
+T04R002	Development Laptop/Computer	PHP 45,000.00
+T04R003	Accessories	PHP 3,000.00
+T04R004	Total Hardware Cost	PHP 48,000.00
+TABLE 5
+T05R001	Developer Role	Estimated Amount
+T05R002	Programmer	PHP 50,000.00
+T05R003	GUI Designer	PHP 30,000.00
+T05R004	Researcher/System Analyst	PHP 25,000.00
+T05R005	Project Leader	PHP 40,000.00
+T05R006	Total Software Cost	PHP 145,000.00
+TABLE 6
+T06R001	Year	Value
+T06R002	Year 0	PHP 48,000.00
+T06R003	Year 1	PHP 38,400.00
+T06R004	Year 2	PHP 28,800.00
+T06R005	Year 3	PHP 19,200.00
+T06R006	Year 4	PHP 9,600.00
+T06R007	Year 5	PHP 0.00
+TABLE 7
+T07R001	Year	Value
+T07R002	Year 0	PHP 145,000.00
+T07R003	Year 1	PHP 130,000.00
+T07R004	Year 2	PHP 116,000.00
+T07R005	Year 3	PHP 101,500.00
+T07R006	Year 4	PHP 87,000.00
+T07R007	Year 5	PHP 72,500.00
+T07R008	Year 6	PHP 58,000.00
+T07R009	Year 7	PHP 43,500.00
+T07R010	Year 8	PHP 29,000.00
+T07R011	Year 9	PHP 14,500.00
+T07R012	Year 10	PHP 0.00

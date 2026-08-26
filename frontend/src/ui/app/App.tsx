@@ -203,6 +203,16 @@ export default function App() {
     })
   }
 
+  const assignEventAssistant = (id: string, assistantId?: string, assistantLabel?: string) => {
+    const event = adminEvents.find(value => value.id === id)
+    if (!event) return
+    const updated = { ...event, assistantId, assistantLabel }
+    setAdminEvents(current => current.map(value => value.id === id ? updated : value))
+    void saveSharedAdminEvent(updated).catch(error => {
+      console.warn('Could not synchronize the event assistant; the local assignment remains available.', error)
+    })
+  }
+
   const deleteAdminEvents = (ids: string[]) => {
     const idsToDelete = new Set(ids)
     setAdminEvents(current => current.filter(event => !idsToDelete.has(event.id)))
@@ -255,12 +265,14 @@ export default function App() {
             onOpenEvents={() => { setEventEditRequest(null); setEventsPanelOpen(true) }}
             onEditEvent={(eventId, scope) => { setEventEditRequest({ eventId, scope }); setEventsPanelOpen(true) }}
             onDeleteEvent={deleteAdminEvent}
+            onAssignAssistant={assignEventAssistant}
           />
         )}
         {activeTab === 'student-assistant' && (
           <StudentAssistantPanel
             mainSchedule={csvEvents}
             mainScheduleName={csvName}
+            adminEvents={adminEvents}
           />
         )}
       </main>

@@ -24,11 +24,26 @@ export interface AssistantTotal {
   remainingHours?: number
 }
 
+export interface RelieverAssignment {
+  date: string
+  classId: string
+  day: string
+  startMinutes: number
+  endMinutes: number
+  courseCode: string
+  room: string
+  originalAssistantId: string
+  originalAssistantLabel: string
+  replacementAssistantId?: string
+  replacementAssistantLabel?: string
+}
+
 export interface StudentAssistantResult {
   status: 'OPTIMAL' | 'FEASIBLE' | 'INFEASIBLE' | 'INVALID'
   diagnostics: string[]
   assignments?: DutyAssignment[]
   assistantTotals?: AssistantTotal[]
+  relieverAssignments?: RelieverAssignment[]
   summary?: {
     assistantCount: number
     coverageHours: number

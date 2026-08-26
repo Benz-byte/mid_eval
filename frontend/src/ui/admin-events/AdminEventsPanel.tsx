@@ -8,13 +8,23 @@ import { formatTime, parseInputTime } from '../../formatters/timeFormatter'
 
 type EventMode = 'event' | 'booking'
 type EventTimeRange = { id: string, startTime: string, endTime: string }
-export type BookingDateSchedule = { date: string, rooms: string[], timeRanges: Array<{ startTime: string, endTime: string }> }
+export type BookingDateSchedule = {
+  date: string
+  rooms: string[]
+  timeRanges: Array<{ startTime: string, endTime: string }>
+}
+
+function defaultSelectableDate() {
+  const date = new Date()
+  if (date.getDay() === 0) date.setDate(date.getDate() + 1)
+  return toDateInputValue(date)
+}
 
 function createEmptyAdminForm(date = toDateInputValue(new Date())): AdminEventForm {
   return { title: '', date, room: '', startTime: '07:00', endTime: '08:00' }
 }
 
-function createEmptyBookingForm(date = toDateInputValue(new Date())): RoomBookingForm {
+function createEmptyBookingForm(date = defaultSelectableDate()): RoomBookingForm {
   return {
     title: '', startDate: date, endDate: date, startTime: '07:00', endTime: '08:00',
     rooms: [], repeat: 'none', weekdays: [new Date(`${date}T12:00:00`).getDay()],
@@ -137,11 +147,11 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
       }]
     })
     if (requestedBookingEvents.length === 0) {
-      grouped[toDateInputValue(new Date())] = [{ id: crypto.randomUUID(), startTime: '07:00', endTime: '08:00' }]
+      grouped[defaultSelectableDate()] = [{ id: crypto.randomUUID(), startTime: '07:00', endTime: '08:00' }]
     }
     return grouped
   })
-  const [activeSelectedDate, setActiveSelectedDate] = useState(() => requestedBookingEvents[0]?.date ?? toDateInputValue(new Date()))
+  const [activeSelectedDate, setActiveSelectedDate] = useState(() => requestedBookingEvents[0]?.date ?? defaultSelectableDate())
   const [selectedBookingTimeId, setSelectedBookingTimeId] = useState(() => bookingTimesByDate[activeSelectedDate]?.[0]?.id ?? '')
   const [moveDate, setMoveDate] = useState(requestedEvent?.date ?? toDateInputValue(new Date()))
   const [moveStartTime, setMoveStartTime] = useState(requestedEvent ? `${String(Math.floor(requestedEvent.startMinutes / 60)).padStart(2, '0')}:${String(requestedEvent.startMinutes % 60).padStart(2, '0')}` : '07:00')
@@ -151,7 +161,7 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
   const [pendingDeleteGroup, setPendingDeleteGroup] = useState<CalendarEvent[] | null>(null)
   const [selectedDates, setSelectedDates] = useState<string[]>(() => {
     const savedDates = [...new Set(requestedBookingEvents.flatMap(event => event.date ? [event.date] : []))].sort()
-    return savedDates.length > 0 ? savedDates : [toDateInputValue(new Date())]
+    return savedDates.length > 0 ? savedDates : [defaultSelectableDate()]
   })
   const [roomsByDate, setRoomsByDate] = useState<Record<string, string[]>>(() => Object.fromEntries(
     [...new Set(requestedBookingEvents.flatMap(event => event.date ? [event.date] : []))].map(date => [date, [...new Set(requestedBookingEvents.filter(event => event.date === date).map(event => event.room))]]),
@@ -317,7 +327,7 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
   }
 
   const resetDateSelectionToToday = () => {
-    const today = toDateInputValue(new Date())
+    const today = defaultSelectableDate()
     const resetTime = { id: crypto.randomUUID(), startTime: '07:00', endTime: '08:00' }
     setSelectedDates([today])
     setBookingTimesByDate({ [today]: [resetTime] })
@@ -330,6 +340,7 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
   }
 
   const toggleBookingDate = (date: Date) => {
+    if (date.getDay() === 0) return
     const key = toDateInputValue(date)
     const removing = selectedDates.includes(key)
     if (removing && selectedDates.length === 1) {
@@ -371,7 +382,7 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
     const filledDates: string[] = []
     const cursor = new Date(first)
     while (cursor <= last) {
-      filledDates.push(toDateInputValue(cursor))
+      if (cursor.getDay() !== 0) filledDates.push(toDateInputValue(cursor))
       cursor.setDate(cursor.getDate() + 1)
     }
     setSelectedDates(filledDates)
@@ -628,7 +639,7 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onUpdateEve
         </>
       )}
 
-      {datePickerOpen && <div className="event-date-picker-backdrop" role="presentation"><section className="event-date-picker" role="dialog" aria-modal="true" aria-labelledby="event-date-picker-title"><div className="event-date-picker-heading"><h3 id="event-date-picker-title">Select Event Dates</h3><button type="button" onClick={applyCalendarDates}>Close</button></div><Calendar key={`event-calendar-${activeSelectedDate || 'none'}`} value={activeSelectedDate ? new Date(`${activeSelectedDate}T12:00:00`) : null} onClickDay={toggleBookingDate} tileClassName={({ date, view }) => view === 'month' && selectedDates.includes(toDateInputValue(date)) ? 'multi-date-selected' : null} /><div className="event-date-picker-actions"><button className="btn-secondary" type="button" onClick={resetDateSelectionToToday}>Clear Selection</button><button className="btn-secondary" disabled={dates.length < 2} type="button" onClick={selectDatesInBetween}>Select in-between</button><button className="btn-primary" type="button" onClick={applyCalendarDates}>Apply Dates</button></div></section></div>}
+      {datePickerOpen && <div className="event-date-picker-backdrop" role="presentation"><section className="event-date-picker" role="dialog" aria-modal="true" aria-labelledby="event-date-picker-title"><div className="event-date-picker-heading"><h3 id="event-date-picker-title">Select Event Dates</h3><button type="button" onClick={applyCalendarDates}>Close</button></div><Calendar key={`event-calendar-${activeSelectedDate || 'none'}`} value={activeSelectedDate ? new Date(`${activeSelectedDate}T12:00:00`) : null} onClickDay={toggleBookingDate} tileDisabled={({ date, view }) => view === 'month' && date.getDay() === 0} tileClassName={({ date, view }) => view === 'month' && date.getDay() !== 0 && selectedDates.includes(toDateInputValue(date)) ? 'multi-date-selected' : null} /><div className="event-date-picker-actions"><button className="btn-secondary" type="button" onClick={resetDateSelectionToToday}>Clear Selection</button><button className="btn-secondary" disabled={dates.length < 2} type="button" onClick={selectDatesInBetween}>Select in-between</button><button className="btn-primary" type="button" onClick={applyCalendarDates}>Apply Dates</button></div></section></div>}
 
       {!isManagerEdit && <button className="manage-events-button" type="button" onClick={() => setManageOpen('events')}>Manage Events</button>}
 

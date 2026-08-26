@@ -14,6 +14,8 @@ export interface SharedAdminEvent {
   room: string
   studentCount: string
   instructorLastName: string
+  assistantId?: string
+  assistantLabel?: string
 }
 
 export async function loadSharedAdminEvents(): Promise<SharedAdminEvent[]> {
@@ -28,6 +30,8 @@ export async function saveSharedAdminEvent(event: {
   room: string
   startMinutes: number
   endMinutes: number
+  assistantId?: string
+  assistantLabel?: string
 }): Promise<void> {
   if (!isCloudConfigured) return
   if (!event.date) throw new Error('An event date is required.')

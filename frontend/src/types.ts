@@ -19,6 +19,8 @@ export interface CalendarEvent {
   lastName?: string
   firstName?: string
   middleName?: string
+  assistantId?: string
+  assistantLabel?: string
 }
 
 export interface ScheduleImportResult {
