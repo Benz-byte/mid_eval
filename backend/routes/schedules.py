@@ -1,7 +1,10 @@
 from flask import Blueprint, jsonify, request
 
 from services.schedule_parser import parse_schedule_rows
-from services.schedule_service import get_shared_schedule, update_shared_schedule
+from services.schedule_service import (
+    get_shared_schedule as load_shared_schedule,
+    update_shared_schedule as save_shared_schedule,
+)
 
 blueprint = Blueprint("schedules", __name__)
 
@@ -19,7 +22,7 @@ def parse_schedule():
 
 @blueprint.get("/api/schedules/shared")
 def get_shared_schedule():
-    return jsonify(get_shared_schedule())
+    return jsonify(load_shared_schedule())
 
 
 @blueprint.put("/api/schedules/shared")
@@ -28,7 +31,7 @@ def put_shared_schedule():
     if not isinstance(payload, dict):
         return jsonify({"error": "Expected a JSON object."}), 400
     try:
-        update_shared_schedule(payload)
+        save_shared_schedule(payload)
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
     return "", 204

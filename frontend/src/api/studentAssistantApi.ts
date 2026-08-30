@@ -4,6 +4,25 @@ export interface StudentAssistantInput<EventType> {
   schedule: EventType[]
 }
 
+export interface SchedulingSettings {
+  minimumGapAfterThreeHourDutyMinutes: number
+}
+
+export const DEFAULT_SCHEDULING_SETTINGS: SchedulingSettings = {
+  minimumGapAfterThreeHourDutyMinutes: 30,
+}
+
+export const DUTY_GAP_OPTIONS = [0, 30, 60, 90, 120] as const
+
+export function normalizeSchedulingSettings(value?: Partial<SchedulingSettings> | null): SchedulingSettings {
+  const gap = Number(value?.minimumGapAfterThreeHourDutyMinutes)
+  return {
+    minimumGapAfterThreeHourDutyMinutes: DUTY_GAP_OPTIONS.some(option => option === gap)
+      ? gap
+      : DEFAULT_SCHEDULING_SETTINGS.minimumGapAfterThreeHourDutyMinutes,
+  }
+}
+
 export interface DutyAssignment {
   assistantId: string
   assistantLabel: string
@@ -44,6 +63,9 @@ export interface StudentAssistantResult {
   assignments?: DutyAssignment[]
   assistantTotals?: AssistantTotal[]
   relieverAssignments?: RelieverAssignment[]
+  appliedSettings?: SchedulingSettings & {
+    dutyBreakConstraintCount?: number
+  }
   summary?: {
     assistantCount: number
     coverageHours: number
@@ -57,12 +79,13 @@ export interface StudentAssistantResult {
 export async function solveStudentAssistantSchedule<EventType>(
   mainSchedule: EventType[],
   assistants: StudentAssistantInput<EventType>[],
+  schedulingSettings: SchedulingSettings,
 ): Promise<StudentAssistantResult> {
   const randomSeed = crypto.getRandomValues(new Uint32Array(1))[0] & 0x7fffffff
   const response = await fetch(`${window.electron.flaskUrl}/api/student-assistant/solve`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mainSchedule, assistants, randomSeed }),
+    body: JSON.stringify({ mainSchedule, assistants, schedulingSettings, randomSeed }),
   })
 
   const result = await response.json() as StudentAssistantResult
@@ -75,6 +98,7 @@ export async function solveStudentAssistantSchedule<EventType>(
 export interface SharedStudentAssistantData<AssistantType, ResultType> {
   assistants: AssistantType[]
   solverResult: ResultType | null
+  schedulingSettings?: SchedulingSettings
 }
 
 export async function loadSharedStudentAssistantData<AssistantType, ResultType>():

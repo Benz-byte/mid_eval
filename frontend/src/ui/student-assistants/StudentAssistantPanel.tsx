@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { isCloudConfigured } from '../../api/scheduleApi'
 import {
+  DEFAULT_SCHEDULING_SETTINGS,
+  DUTY_GAP_OPTIONS,
   loadSharedStudentAssistantData,
-  saveSharedStudentAssistantData,
+  normalizeSchedulingSettings,
   solveStudentAssistantSchedule,
   subscribeToSharedStudentAssistantData,
+  type SchedulingSettings,
   type StudentAssistantResult,
 } from '../../api/studentAssistantApi'
 import { readScheduleFile } from '../../api/scheduleParser'
-import { ASSISTANT_STORAGE_KEY, loadLocalAssistantData } from '../../storage/studentAssistantStorage'
+import { flushPendingAssistantSync, hasPendingAssistantSync } from '../../storage/localFirstSync'
+import { loadLocalAssistantData, saveLocalAssistantData } from '../../storage/studentAssistantStorage'
 import type { CalendarEvent, UploadedAssistant } from '../../types'
 import { AssistantWeeklyCalendar } from './AssistantWeeklyCalendar'
 
@@ -50,7 +53,18 @@ function weekRangeLabel(weekStart: Date) {
   return `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}–${weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
 }
 
+function workloadHoursLabel(minutes: number) {
+  const hours = minutes / 60
+  return `${hours.toFixed(1).replace(/\.0$/, '')} ${hours === 1 ? 'hour' : 'hours'}`
+}
+
 const EMPTY_PROFILE = { lastName: '', firstName: '', middleName: '' }
+function dutyGapLabel(minutes: number) {
+  if (minutes === 0) return 'No required gap'
+  if (minutes < 60) return `${minutes} minutes`
+  const hours = minutes / 60
+  return `${hours} ${hours === 1 ? 'hour' : 'hours'}`
+}
 
 export function StudentAssistantPanel({
   mainSchedule,
@@ -64,6 +78,7 @@ export function StudentAssistantPanel({
   const localAssistantData = useMemo(() => loadLocalAssistantData(), [])
   const [assistants, setAssistants] = useState<UploadedAssistant[]>(localAssistantData.assistants)
   const [result, setResult] = useState<StudentAssistantResult | null>(localAssistantData.result)
+  const [settings, setSettings] = useState<SchedulingSettings>(localAssistantData.settings)
   const [error, setError] = useState('')
   const [solving, setSolving] = useState(false)
   const [selectedAssistantId, setSelectedAssistantId] = useState('')
@@ -79,33 +94,42 @@ export function StudentAssistantPanel({
   const [keepCurrentSchedule, setKeepCurrentSchedule] = useState(true)
   const [editError, setEditError] = useState('')
   const [deletingAssistant, setDeletingAssistant] = useState<UploadedAssistant | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [weeklySummaryOpen, setWeeklySummaryOpen] = useState(false)
+  const [draftDutyGapMinutes, setDraftDutyGapMinutes] = useState(
+    localAssistantData.settings.minimumGapAfterThreeHourDutyMinutes,
+  )
   const [viewedWeekStart, setViewedWeekStart] = useState(() => startOfWeek(new Date()))
-  const [, setSyncMessage] = useState('Loading saved assistants…')
-
+  const assistantRevisionRef = useRef(0)
   useEffect(() => {
     let cancelled = false
 
     const refresh = async () => {
+      const revision = assistantRevisionRef.current
       try {
+        await flushPendingAssistantSync()
+        if (hasPendingAssistantSync()) return
         const saved = await loadSharedStudentAssistantData<
           UploadedAssistant,
           StudentAssistantResult
         >()
-        if (cancelled) return
+        if (cancelled || hasPendingAssistantSync() || revision !== assistantRevisionRef.current) return
         if (saved) {
+          const nextSettings = normalizeSchedulingSettings(
+            saved.schedulingSettings ?? DEFAULT_SCHEDULING_SETTINGS,
+          )
           setAssistants(saved.assistants)
           setResult(saved.solverResult)
-          localStorage.setItem(ASSISTANT_STORAGE_KEY, JSON.stringify({
+          setSettings(nextSettings)
+          setDraftDutyGapMinutes(nextSettings.minimumGapAfterThreeHourDutyMinutes)
+          saveLocalAssistantData({
             assistants: saved.assistants,
             result: saved.solverResult,
-          }))
-          setSyncMessage('Student assistant data synchronized')
-        } else {
-          setSyncMessage(isCloudConfigured ? 'No saved assistant schedule' : 'Local session only')
+            settings: nextSettings,
+          }, false)
         }
       } catch (syncError) {
         console.warn('Could not load student assistant data.', syncError)
-        if (!cancelled) setSyncMessage('Assistant database unavailable')
       }
     }
 
@@ -122,21 +146,30 @@ export function StudentAssistantPanel({
   const saveAssistantData = (
     nextAssistants: UploadedAssistant[],
     nextResult: StudentAssistantResult | null,
+    nextSettings: SchedulingSettings = settings,
   ) => {
-    localStorage.setItem(ASSISTANT_STORAGE_KEY, JSON.stringify({
+    assistantRevisionRef.current += 1
+    saveLocalAssistantData({
       assistants: nextAssistants,
       result: nextResult,
-    }))
-    setSyncMessage(isCloudConfigured ? 'Saving assistant data…' : 'Local session only')
-    void saveSharedStudentAssistantData({
-      assistants: nextAssistants,
-      solverResult: nextResult,
-    }).then(() => {
-      setSyncMessage(isCloudConfigured ? 'Student assistant data synchronized' : 'Local session only')
-    }).catch(syncError => {
-      console.warn('Could not save student assistant data.', syncError)
-      setSyncMessage('Assistant database unavailable')
+      settings: nextSettings,
     })
+  }
+
+  const openSchedulingSettings = () => {
+    setDraftDutyGapMinutes(settings.minimumGapAfterThreeHourDutyMinutes)
+    setSidebarOpen(false)
+    setSettingsOpen(true)
+  }
+
+  const saveSchedulingSettings = (event: FormEvent) => {
+    event.preventDefault()
+    const nextSettings = {
+      minimumGapAfterThreeHourDutyMinutes: draftDutyGapMinutes,
+    }
+    setSettings(nextSettings)
+    saveAssistantData(assistants, result, nextSettings)
+    setSettingsOpen(false)
   }
 
   const closeAddProfile = () => {
@@ -167,17 +200,19 @@ export function StudentAssistantPanel({
   }
 
   useEffect(() => {
-    if (!sidebarOpen && !addProfileOpen && !editingAssistant && !deletingAssistant) return
+    if (!sidebarOpen && !addProfileOpen && !editingAssistant && !deletingAssistant && !settingsOpen && !weeklySummaryOpen) return
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       if (deletingAssistant) setDeletingAssistant(null)
       else if (editingAssistant) closeEditProfile()
       else if (addProfileOpen) closeAddProfile()
+      else if (settingsOpen) setSettingsOpen(false)
+      else if (weeklySummaryOpen) setWeeklySummaryOpen(false)
       else setSidebarOpen(false)
     }
     document.addEventListener('keydown', closeOnEscape)
     return () => document.removeEventListener('keydown', closeOnEscape)
-  }, [addProfileOpen, deletingAssistant, editingAssistant, sidebarOpen])
+  }, [addProfileOpen, deletingAssistant, editingAssistant, settingsOpen, sidebarOpen, weeklySummaryOpen])
 
   const addStudentAssistant = async (event: FormEvent) => {
     event.preventDefault()
@@ -313,6 +348,7 @@ export function StudentAssistantPanel({
           label: assistant.label.trim() || assistant.fileName,
           schedule: assistant.events,
         })),
+        settings,
       )
       setResult(response)
       saveAssistantData(assistants, response)
@@ -340,10 +376,6 @@ export function StudentAssistantPanel({
   const selectedAssignments = assignments.filter(
     assignment => assignment.assistantId === effectiveSelectedAssistantId,
   )
-  const selectedAssistantTotal = result?.assistantTotals?.find(
-    total => total.assistantId === effectiveSelectedAssistantId,
-  )
-  const selectedAssignedHours = selectedAssistantTotal?.hours ?? 0
   const selectedEventAssignments = useMemo(() => {
     const weekEnd = new Date(viewedWeekStart)
     weekEnd.setDate(weekEnd.getDate() + 7)
@@ -356,10 +388,6 @@ export function StudentAssistantPanel({
       && event.date! < endKey,
     )
   }, [adminEvents, effectiveSelectedAssistantId, viewedWeekStart])
-  const selectedEventOvertimeHours = selectedEventAssignments.reduce(
-    (total, event) => total + Math.max(0, event.endMinutes - event.startMinutes),
-    0,
-  ) / 60
   const selectedRelieverAssignments = useMemo(() => {
     const weekEnd = new Date(viewedWeekStart)
     weekEnd.setDate(weekEnd.getDate() + 7)
@@ -372,9 +400,22 @@ export function StudentAssistantPanel({
         || record.replacementAssistantId === effectiveSelectedAssistantId),
     )
   }, [effectiveSelectedAssistantId, result?.relieverAssignments, viewedWeekStart])
-  const selectedRelieverOvertimeHours = selectedRelieverAssignments
-    .filter(record => record.replacementAssistantId === effectiveSelectedAssistantId)
-    .reduce((total, record) => total + Math.max(0, record.endMinutes - record.startMinutes), 0) / 60
+  const performedRelieverAssignments = selectedRelieverAssignments.filter(
+    record => record.replacementAssistantId === effectiveSelectedAssistantId,
+  )
+  const regularDutyMinutes = selectedAssignments.reduce(
+    (total, assignment) => total + Math.max(0, assignment.endMinutes - assignment.startMinutes),
+    0,
+  )
+  const eventOvertimeMinutes = selectedEventAssignments.reduce(
+    (total, event) => total + Math.max(0, event.endMinutes - event.startMinutes),
+    0,
+  )
+  const relieverOvertimeMinutes = performedRelieverAssignments.reduce(
+    (total, record) => total + Math.max(0, record.endMinutes - record.startMinutes),
+    0,
+  )
+  const totalWorkloadMinutes = regularDutyMinutes + eventOvertimeMinutes + relieverOvertimeMinutes
   const moveViewedWeek = (offset: number) => {
     setViewedWeekStart(current => {
       const next = new Date(current)
@@ -419,10 +460,7 @@ export function StudentAssistantPanel({
       {selectedAssistant ? (
         <div className="sa-calendar-section">
           <div className="sa-calendar-switcher">
-            <div>
-              <h3>Weekly Schedule</h3>
-              <p>{selectedAssistantTotal ? `${selectedAssignedHours.toFixed(1).replace(/\.0$/, '')} duty hours assigned · ${selectedEventOvertimeHours.toFixed(1).replace(/\.0$/, '')} event overtime hours · ${selectedRelieverOvertimeHours.toFixed(1).replace(/\.0$/, '')} reliever overtime hours` : `Personal class schedule · ${selectedEventOvertimeHours.toFixed(1).replace(/\.0$/, '')} event overtime hours · ${selectedRelieverOvertimeHours.toFixed(1).replace(/\.0$/, '')} reliever overtime hours`}</p>
-            </div>
+            <button className="sa-weekly-summary-button" type="button" onClick={() => setWeeklySummaryOpen(true)}>Weekly Summary</button>
             <div className="sa-week-navigation"><button type="button" aria-label="Previous week" onClick={() => moveViewedWeek(-1)}>←</button><button type="button" onClick={() => setViewedWeekStart(startOfWeek(new Date()))}>This Week</button><button type="button" aria-label="Next week" onClick={() => moveViewedWeek(1)}>→</button><strong>{weekRangeLabel(viewedWeekStart)}</strong></div>
           </div>
           <AssistantWeeklyCalendar assistant={selectedAssistant} assignments={selectedAssignments} eventAssignments={selectedEventAssignments} relieverAssignments={selectedRelieverAssignments} weekStart={viewedWeekStart} />
@@ -443,8 +481,29 @@ export function StudentAssistantPanel({
           {assistants.length > 0 && filteredAssistants.length === 0 && <p>No student assistants found.</p>}
           {filteredAssistants.map(assistant => <div className={`sa-sidebar-row${assistant.id === effectiveSelectedAssistantId ? ' selected' : ''}`} key={assistant.id}><button className="sa-student-select" type="button" onClick={() => { setSelectedAssistantId(assistant.id); setSidebarOpen(false) }}><span><strong>{assistantDisplayName(assistant)}</strong><small>{assistant.studentId || 'ID number unavailable'}</small></span></button><div className="sa-student-actions"><button type="button" aria-label={`Edit ${assistantDisplayName(assistant)}`} title="Edit student assistant" onClick={() => openEditProfile(assistant)}>✎</button><button className="delete" type="button" aria-label={`Delete ${assistantDisplayName(assistant)}`} title="Delete student assistant" onClick={() => setDeletingAssistant(assistant)}>×</button></div></div>)}
         </div>
-        <button className="sa-sidebar-settings" type="button"><span aria-hidden="true">⚙</span><strong>Scheduling Settings</strong><b aria-hidden="true">›</b></button>
+        <button className="sa-sidebar-settings" type="button" onClick={openSchedulingSettings}><span aria-hidden="true">⚙</span><strong>Scheduling Settings</strong><b aria-hidden="true">›</b></button>
       </aside></div>}
+
+      {settingsOpen && <div className="sa-profile-backdrop" role="presentation" onMouseDown={() => setSettingsOpen(false)}><form className="sa-profile-form sa-settings-form" onSubmit={saveSchedulingSettings} onMouseDown={event => event.stopPropagation()}>
+        <div className="sa-profile-heading"><h3>Scheduling Settings</h3><button type="button" aria-label="Close" onClick={() => setSettingsOpen(false)}>×</button></div>
+        <section className="sa-duty-break-setting">
+          <h4>Break After Duty</h4>
+          <p>After completing three continuous regular-duty hours, require a minimum gap before another regular duty.</p>
+          <label>Minimum gap after three duty hours<select value={draftDutyGapMinutes} onChange={event => setDraftDutyGapMinutes(Number(event.target.value))}>{DUTY_GAP_OPTIONS.map(minutes => <option value={minutes} key={minutes}>{dutyGapLabel(minutes)}</option>)}</select></label>
+        </section>
+        <div className="sa-profile-actions"><button className="btn-secondary" type="button" onClick={() => setSettingsOpen(false)}>Cancel</button><button className="btn-primary" type="submit">Save</button></div>
+      </form></div>}
+
+      {weeklySummaryOpen && selectedAssistant && <div className="sa-profile-backdrop" role="presentation" onMouseDown={() => setWeeklySummaryOpen(false)}><section className="sa-weekly-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="sa-weekly-summary-title" onMouseDown={event => event.stopPropagation()}>
+        <div className="sa-profile-heading"><div><h3 id="sa-weekly-summary-title">Weekly Summary</h3><p>{assistantDisplayName(selectedAssistant)} · {selectedAssistant.studentId || 'ID number unavailable'}</p><small>{weekRangeLabel(viewedWeekStart)}</small></div><button type="button" aria-label="Close" onClick={() => setWeeklySummaryOpen(false)}>×</button></div>
+        <dl className="sa-weekly-summary-totals">
+          <div><dt>Regular duty scheduled</dt><dd>{workloadHoursLabel(regularDutyMinutes)}</dd></div>
+          <div><dt>Event overtime</dt><dd>{workloadHoursLabel(eventOvertimeMinutes)}</dd></div>
+          <div><dt>Reliever overtime</dt><dd>{workloadHoursLabel(relieverOvertimeMinutes)}</dd></div>
+          <div className="total"><dt>Total workload</dt><dd>{workloadHoursLabel(totalWorkloadMinutes)}</dd></div>
+        </dl>
+        <div className="sa-profile-actions"><button className="btn-secondary" type="button" onClick={() => setWeeklySummaryOpen(false)}>Close</button></div>
+      </section></div>}
 
       {addProfileOpen && <div className="sa-profile-backdrop" role="presentation" onMouseDown={closeAddProfile}><form className="sa-profile-form" onSubmit={addStudentAssistant} onMouseDown={event => event.stopPropagation()}>
         <div className="sa-profile-heading"><h3>Add Student Assistant</h3><button type="button" aria-label="Close" onClick={closeAddProfile}>×</button></div>

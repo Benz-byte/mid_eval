@@ -48,7 +48,9 @@ def request(
     prefer: str | None = None,
 ) -> Any:
     if not is_configured():
-        return None
+        if method.upper() == "GET":
+            return None
+        raise RuntimeError("Supabase is not configured; the local change will retry later.")
 
     query_string = f"?{urlencode(query)}" if query else ""
     body = json.dumps(payload).encode("utf-8") if payload is not None else None

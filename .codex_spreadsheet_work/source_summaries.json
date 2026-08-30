@@ -1,0 +1,1062 @@
+[
+  {
+    "filename": "BSCS_Year1_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 5,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0001-01",
+        "806",
+        "CCS 1001",
+        "Introduction to Computing",
+        700,
+        900
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0001-01",
+        "806",
+        "CCS 1001",
+        "Introduction to Computing",
+        1300,
+        1600
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0001-01",
+        "813",
+        "CCS 1400",
+        "Fundamentals of Programming",
+        1000,
+        1200
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0001-01",
+        "813",
+        "CCS 1400",
+        "Fundamentals of Programming",
+        1000,
+        1300
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/p3j9al\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L5\",\"address\":\"A1:L5\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H5\",\"rows\":5,\"cols\":8,\"nonEmpty\":40,\"text\":40,\"maxTextLength\":27,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0001-01\",\"806\",\"CCS 1001\",\"Introduction to Computing\",\"700\",\"900\"],[\"2026-2027\",\"1st\",\"26-0001-01\",\"806\",\"CCS 1001\",\"Introduction to Computing\",\"1300\",\"1600\"],[\"2026-2027\",\"1st\",\"26-0001-01\",\"813\",\"CCS 1400\",\"Fundamentals of Programming\",\"1000\",\"1200\"],[\"2026-2027\",\"1st\",\"26-0001-01\",\"813\",\"CCS 1400\",\"Fundamentals of Programming\",\"1000\",\"1300\"]],\"previewAddress\":\"A1:H5\",\"previewRows\":5,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"D1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 36 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSCS_Year1_Student.png"
+  },
+  {
+    "filename": "BSCS_Year2_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 8,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0002-02",
+        "828",
+        "CCS 2100",
+        "Fundamentals of Database Design",
+        700,
+        900
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0002-02",
+        "828",
+        "CCS 2100",
+        "Fundamentals of Database Design",
+        1000,
+        1300
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0002-02",
+        "950",
+        "CS 2111",
+        "Structure of Programming Languages",
+        1000,
+        1300
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0002-02",
+        "836",
+        "CCS 2110",
+        "Application Development and Emerging Technologies",
+        700,
+        1000
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0002-02",
+        "842",
+        "CCS 2200",
+        "Basic Electrical and Electronic Concepts",
+        1000,
+        1200
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0002-02",
+        "842",
+        "CCS 2200",
+        "Basic Electrical and Electronic Concepts",
+        700,
+        1000
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0002-02",
+        "930",
+        "CCS 2800",
+        "Mobile Application Development I",
+        1600,
+        1900
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/bufuf5\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L8\",\"address\":\"A1:L8\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H8\",\"rows\":8,\"cols\":8,\"nonEmpty\":64,\"text\":64,\"maxTextLength\":49,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0002-02\",\"828\",\"CCS 2100\",\"Fundamentals of Database Design\",\"700\",\"900\"],[\"2026-2027\",\"1st\",\"26-0002-02\",\"828\",\"CCS 2100\",\"Fundamentals of Database Design\",\"1000\",\"1300\"],[\"2026-2027\",\"1st\",\"26-0002-02\",\"950\",\"CS 2111\",\"Structure of Programming Languages\",\"1000\",\"1300\"],[\"2026-2027\",\"1st\",\"26-0002-02\",\"836\",\"CCS 2110\",\"Application Development and Emerging Technologies\",\"700\",\"1000\"],[\"2026-2027\",\"1st\",\"26-0002-02\",\"842\",\"CCS 2200\",\"Basic Electrical and Electronic Concepts\",\"1000\",\"1200\"],[\"2026-2027\",\"1st\",\"26-0002-02\",\"842\",\"CCS 2200\",\"Basic Electrical and Electronic Concepts\",\"700\",\"1000\"],[\"2026-2027\",\"1st\",\"26-0002-02\",\"930\",\"CCS 2800\",\"Mobile Application Development I\",\"1600\",\"1900\"]],\"previewAddress\":\"A1:H8\",\"previewRows\":8,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 61 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSCS_Year2_Student.png"
+  },
+  {
+    "filename": "BSCS_Year3_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 7,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0003-03",
+        "848",
+        "CCS 3001",
+        "Computer Organization & Assembly Language",
+        700,
+        1000
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0003-03",
+        "857",
+        "CCS 3010",
+        "Fundamentals of Human Computer Interaction",
+        900,
+        1200
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0003-03",
+        "858",
+        "CCS 3020",
+        "Information Assurance and Security I",
+        700,
+        1000
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0003-03",
+        "904",
+        "CCS 3030",
+        "Web Systems and Technologies",
+        1740,
+        2040
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0003-03",
+        "907",
+        "CCS 3100",
+        "Methods of Research in IT",
+        1000,
+        1300
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0003-03",
+        "952",
+        "CS 3120",
+        "Algorithms and Complexities",
+        1430,
+        1600
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/7gp2y6\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L7\",\"address\":\"A1:L7\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H7\",\"rows\":7,\"cols\":8,\"nonEmpty\":56,\"text\":56,\"maxTextLength\":42,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0003-03\",\"848\",\"CCS 3001\",\"Computer Organization & Assembly Language\",\"700\",\"1000\"],[\"2026-2027\",\"1st\",\"26-0003-03\",\"857\",\"CCS 3010\",\"Fundamentals of Human Computer Interaction\",\"900\",\"1200\"],[\"2026-2027\",\"1st\",\"26-0003-03\",\"858\",\"CCS 3020\",\"Information Assurance and Security I\",\"700\",\"1000\"],[\"2026-2027\",\"1st\",\"26-0003-03\",\"904\",\"CCS 3030\",\"Web Systems and Technologies\",\"1740\",\"2040\"],[\"2026-2027\",\"1st\",\"26-0003-03\",\"907\",\"CCS 3100\",\"Methods of Research in IT\",\"1000\",\"1300\"],[\"2026-2027\",\"1st\",\"26-0003-03\",\"952\",\"CS 3120\",\"Algorithms and Complexities\",\"1430\",\"1600\"]],\"previewAddress\":\"A1:H7\",\"previewRows\":7,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 53 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSCS_Year3_Student.png"
+  },
+  {
+    "filename": "BSCS_Year4_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 4,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0004-04",
+        "957",
+        "CS 4110",
+        "Artificial Intelligence",
+        1600,
+        1800
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0004-04",
+        "957",
+        "CS 4110",
+        "Artificial Intelligence",
+        900,
+        1200
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0004-04",
+        "936",
+        "CCS 4300",
+        "Social Issues and Professional Practices",
+        1000,
+        1300
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/rvseht\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L4\",\"address\":\"A1:L4\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H4\",\"rows\":4,\"cols\":8,\"nonEmpty\":32,\"text\":32,\"maxTextLength\":40,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0004-04\",\"957\",\"CS 4110\",\"Artificial Intelligence\",\"1600\",\"1800\"],[\"2026-2027\",\"1st\",\"26-0004-04\",\"957\",\"CS 4110\",\"Artificial Intelligence\",\"900\",\"1200\"],[\"2026-2027\",\"1st\",\"26-0004-04\",\"936\",\"CCS 4300\",\"Social Issues and Professional Practices\",\"1000\",\"1300\"]],\"previewAddress\":\"A1:H4\",\"previewRows\":4,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"D1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 28 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSCS_Year4_Student.png"
+  },
+  {
+    "filename": "BSIS_Year1_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 5,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0009-01",
+        "806",
+        "CCS 1001",
+        "Introduction to Computing",
+        700,
+        900
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0009-01",
+        "806",
+        "CCS 1001",
+        "Introduction to Computing",
+        1300,
+        1600
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0009-01",
+        "813",
+        "CCS 1400",
+        "Fundamentals of Programming",
+        1000,
+        1200
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0009-01",
+        "813",
+        "CCS 1400",
+        "Fundamentals of Programming",
+        1000,
+        1300
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/v6msxx\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L5\",\"address\":\"A1:L5\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H5\",\"rows\":5,\"cols\":8,\"nonEmpty\":40,\"text\":40,\"maxTextLength\":27,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0009-01\",\"806\",\"CCS 1001\",\"Introduction to Computing\",\"700\",\"900\"],[\"2026-2027\",\"1st\",\"26-0009-01\",\"806\",\"CCS 1001\",\"Introduction to Computing\",\"1300\",\"1600\"],[\"2026-2027\",\"1st\",\"26-0009-01\",\"813\",\"CCS 1400\",\"Fundamentals of Programming\",\"1000\",\"1200\"],[\"2026-2027\",\"1st\",\"26-0009-01\",\"813\",\"CCS 1400\",\"Fundamentals of Programming\",\"1000\",\"1300\"]],\"previewAddress\":\"A1:H5\",\"previewRows\":5,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"D1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 36 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSIS_Year1_Student.png"
+  },
+  {
+    "filename": "BSIS_Year2_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 4,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0010-02",
+        "202",
+        "IS 2130",
+        "Accounting Information System",
+        1600,
+        1730
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0010-02",
+        "828",
+        "CCS 2100",
+        "Fundamentals of Database Design",
+        700,
+        900
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0010-02",
+        "828",
+        "CCS 2100",
+        "Fundamentals of Database Design",
+        1000,
+        1300
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/zqsg5k\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L4\",\"address\":\"A1:L4\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H4\",\"rows\":4,\"cols\":8,\"nonEmpty\":32,\"text\":32,\"maxTextLength\":31,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0010-02\",\"202\",\"IS 2130\",\"Accounting Information System\",\"1600\",\"1730\"],[\"2026-2027\",\"1st\",\"26-0010-02\",\"828\",\"CCS 2100\",\"Fundamentals of Database Design\",\"700\",\"900\"],[\"2026-2027\",\"1st\",\"26-0010-02\",\"828\",\"CCS 2100\",\"Fundamentals of Database Design\",\"1000\",\"1300\"]],\"previewAddress\":\"A1:H4\",\"previewRows\":4,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"D1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 28 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSIS_Year2_Student.png"
+  },
+  {
+    "filename": "BSIS_Year3_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 4,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0011-03",
+        "857",
+        "CCS 3010",
+        "Fundamentals of Human Computer Interaction",
+        900,
+        1200
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0011-03",
+        "907",
+        "CCS 3100",
+        "Methods of Research in IT",
+        1000,
+        1300
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0011-03",
+        "904",
+        "CCS 3030",
+        "Web Systems and Technologies",
+        1740,
+        2040
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/om9dmd\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L4\",\"address\":\"A1:L4\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H4\",\"rows\":4,\"cols\":8,\"nonEmpty\":32,\"text\":32,\"maxTextLength\":42,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0011-03\",\"857\",\"CCS 3010\",\"Fundamentals of Human Computer Interaction\",\"900\",\"1200\"],[\"2026-2027\",\"1st\",\"26-0011-03\",\"907\",\"CCS 3100\",\"Methods of Research in IT\",\"1000\",\"1300\"],[\"2026-2027\",\"1st\",\"26-0011-03\",\"904\",\"CCS 3030\",\"Web Systems and Technologies\",\"1740\",\"2040\"]],\"previewAddress\":\"A1:H4\",\"previewRows\":4,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"D1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 28 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSIS_Year3_Student.png"
+  },
+  {
+    "filename": "BSIS_Year4_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 3,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0012-04",
+        "936",
+        "CCS 4300",
+        "Social Issues and Professional Practices",
+        1000,
+        1300
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0012-04",
+        "858",
+        "CCS 3020",
+        "Information Assurance and Security I",
+        700,
+        1000
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/5wu8a8\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L3\",\"address\":\"A1:L3\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H3\",\"rows\":3,\"cols\":8,\"nonEmpty\":24,\"text\":24,\"maxTextLength\":40,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0012-04\",\"936\",\"CCS 4300\",\"Social Issues and Professional Practices\",\"1000\",\"1300\"],[\"2026-2027\",\"1st\",\"26-0012-04\",\"858\",\"CCS 3020\",\"Information Assurance and Security I\",\"700\",\"1000\"]],\"previewAddress\":\"A1:H3\",\"previewRows\":3,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"D1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 20 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSIS_Year4_Student.png"
+  },
+  {
+    "filename": "BSIT_Year1_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 5,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0005-01",
+        "806",
+        "CCS 1001",
+        "Introduction to Computing",
+        700,
+        900
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0005-01",
+        "806",
+        "CCS 1001",
+        "Introduction to Computing",
+        1300,
+        1600
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0005-01",
+        "813",
+        "CCS 1400",
+        "Fundamentals of Programming",
+        1000,
+        1200
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0005-01",
+        "813",
+        "CCS 1400",
+        "Fundamentals of Programming",
+        1000,
+        1300
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/1yiyv4\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L5\",\"address\":\"A1:L5\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H5\",\"rows\":5,\"cols\":8,\"nonEmpty\":40,\"text\":40,\"maxTextLength\":27,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0005-01\",\"806\",\"CCS 1001\",\"Introduction to Computing\",\"700\",\"900\"],[\"2026-2027\",\"1st\",\"26-0005-01\",\"806\",\"CCS 1001\",\"Introduction to Computing\",\"1300\",\"1600\"],[\"2026-2027\",\"1st\",\"26-0005-01\",\"813\",\"CCS 1400\",\"Fundamentals of Programming\",\"1000\",\"1200\"],[\"2026-2027\",\"1st\",\"26-0005-01\",\"813\",\"CCS 1400\",\"Fundamentals of Programming\",\"1000\",\"1300\"]],\"previewAddress\":\"A1:H5\",\"previewRows\":5,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"D1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 36 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSIT_Year1_Student.png"
+  },
+  {
+    "filename": "BSIT_Year2_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 8,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0006-02",
+        "828",
+        "CCS 2100",
+        "Fundamentals of Database Design",
+        700,
+        900
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0006-02",
+        "828",
+        "CCS 2100",
+        "Fundamentals of Database Design",
+        1000,
+        1300
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0006-02",
+        "842",
+        "CCS 2200",
+        "Basic Electrical and Electronic Concepts",
+        1000,
+        1200
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0006-02",
+        "842",
+        "CCS 2200",
+        "Basic Electrical and Electronic Concepts",
+        700,
+        1000
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0006-02",
+        "837",
+        "CCS 2110",
+        "Application Development and Emerging Technologies",
+        700,
+        1000
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0006-02",
+        "930",
+        "CCS 2800",
+        "Mobile Application Development I",
+        1600,
+        1900
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0006-02",
+        "1028",
+        "IT 2110",
+        "Platform Technologies",
+        700,
+        1000
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/22hgyf\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L8\",\"address\":\"A1:L8\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H8\",\"rows\":8,\"cols\":8,\"nonEmpty\":64,\"text\":64,\"maxTextLength\":49,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0006-02\",\"828\",\"CCS 2100\",\"Fundamentals of Database Design\",\"700\",\"900\"],[\"2026-2027\",\"1st\",\"26-0006-02\",\"828\",\"CCS 2100\",\"Fundamentals of Database Design\",\"1000\",\"1300\"],[\"2026-2027\",\"1st\",\"26-0006-02\",\"842\",\"CCS 2200\",\"Basic Electrical and Electronic Concepts\",\"1000\",\"1200\"],[\"2026-2027\",\"1st\",\"26-0006-02\",\"842\",\"CCS 2200\",\"Basic Electrical and Electronic Concepts\",\"700\",\"1000\"],[\"2026-2027\",\"1st\",\"26-0006-02\",\"837\",\"CCS 2110\",\"Application Development and Emerging Technologies\",\"700\",\"1000\"],[\"2026-2027\",\"1st\",\"26-0006-02\",\"930\",\"CCS 2800\",\"Mobile Application Development I\",\"1600\",\"1900\"],[\"2026-2027\",\"1st\",\"26-0006-02\",\"1028\",\"IT 2110\",\"Platform Technologies\",\"700\",\"1000\"]],\"previewAddress\":\"A1:H8\",\"previewRows\":8,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 61 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSIT_Year2_Student.png"
+  },
+  {
+    "filename": "BSIT_Year3_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 9,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0007-03",
+        "906",
+        "CCS 3100",
+        "Methods of Research in IT",
+        1000,
+        1300
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0007-03",
+        "851",
+        "CCS 3010",
+        "Fundamentals of Human Computer Interaction",
+        1700,
+        2000
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0007-03",
+        "858",
+        "CCS 3020",
+        "Information Assurance and Security I",
+        700,
+        1000
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0007-03",
+        "904",
+        "CCS 3030",
+        "Web Systems and Technologies",
+        1740,
+        2040
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0007-03",
+        "1037",
+        "IT 3121",
+        "Network Engineering II: Switching, Routing, and Wireless Essentials",
+        1000,
+        1300
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0007-03",
+        "1037",
+        "IT 3121",
+        "Network Engineering II: Switching, Routing, and Wireless Essentials",
+        800,
+        1000
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0007-03",
+        "1063",
+        "IT 3131",
+        "System Administration and Maintenance",
+        1700,
+        1900
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0007-03",
+        "1063",
+        "IT 3131",
+        "System Administration and Maintenance",
+        1700,
+        2000
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/8k1z8k\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L9\",\"address\":\"A1:L9\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H9\",\"rows\":9,\"cols\":8,\"nonEmpty\":72,\"text\":72,\"maxTextLength\":67,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0007-03\",\"906\",\"CCS 3100\",\"Methods of Research in IT\",\"1000\",\"1300\"],[\"2026-2027\",\"1st\",\"26-0007-03\",\"851\",\"CCS 3010\",\"Fundamentals of Human Computer Interaction\",\"1700\",\"2000\"],[\"2026-2027\",\"1st\",\"26-0007-03\",\"858\",\"CCS 3020\",\"Information Assurance and Security I\",\"700\",\"1000\"],[\"2026-2027\",\"1st\",\"26-0007-03\",\"904\",\"CCS 3030\",\"Web Systems and Technologies\",\"1740\",\"2040\"],[\"2026-2027\",\"1st\",\"26-0007-03\",\"1037\",\"IT 3121\",\"Network Engineering II: Switching, Routing, and Wireless Essentials\",\"1000\",\"1300\"],[\"2026-2027\",\"1st\",\"26-0007-03\",\"1037\",\"IT 3121\",\"Network Engineering II: Switching, Routing, and Wireless Essentials\",\"800\",\"1000\"],[\"2026-2027\",\"1st\",\"26-0007-03\",\"1063\",\"IT 3131\",\"System Administration and Maintenance\",\"1700\",\"1900\"],[\"2026-2027\",\"1st\",\"26-0007-03\",\"1063\",\"IT 3131\",\"System Administration and Maintenance\",\"1700\",\"2000\"]],\"previewAddress\":\"A1:H9\",\"previewRows\":9,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 69 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSIT_Year3_Student.png"
+  },
+  {
+    "filename": "BSIT_Year4_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 4,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0008-04",
+        "936",
+        "CCS 4300",
+        "Social Issues and Professional Practices",
+        1000,
+        1300
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0008-04",
+        "1068",
+        "IT 4120",
+        "Advanced Database Systems",
+        1740,
+        2040
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0008-04",
+        "1071",
+        "IT 4130",
+        "Advanced System Integration and Architecture",
+        1300,
+        1600
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/yrcxzy\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L4\",\"address\":\"A1:L4\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H4\",\"rows\":4,\"cols\":8,\"nonEmpty\":32,\"text\":32,\"maxTextLength\":44,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0008-04\",\"936\",\"CCS 4300\",\"Social Issues and Professional Practices\",\"1000\",\"1300\"],[\"2026-2027\",\"1st\",\"26-0008-04\",\"1068\",\"IT 4120\",\"Advanced Database Systems\",\"1740\",\"2040\"],[\"2026-2027\",\"1st\",\"26-0008-04\",\"1071\",\"IT 4130\",\"Advanced System Integration and Architecture\",\"1300\",\"1600\"]],\"previewAddress\":\"A1:H4\",\"previewRows\":4,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"D1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 28 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\BSIT_Year4_Student.png"
+  },
+  {
+    "filename": "DMA_Year1_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 5,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0013-01",
+        "970",
+        "DMIA 1101",
+        "Elements and Principles of Art and Design",
+        1300,
+        1600
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0013-01",
+        "977",
+        "DMIA 1102",
+        "Drawing and Illustration I: Fundamentals",
+        700,
+        1000
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0013-01",
+        "977",
+        "DMIA 1102",
+        "Drawing and Illustration I: Fundamentals",
+        1300,
+        1600
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0013-01",
+        "978",
+        "DMIA 1103",
+        "Color Theory",
+        1600,
+        1800
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/kl09dn\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L5\",\"address\":\"A1:L5\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H5\",\"rows\":5,\"cols\":8,\"nonEmpty\":40,\"text\":40,\"maxTextLength\":41,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0013-01\",\"970\",\"DMIA 1101\",\"Elements and Principles of Art and Design\",\"1300\",\"1600\"],[\"2026-2027\",\"1st\",\"26-0013-01\",\"977\",\"DMIA 1102\",\"Drawing and Illustration I: Fundamentals\",\"700\",\"1000\"],[\"2026-2027\",\"1st\",\"26-0013-01\",\"977\",\"DMIA 1102\",\"Drawing and Illustration I: Fundamentals\",\"1300\",\"1600\"],[\"2026-2027\",\"1st\",\"26-0013-01\",\"978\",\"DMIA 1103\",\"Color Theory\",\"1600\",\"1800\"]],\"previewAddress\":\"A1:H5\",\"previewRows\":5,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"D1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 36 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\DMA_Year1_Student.png"
+  },
+  {
+    "filename": "DMA_Year2_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 9,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0014-02",
+        "983",
+        "DMIA 2102",
+        "Essentials of 2D and 3D Design",
+        1730,
+        1930
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0014-02",
+        "983",
+        "DMIA 2102",
+        "Essentials of 2D and 3D Design",
+        1300,
+        1600
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0014-02",
+        "986",
+        "DMIA 2103",
+        "Design and Digital Imaging",
+        1300,
+        1600
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0014-02",
+        "989",
+        "DMIA 2104",
+        "Digital Photography",
+        1600,
+        1800
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0014-02",
+        "989",
+        "DMIA 2104",
+        "Digital Photography",
+        1300,
+        1600
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0014-02",
+        "813",
+        "CCS 1400",
+        "Fundamentals of Programming",
+        1000,
+        1200
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0014-02",
+        "813",
+        "CCS 1400",
+        "Fundamentals of Programming",
+        1000,
+        1300
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0014-02",
+        "994",
+        "DMIA 2205",
+        "Media and Social Psychology",
+        1740,
+        2040
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/v2nqcb\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L9\",\"address\":\"A1:L9\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H9\",\"rows\":9,\"cols\":8,\"nonEmpty\":72,\"text\":72,\"maxTextLength\":30,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0014-02\",\"983\",\"DMIA 2102\",\"Essentials of 2D and 3D Design\",\"1730\",\"1930\"],[\"2026-2027\",\"1st\",\"26-0014-02\",\"983\",\"DMIA 2102\",\"Essentials of 2D and 3D Design\",\"1300\",\"1600\"],[\"2026-2027\",\"1st\",\"26-0014-02\",\"986\",\"DMIA 2103\",\"Design and Digital Imaging\",\"1300\",\"1600\"],[\"2026-2027\",\"1st\",\"26-0014-02\",\"989\",\"DMIA 2104\",\"Digital Photography\",\"1600\",\"1800\"],[\"2026-2027\",\"1st\",\"26-0014-02\",\"989\",\"DMIA 2104\",\"Digital Photography\",\"1300\",\"1600\"],[\"2026-2027\",\"1st\",\"26-0014-02\",\"813\",\"CCS 1400\",\"Fundamentals of Programming\",\"1000\",\"1200\"],[\"2026-2027\",\"1st\",\"26-0014-02\",\"813\",\"CCS 1400\",\"Fundamentals of Programming\",\"1000\",\"1300\"],[\"2026-2027\",\"1st\",\"26-0014-02\",\"994\",\"DMIA 2205\",\"Media and Social Psychology\",\"1740\",\"2040\"]],\"previewAddress\":\"A1:H9\",\"previewRows\":9,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 69 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\DMA_Year2_Student.png"
+  },
+  {
+    "filename": "DMA_Year3_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 5,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0015-03",
+        "997",
+        "DMIA 3110",
+        "Interactive Digital Storytelling",
+        1740,
+        2040
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0015-03",
+        "1006",
+        "DMBD 3101",
+        "Motion and Broadcast Design Principles",
+        700,
+        1000
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0015-03",
+        "1001",
+        "DMBD 3103",
+        "Motion Typography",
+        1600,
+        1900
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0015-03",
+        "904",
+        "CCS 3030",
+        "Web System and Technologies",
+        1740,
+        2040
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/nopdu6\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L5\",\"address\":\"A1:L5\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H5\",\"rows\":5,\"cols\":8,\"nonEmpty\":40,\"text\":40,\"maxTextLength\":38,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0015-03\",\"997\",\"DMIA 3110\",\"Interactive Digital Storytelling\",\"1740\",\"2040\"],[\"2026-2027\",\"1st\",\"26-0015-03\",\"1006\",\"DMBD 3101\",\"Motion and Broadcast Design Principles\",\"700\",\"1000\"],[\"2026-2027\",\"1st\",\"26-0015-03\",\"1001\",\"DMBD 3103\",\"Motion Typography\",\"1600\",\"1900\"],[\"2026-2027\",\"1st\",\"26-0015-03\",\"904\",\"CCS 3030\",\"Web System and Technologies\",\"1740\",\"2040\"]],\"previewAddress\":\"A1:H5\",\"previewRows\":5,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"D1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 36 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\DMA_Year3_Student.png"
+  },
+  {
+    "filename": "DMA_Year4_Student.xlsx",
+    "sheetName": "Sheet1",
+    "rowCount": 5,
+    "columnCount": 12,
+    "values": [
+      [
+        "SY",
+        "SEM",
+        "IDNO",
+        "STUBCODE",
+        "SUBJECTCODE",
+        "TITLE",
+        "START",
+        "END"
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0016-04",
+        "1020",
+        "DMIA 4102",
+        "Digital Media Law with Professional Ethics",
+        1300,
+        1600
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0016-04",
+        "1023",
+        "DMIA 4103",
+        "Digital Arts Entrepreneurship",
+        1300,
+        1600
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0016-04",
+        "1019",
+        "DMIA 4100",
+        "Portfolio Development II",
+        1600,
+        1900
+      ],
+      [
+        "2026-2027",
+        "1st",
+        "26-0016-04",
+        "936",
+        "CCS 4300",
+        "Social Issues and Professional Practices",
+        1000,
+        1300
+      ]
+    ],
+    "inspection": "{\"kind\":\"sheet\",\"id\":\"ws/be58xl\",\"name\":\"Sheet1\",\"index\":0,\"range\":\"A1:L5\",\"address\":\"A1:L5\"}\n{\"kind\":\"region\",\"sheet\":\"Sheet1\",\"address\":\"A1:H5\",\"rows\":5,\"cols\":8,\"nonEmpty\":40,\"text\":40,\"maxTextLength\":42,\"preview\":[[\"SY\",\"SEM\",\"IDNO\",\"STUBCODE\",\"SUBJECTCODE\",\"TITLE\",\"START\",\"END\"],[\"2026-2027\",\"1st\",\"26-0016-04\",\"1020\",\"DMIA 4102\",\"Digital Media Law with Professional Ethics\",\"1300\",\"1600\"],[\"2026-2027\",\"1st\",\"26-0016-04\",\"1023\",\"DMIA 4103\",\"Digital Arts Entrepreneurship\",\"1300\",\"1600\"],[\"2026-2027\",\"1st\",\"26-0016-04\",\"1019\",\"DMIA 4100\",\"Portfolio Development II\",\"1600\",\"1900\"],[\"2026-2027\",\"1st\",\"26-0016-04\",\"936\",\"CCS 4300\",\"Social Issues and Professional Practices\",\"1000\",\"1300\"]],\"previewAddress\":\"A1:H5\",\"previewRows\":5,\"previewCols\":8}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"A1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"B1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"C1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"computedStyle\",\"sheet\":\"Sheet1\",\"for\":\"D1\",\"style\":{\"fill\":{\"type\":3,\"color\":{\"type\":1,\"value\":\"17365D\"},\"gradientStops\":[],\"pattern\":{\"patternType\":2},\"pictureEffects\":[]},\"font\":{\"bold\":true,\"fontSize\":11,\"typeface\":\"Carlito\",\"fill\":{\"type\":0,\"color\":{\"type\":1,\"value\":\"FFFFFF\"},\"gradientStops\":[],\"pictureEffects\":[]}},\"border\":{\"top\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"bottom\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"left\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}},\"right\":{\"style\":\"thin\",\"color\":{\"type\":1,\"value\":\"CBD5E1\"}}},\"wrapText\":false,\"horizontalAlignment\":\"center\",\"styleId\":5}}\n{\"kind\":\"notice\",\"message\":\"Truncated: omitted 36 lines. Increase maxChars, narrow range, or use tableMaxRows/tableMaxCols/tableMaxCellChars.\"}",
+    "previewPath": "C:\\Users\\jap\\Documents\\mid_eval\\.codex_spreadsheet_work\\source_previews\\DMA_Year4_Student.png"
+  }
+]

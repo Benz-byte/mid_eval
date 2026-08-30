@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ChangeEvent } from 'react'
 import type { BookingEditScope, CalendarEvent, ScheduleConflict, UploadedAssistant } from '../../types'
-import { saveSharedStudentAssistantData } from '../../api/studentAssistantApi'
 import type { DutyAssignment, RelieverAssignment, StudentAssistantResult } from '../../api/studentAssistantApi'
 import { matchesSelectedDay, toDateInputValue } from '../../formatters/dateFormatter'
 import { formatTime } from '../../formatters/timeFormatter'
 import { SCHEDULE_DATE_STORAGE_KEY, loadScheduleDate } from '../../storage/preferenceStorage'
-import { ASSISTANT_STORAGE_KEY, loadLocalAssistantData } from '../../storage/studentAssistantStorage'
+import { loadLocalAssistantData, saveLocalAssistantData } from '../../storage/studentAssistantStorage'
 import { ScheduleFilter, type ScheduleFilterOption } from './ScheduleFilter'
 
 const DEFAULT_START = 7 * 60
@@ -66,6 +65,11 @@ function sameWeek(left: Date, right: Date) {
 
 function overlaps(start: number, end: number, otherStart: number, otherEnd: number) {
   return start < otherEnd && end > otherStart
+}
+
+function dateFromInputValue(value: string) {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year, month - 1, day)
 }
 
 function longestConsecutiveMinutes(intervals: Array<{ start: number, end: number }>) {
@@ -194,13 +198,36 @@ export function ScheduleCalendar({
   const selectedDateKey = toDateInputValue(selectedDate)
   const availableEventAssistants = useMemo(() => {
     if (!selectedCalendarEvent?.date) return []
-    return assistantData.assistants.filter(assistant => !adminEvents.some(event =>
-      event.id !== selectedCalendarEvent.id
-      && event.date === selectedCalendarEvent.date
-      && event.assistantId === assistant.id
-      && overlaps(selectedCalendarEvent.startMinutes, selectedCalendarEvent.endMinutes, event.startMinutes, event.endMinutes),
-    ))
-  }, [adminEvents, assistantData.assistants, selectedCalendarEvent])
+    const eventDate = dateFromInputValue(selectedCalendarEvent.date)
+    const assignments = assistantData.result?.assignments ?? []
+    const relieverRecords = assistantData.result?.relieverAssignments ?? []
+    return assistantData.assistants.filter(assistant => {
+      const hasPersonalClassConflict = assistant.events.some(event =>
+        matchesSelectedDay(event.dayCode, eventDate)
+        && overlaps(selectedCalendarEvent.startMinutes, selectedCalendarEvent.endMinutes, event.startMinutes, event.endMinutes),
+      )
+      if (hasPersonalClassConflict) return false
+
+      const hasDutyConflict = assignments.some(assignment =>
+        assignment.assistantId === assistant.id
+        && matchesSelectedDay(assignment.day, eventDate)
+        && overlaps(selectedCalendarEvent.startMinutes, selectedCalendarEvent.endMinutes, assignment.startMinutes, assignment.endMinutes),
+      ) || relieverRecords.some(assignment =>
+        assignment.date === selectedCalendarEvent.date
+        && assignment.replacementAssistantId === assistant.id
+        && overlaps(selectedCalendarEvent.startMinutes, selectedCalendarEvent.endMinutes, assignment.startMinutes, assignment.endMinutes),
+      )
+      if (hasDutyConflict) return false
+
+      return !adminEvents.some(event =>
+        event.id !== selectedCalendarEvent.id
+        && event.date === selectedCalendarEvent.date
+        && event.assistantId === assistant.id
+        && overlaps(selectedCalendarEvent.startMinutes, selectedCalendarEvent.endMinutes, event.startMinutes, event.endMinutes),
+      )
+    })
+  }, [adminEvents, assistantData.assistants, assistantData.result, selectedCalendarEvent])
+  const selectedEventAssistantAvailable = availableEventAssistants.some(assistant => assistant.id === selectedEventAssistantId)
   const openAssistantAssignment = () => {
     if (!selectedCalendarEvent) return
     setSelectedEventAssistantId(selectedCalendarEvent.assistantId ?? '')
@@ -641,13 +668,9 @@ export function ScheduleCalendar({
         ...records,
       ],
     }
-    const nextData = { assistants: assistantData.assistants, result: nextResult }
+    const nextData = { ...assistantData, result: nextResult }
     setAssistantData(nextData)
-    localStorage.setItem(ASSISTANT_STORAGE_KEY, JSON.stringify(nextData))
-    void saveSharedStudentAssistantData({
-      assistants: nextData.assistants,
-      solverResult: nextResult,
-    }).catch(error => console.warn('Could not synchronize the reliever assignment.', error))
+    saveLocalAssistantData(nextData)
   }
 
   const findRelievers = () => {
@@ -931,9 +954,9 @@ export function ScheduleCalendar({
                 <label>Student Assistant<select value={selectedEventAssistantId} onChange={event => setSelectedEventAssistantId(event.target.value)}><option value="">Select a student assistant</option>{availableEventAssistants.map(assistant => <option value={assistant.id} key={assistant.id}>{abbreviatedAssistantName(assistant.label)}</option>)}</select></label>
                 {assistantData.assistants.length === 0 && <p>No student assistants added.</p>}
                 {assistantData.assistants.length > 0 && availableEventAssistants.length === 0 && <p>No student assistants are available at this date and time.</p>}
-                <small>Assistants already assigned to another event at the same time are not shown.</small>
+                <small>Assistants with a personal class, duty, reliever duty, or another event at the same time are not shown.</small>
               </div>
-              <div className="calendar-event-dialog-actions">{selectedCalendarEvent.assistantId && <button className="btn-danger" type="button" onClick={removeEventAssistant}>Remove Assistant</button>}<button className="btn-secondary" type="button" onClick={() => setAssistantAssignmentOpen(false)}>Cancel</button><button className="btn-primary" type="button" disabled={!selectedEventAssistantId} onClick={saveEventAssistant}>Save</button></div>
+              <div className="calendar-event-dialog-actions">{selectedCalendarEvent.assistantId && <button className="btn-danger" type="button" onClick={removeEventAssistant}>Remove Assistant</button>}<button className="btn-secondary" type="button" onClick={() => setAssistantAssignmentOpen(false)}>Cancel</button><button className="btn-primary" type="button" disabled={!selectedEventAssistantAvailable} onClick={saveEventAssistant}>Save</button></div>
             </> : !confirmCardDelete ? <>
               <div className="calendar-event-dialog-heading"><h3 id="calendar-event-dialog-title">{selectedCalendarEvent.id.startsWith('booking_') ? 'Booking details' : 'Event details'}</h3><button type="button" onClick={() => { setSelectedCalendarEvent(null); setAssistantAssignmentOpen(false) }}>Close</button></div>
               <strong>{selectedCalendarEvent.courseCode}</strong>

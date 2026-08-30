@@ -10,3 +10,7 @@ export function loadAdminEvents(): CalendarEvent[] {
     return []
   }
 }
+
+export function saveAdminEventsLocally(events: CalendarEvent[]) {
+  localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(events))
+}

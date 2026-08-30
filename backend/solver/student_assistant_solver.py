@@ -13,6 +13,9 @@ DAY_ORDER = {"M": 0, "T": 1, "W": 2, "Th": 3, "F": 4, "S": 5, "Su": 6}
 MINUTES_PER_WEEK = 20 * 60
 MAX_MINUTES_PER_DAY = 6 * 60
 SLOT_MINUTES = 30
+THREE_HOUR_DUTY_MINUTES = 3 * 60
+DEFAULT_DUTY_GAP_MINUTES = 30
+ALLOWED_DUTY_GAP_MINUTES = {0, 30, 60, 90, 120}
 
 
 @dataclass(frozen=True)
@@ -100,6 +103,92 @@ def _overlaps(unit: CoverageUnit, busy: Meeting) -> bool:
         and unit.start < busy.end
         and unit.end > busy.start
     )
+
+
+def _duty_gap_minutes(payload: dict[str, Any]) -> int:
+    settings = payload.get("schedulingSettings") or {}
+    if not isinstance(settings, dict):
+        raise ValueError("Scheduling settings must be a JSON object.")
+    try:
+        minutes = int(settings.get(
+            "minimumGapAfterThreeHourDutyMinutes",
+            DEFAULT_DUTY_GAP_MINUTES,
+        ))
+    except (TypeError, ValueError) as error:
+        raise ValueError("The duty-break gap must be a number of minutes.") from error
+    if minutes not in ALLOWED_DUTY_GAP_MINUTES:
+        raise ValueError("The duty-break gap must be 0, 30, 60, 90, or 120 minutes.")
+    return minutes
+
+
+def _add_duty_break_constraints(
+    model: cp_model.CpModel,
+    assistant_occurrences: dict[
+        tuple[str, str], list[tuple[str, cp_model.IntVar, int, int]]
+    ],
+    minimum_gap: int,
+) -> int:
+    """Forbid another regular duty too soon after three continuous duty hours."""
+    if minimum_gap <= 0:
+        return 0
+
+    constraint_keys: set[tuple[str, str, tuple[str, ...]]] = set()
+    constraint_count = 0
+
+    for (assistant_id, day), raw_occurrences in assistant_occurrences.items():
+        unique_occurrences = {
+            (class_id, start, end): (class_id, variable, start, end)
+            for class_id, variable, start, end in raw_occurrences
+        }
+        occurrences = sorted(
+            unique_occurrences.values(),
+            key=lambda item: (item[2], item[3], item[0]),
+        )
+        by_start: dict[int, list[tuple[str, cp_model.IntVar, int, int]]] = defaultdict(list)
+        for occurrence in occurrences:
+            by_start[occurrence[2]].append(occurrence)
+
+        def extend_chain(
+            path: list[tuple[str, cp_model.IntVar, int, int]],
+            continuous_minutes: int,
+        ) -> None:
+            nonlocal constraint_count
+            current_end = path[-1][3]
+            path_keys = {(class_id, start, end) for class_id, _, start, end in path}
+            if continuous_minutes >= THREE_HOUR_DUTY_MINUTES:
+                for following in occurrences:
+                    following_key = (following[0], following[2], following[3])
+                    if following_key in path_keys or not (
+                        current_end <= following[2] < current_end + minimum_gap
+                    ):
+                        continue
+                    variables_by_class = {
+                        class_id: variable
+                        for class_id, variable, _, _ in [*path, following]
+                    }
+                    class_ids = tuple(sorted(variables_by_class))
+                    key = (assistant_id, day, class_ids)
+                    if key in constraint_keys:
+                        continue
+                    constraint_keys.add(key)
+                    variables = list(variables_by_class.values())
+                    model.add(sum(variables) <= len(variables) - 1)
+                    constraint_count += 1
+                return
+
+            for following in by_start.get(current_end, []):
+                following_key = (following[0], following[2], following[3])
+                if following_key in path_keys:
+                    continue
+                extend_chain(
+                    [*path, following],
+                    continuous_minutes + following[3] - following[2],
+                )
+
+        for occurrence in occurrences:
+            extend_chain([occurrence], occurrence[3] - occurrence[2])
+
+    return constraint_count
 
 
 def _merge_assignments(
@@ -192,6 +281,7 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
     randomizer = random.Random(random_seed)
 
     try:
+        minimum_duty_gap = _duty_gap_minutes(payload)
         main_meetings = _parse_meetings(main_events, "main schedule")
         coverage_units = _coverage_units(main_meetings)
         assistant_busy: dict[str, list[Meeting]] = {}
@@ -281,6 +371,12 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
                         f"interval_{assistant_id}_{unit.unit_id}",
                     )
                 )
+
+    duty_break_constraint_count = _add_duty_break_constraints(
+        model,
+        assistant_occurrences,
+        minimum_duty_gap,
+    )
 
     for unit in coverage_units:
         candidates = unit_candidates.get(unit.unit_id, [])
@@ -391,7 +487,7 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
             "status": "INFEASIBLE",
             "diagnostics": [
                 "No assignment satisfies all class conflicts, available duty periods, "
-                "the six-hour daily limit, and the 20-hour weekly maximum."
+                "the duty-break rule, the six-hour daily limit, and the 20-hour weekly maximum."
             ],
         }
 
@@ -440,4 +536,8 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
             "unassignedClassCount": unassigned_count,
         },
         "diagnostics": [],
+        "appliedSettings": {
+            "minimumGapAfterThreeHourDutyMinutes": minimum_duty_gap,
+            "dutyBreakConstraintCount": duty_break_constraint_count,
+        },
     }

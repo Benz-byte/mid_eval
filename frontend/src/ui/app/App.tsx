@@ -1,11 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
-import { deleteSharedAdminEvent, loadSharedAdminEvents, saveSharedAdminEvent, subscribeToSharedAdminEvents } from '../../api/adminEventApi'
-import { isCloudConfigured, loadSharedSchedule, saveSharedSchedule, subscribeToSharedSchedule } from '../../api/scheduleApi'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { loadSharedAdminEvents, subscribeToSharedAdminEvents } from '../../api/adminEventApi'
+import { isCloudConfigured, loadSharedSchedule, subscribeToSharedSchedule } from '../../api/scheduleApi'
 import { readScheduleFile } from '../../api/scheduleParser'
 import { parseInputTime } from '../../formatters/timeFormatter'
-import { ADMIN_STORAGE_KEY, loadAdminEvents } from '../../storage/adminEventStorage'
+import { ADMIN_STORAGE_KEY, loadAdminEvents, saveAdminEventsLocally } from '../../storage/adminEventStorage'
+import {
+  flushPendingAdminSync,
+  flushPendingScheduleSync,
+  hasPendingScheduleSync,
+  mergePendingAdminEvents,
+  queueAdminDelete,
+  queueAdminUpsert,
+  queueScheduleSync,
+} from '../../storage/localFirstSync'
 import { ACTIVE_TAB_STORAGE_KEY, loadActiveTab } from '../../storage/preferenceStorage'
-import { CSV_STORAGE_KEY, loadCsvSchedule } from '../../storage/scheduleStorage'
+import { CSV_STORAGE_KEY, loadCsvSchedule, saveCsvScheduleLocally } from '../../storage/scheduleStorage'
 import type { AdminEventForm, BookingEditScope, CalendarEvent, RoomBookingForm, Tab } from '../../types'
 import { AdminEventsPanel } from '../admin-events/AdminEventsPanel'
 import type { BookingDateSchedule } from '../admin-events/AdminEventsPanel'
@@ -27,6 +36,8 @@ export default function App() {
   const [eventEditRequest, setEventEditRequest] = useState<{ eventId: string, scope?: BookingEditScope } | null>(null)
   const [, setStorageStatus] = useState('Opening interface…')
   const [, setStorageStatusClass] = useState('api-connecting')
+  const scheduleRevisionRef = useRef(0)
+  const adminRevisionRef = useRef(0)
 
   useEffect(() => {
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminEvents))
@@ -50,13 +61,18 @@ export default function App() {
         return
       }
 
+      const revision = scheduleRevisionRef.current
       try {
+        await flushPendingScheduleSync()
+        if (hasPendingScheduleSync()) return
         const schedule = await loadSharedSchedule<CalendarEvent>()
-        if (cancelled) return
+        if (cancelled || hasPendingScheduleSync() || revision !== scheduleRevisionRef.current) return
 
         if (schedule) {
           setCsvEvents(schedule.csvEvents)
           setCsvName(schedule.csvName)
+          const local = loadCsvSchedule()
+          saveCsvScheduleLocally({ events: schedule.csvEvents, name: schedule.csvName, tbaSubjects: local.tbaSubjects })
           setStorageStatus('Database schedule loaded')
           setStorageStatusClass('api-online')
         } else {
@@ -86,9 +102,15 @@ export default function App() {
     let cancelled = false
 
     const refreshAdminEvents = async () => {
+      const revision = adminRevisionRef.current
       try {
+        await flushPendingAdminSync()
         const events = await loadSharedAdminEvents()
-        if (!cancelled) setAdminEvents(events)
+        if (!cancelled && revision === adminRevisionRef.current) {
+          const merged = mergePendingAdminEvents(events)
+          saveAdminEventsLocally(merged)
+          setAdminEvents(merged)
+        }
       } catch (error) {
         console.warn('Could not load shared events; local events remain available.', error)
       }
@@ -118,30 +140,18 @@ export default function App() {
     setCsvEvents(parsed.events)
     setCsvName(file.name)
     setTbaSubjects(parsed.tbaSubjects)
-
-    try {
-      await saveSharedSchedule({ csvEvents: parsed.events, csvName: file.name })
-      if (isCloudConfigured) {
-        setStorageStatus('Database schedule loaded')
-        setStorageStatusClass('api-online')
-      }
-    } catch (error) {
-      console.warn('Could not synchronize the CSV schedule; the local copy remains available.', error)
-      setStorageStatus('Database unavailable')
-      setStorageStatusClass('api-offline')
-    }
+    saveCsvScheduleLocally({ events: parsed.events, name: file.name, tbaSubjects: parsed.tbaSubjects })
+    scheduleRevisionRef.current += 1
+    queueScheduleSync({ csvEvents: parsed.events, csvName: file.name })
   }
 
   const removeCsv = () => {
     setCsvEvents([])
     setCsvName('')
     setTbaSubjects([])
-
-    void saveSharedSchedule({ csvEvents: [], csvName: '' }).catch(error => {
-      console.warn('Could not synchronize CSV removal; the local copy was still removed.', error)
-      setStorageStatus('Database unavailable')
-      setStorageStatusClass('api-offline')
-    })
+    saveCsvScheduleLocally({ events: [], name: '', tbaSubjects: [] })
+    scheduleRevisionRef.current += 1
+    queueScheduleSync({ csvEvents: [], csvName: '' })
   }
 
   const saveAdminEvent = (form: AdminEventForm, editingId: string | null) => {
@@ -160,14 +170,14 @@ export default function App() {
       instructorLastName: '',
     }
 
-    setAdminEvents(current =>
-      editingId
+    adminRevisionRef.current += 1
+    queueAdminUpsert(calendarEvent)
+    setAdminEvents(current => {
+      const next = editingId
         ? current.map(event => event.id === editingId ? calendarEvent : event)
-        : [...current, calendarEvent],
-    )
-
-    void saveSharedAdminEvent(calendarEvent).catch(error => {
-      console.warn('Could not synchronize the event; the local copy remains available.', error)
+        : [...current, calendarEvent]
+      saveAdminEventsLocally(next)
+      return next
     })
   }
 
@@ -188,18 +198,22 @@ export default function App() {
       instructorLastName: '',
     }))))
 
-    setAdminEvents(current => [...current, ...bookingEvents])
-    bookingEvents.forEach(event => {
-      void saveSharedAdminEvent(event).catch(error => {
-        console.warn('Could not synchronize the room booking; the local copy remains available.', error)
-      })
+    adminRevisionRef.current += 1
+    bookingEvents.forEach(queueAdminUpsert)
+    setAdminEvents(current => {
+      const next = [...current, ...bookingEvents]
+      saveAdminEventsLocally(next)
+      return next
     })
   }
 
   const deleteAdminEvent = (id: string) => {
-    setAdminEvents(current => current.filter(event => event.id !== id))
-    void deleteSharedAdminEvent(id).catch(error => {
-      console.warn('Could not synchronize the deletion.', error)
+    adminRevisionRef.current += 1
+    queueAdminDelete(id)
+    setAdminEvents(current => {
+      const next = current.filter(event => event.id !== id)
+      saveAdminEventsLocally(next)
+      return next
     })
   }
 
@@ -207,19 +221,23 @@ export default function App() {
     const event = adminEvents.find(value => value.id === id)
     if (!event) return
     const updated = { ...event, assistantId, assistantLabel }
-    setAdminEvents(current => current.map(value => value.id === id ? updated : value))
-    void saveSharedAdminEvent(updated).catch(error => {
-      console.warn('Could not synchronize the event assistant; the local assignment remains available.', error)
+    adminRevisionRef.current += 1
+    queueAdminUpsert(updated)
+    setAdminEvents(current => {
+      const next = current.map(value => value.id === id ? updated : value)
+      saveAdminEventsLocally(next)
+      return next
     })
   }
 
   const deleteAdminEvents = (ids: string[]) => {
     const idsToDelete = new Set(ids)
-    setAdminEvents(current => current.filter(event => !idsToDelete.has(event.id)))
-    ids.forEach(id => {
-      void deleteSharedAdminEvent(id).catch(error => {
-        console.warn('Could not synchronize the booking deletion.', error)
-      })
+    adminRevisionRef.current += 1
+    ids.forEach(queueAdminDelete)
+    setAdminEvents(current => {
+      const next = current.filter(event => !idsToDelete.has(event.id))
+      saveAdminEventsLocally(next)
+      return next
     })
   }
 

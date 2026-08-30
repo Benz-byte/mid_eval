@@ -25,3 +25,7 @@ export function loadCsvSchedule(): { events: CalendarEvent[]; name: string; tbaS
     return { events: [], name: '', tbaSubjects: [] }
   }
 }
+
+export function saveCsvScheduleLocally(value: { events: CalendarEvent[]; name: string; tbaSubjects: string[] }) {
+  localStorage.setItem(CSV_STORAGE_KEY, JSON.stringify(value))
+}

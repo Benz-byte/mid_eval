@@ -2,18 +2,34 @@ from typing import Any
 
 from .client import request
 
+PAGE_SIZE = 1000
+
+
+def _load_event_rows(select: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    offset = 0
+    while True:
+        page = request("GET", "admin_events", query={
+            "select": select,
+            "order": "updated_at.asc",
+            "limit": str(PAGE_SIZE),
+            "offset": str(offset),
+        }) or []
+        rows.extend(page)
+        if len(page) < PAGE_SIZE:
+            return rows
+        offset += PAGE_SIZE
+
 
 def load_events() -> list[dict[str, Any]]:
     try:
-        rows = request("GET", "admin_events", query={
-            "select": "id,title,event_date,room,start_minutes,end_minutes,assistant_id,assistant_label,updated_at",
-            "order": "updated_at.asc",
-        }) or []
+        rows = _load_event_rows(
+            "id,title,event_date,room,start_minutes,end_minutes,assistant_id,assistant_label,updated_at",
+        )
     except RuntimeError:
-        rows = request("GET", "admin_events", query={
-            "select": "id,title,event_date,room,start_minutes,end_minutes,updated_at",
-            "order": "updated_at.asc",
-        }) or []
+        rows = _load_event_rows(
+            "id,title,event_date,room,start_minutes,end_minutes,updated_at",
+        )
     return [{
         "id": row["id"],
         "source": "admin",
