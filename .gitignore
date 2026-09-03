@@ -11,6 +11,8 @@ node_modules
 dist
 dist-react
 dist-electron
+dist-backend
+build-backend
 dist-ssr
 *.local
 

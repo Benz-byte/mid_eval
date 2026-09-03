@@ -15,10 +15,11 @@
     "test:conflicts": "node scripts/test-conflicts-database.mjs",
     "test:conflicts:sample": "node scripts/test-conflicts.mjs",
     "preview": "vite preview --config frontend/vite.config.ts",
+    "build:backend": "node scripts/build-backend.mjs",
     "transpile:electron": "tsc --project frontend/src/desktop/tsconfig.json && tsc --project frontend/src/desktop/tsconfig.preload.json",
-    "dist:mac": "npm run transpile:electron && npm run build && electron-builder --config frontend/electron-builder.json --mac --arm64",
-    "dist:win": "npm run transpile:electron && npm run build && electron-builder --config frontend/electron-builder.json --win --x64",
-    "dist:linux": "npm run transpile:electron && npm run build && electron-builder --config frontend/electron-builder.json --linux --x64"
+    "dist:mac": "npm run build:backend && npm run transpile:electron && npm run build && electron-builder --config frontend/electron-builder.json --mac --arm64",
+    "dist:win": "npm run build:backend && npm run transpile:electron && npm run build && electron-builder --config frontend/electron-builder.json --win --x64",
+    "dist:linux": "npm run build:backend && npm run transpile:electron && npm run build && electron-builder --config frontend/electron-builder.json --linux --x64"
   },
   "dependencies": {
     "react": "^19.2.5",

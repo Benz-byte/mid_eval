@@ -42,7 +42,14 @@ npm run build
 ```
 
 Use `npm run dist:win`, `npm run dist:mac`, or `npm run dist:linux` to package
-the desktop application.
+the desktop application. Each distribution command first uses PyInstaller to
+bundle Flask, CP-SAT, the Python runtime, and their dependencies into a
+standalone backend executable. End users do not need to install Node.js,
+Python, Flask, or OR-Tools.
+
+The Windows build creates a portable `.exe` and an `.msi` installer in
+`dist/`. The packaged backend runs privately on `127.0.0.1` and is started and
+stopped automatically by Electron.
 
 ## Architecture
 

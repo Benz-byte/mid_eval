@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError
@@ -11,7 +12,11 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 def _load_project_environment() -> None:
-    env_path = Path(__file__).resolve().parents[3] / ".env"
+    env_path = (
+        Path(sys.executable).resolve().parents[1] / ".env"
+        if getattr(sys, "frozen", False)
+        else Path(__file__).resolve().parents[3] / ".env"
+    )
     if not env_path.exists():
         return
     for line in env_path.read_text(encoding="utf-8").splitlines():

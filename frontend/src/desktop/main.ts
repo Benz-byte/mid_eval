@@ -10,15 +10,21 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 let flaskProcess: ChildProcess | null = null
 
 function startFlask(): void {
-  const scriptPath = isDev()
-    ? path.join(process.cwd(), 'backend', 'app.py')
-    : path.join(process.resourcesPath, 'backend', 'app.py')
+  const backendCommand = isDev()
+    ? process.platform === 'win32' ? 'python' : 'python3'
+    : path.join(
+        process.resourcesPath,
+        'backend-bin',
+        process.platform === 'win32' ? 'auto-scheduler-backend.exe' : 'auto-scheduler-backend',
+      )
+  const backendArguments = isDev()
+    ? [path.join(process.cwd(), 'backend', 'app.py')]
+    : []
 
-  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3'
-
-  flaskProcess = spawn(pythonCmd, [scriptPath], {
+  flaskProcess = spawn(backendCommand, backendArguments, {
     stdio: 'pipe',
     env: { ...process.env },
+    windowsHide: true,
   })
 
   flaskProcess.stdout?.on('data', (data: Buffer) => {
@@ -32,6 +38,10 @@ function startFlask(): void {
   flaskProcess.on('close', (code: number | null) => {
     console.log(`[Flask] process exited with code ${code}`)
     flaskProcess = null
+  })
+
+  flaskProcess.on('error', (error: Error) => {
+    console.error(`[Flask] failed to start: ${error.message}`)
   })
 }
 

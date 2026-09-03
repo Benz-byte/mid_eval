@@ -2,7 +2,7 @@
   "appId": "com.group27.auto-scheduler",
   "files": ["dist-electron", "dist-react"],
   "extraResources": [
-    { "from": "backend", "to": "backend", "filter": ["**/*"] },
+    { "from": "dist-backend", "to": "backend-bin", "filter": ["**/*"] },
     { "from": ".env", "to": ".env" },
     "dist-electron/preload.js"
   ],
@@ -15,6 +15,7 @@
     "category": "Utility"
   },
   "win": {
+    "signAndEditExecutable": false,
     "target": ["portable", "msi"]
   }
 }
