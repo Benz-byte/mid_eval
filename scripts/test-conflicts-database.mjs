@@ -67,6 +67,11 @@ function detectConflicts(events) {
   )
 }
 
+function scheduleEvents(storedValue) {
+  if (Array.isArray(storedValue)) return storedValue
+  return Array.isArray(storedValue?.events) ? storedValue.events : []
+}
+
 function formatTime(minutes) {
   const hour = Math.floor(minutes / 60)
   const minute = minutes % 60
@@ -97,7 +102,7 @@ const rows = await response.json()
 const data = rows[0]
 if (!data) throw new Error('No uploaded shared schedule was found.')
 
-const events = Array.isArray(data.csv_events) ? data.csv_events : []
+const events = scheduleEvents(data.csv_events)
 const groups = detectConflicts(events)
 
 if (groups.length === 0) {

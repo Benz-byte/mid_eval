@@ -21,6 +21,8 @@ type AssistantSnapshot = {
   assistants: UploadedAssistant[]
   result: StudentAssistantResult | null
   settings: SchedulingSettings
+  activeScheduleKey: string
+  resultsBySchedule: Record<string, StudentAssistantResult>
 }
 
 let scheduleFlush: Promise<void> | null = null
@@ -142,6 +144,8 @@ export function flushPendingAssistantSync(): Promise<void> {
     await saveSharedStudentAssistantData({
       assistants: pending.assistants,
       solverResult: pending.result,
+      activeScheduleKey: pending.activeScheduleKey,
+      solverResultsBySchedule: pending.resultsBySchedule,
       schedulingSettings: pending.settings ?? DEFAULT_SCHEDULING_SETTINGS,
     })
     const latest = readJson<AssistantSnapshot | null>(PENDING_ASSISTANT_KEY, null)

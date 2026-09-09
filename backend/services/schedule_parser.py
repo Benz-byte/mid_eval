@@ -172,7 +172,7 @@ def _parse_legacy_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
     header_index = header[0] if header else -1
     columns = {**infer_columns(rows[header_index + 1:]), **(header[1] if header else {})}
     if not ("time" in columns or {"start", "end"} <= columns.keys()) or "day" not in columns or "room" not in columns or not ({"course", "subject"} & columns.keys()):
-        return {"events": [], "tbaSubjects": []}
+        return {"events": [], "rooms": [], "times": [], "tbaSubjects": []}
 
     def value(row: list[str], field: str) -> str:
         index = columns.get(field)
@@ -207,7 +207,15 @@ def _parse_legacy_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
         if instructor and instructor_first and "," not in instructor:
             instructor = f"{instructor}, {instructor_first[0].upper()}"
         events.append({"id": f"import-{index}-{course}-{day}-{start}", "source": "csv", "stubCode": value(row, "stubCode"), "courseCode": course, "subject": value(row, "subject"), "startMinutes": start, "endMinutes": end, "dayCode": day, "classType": class_type, "section": value(row, "section") or grouped_section, "room": room, "studentCount": value(row, "students"), "instructorLastName": instructor})
-    return {"events": events, "tbaSubjects": tba}
+    rooms: list[str] = []
+    seen_rooms: set[str] = set()
+    for event in events:
+        room = event["room"]
+        key = room.casefold()
+        if key not in seen_rooms:
+            seen_rooms.add(key)
+            rooms.append(room)
+    return {"events": events, "rooms": rooms, "times": [], "tbaSubjects": tba}
 
 
 OFFICIAL_HEADER_LABELS = {
@@ -312,7 +320,7 @@ def _parse_assistant_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
             "room": "",
             "studentCount": "",
         })
-    return {"events": events, "tbaSubjects": [], "studentId": extract_student_id(rows)}
+    return {"events": events, "rooms": [], "times": [], "tbaSubjects": [], "studentId": extract_student_id(rows)}
 
 
 def _parse_official_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
@@ -350,15 +358,51 @@ def _parse_official_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
         return clean(row[index]) if index < len(row) else ""
 
     events: list[dict[str, Any]] = []
+    rooms: list[str] = []
+    rooms_by_key: dict[str, str] = {}
+    times: list[int] = []
     tba: list[str] = []
     invalid_rows: list[int] = []
+
+    def register_room(room_name: str) -> str:
+        display_name = clean(room_name)
+        key = display_name.casefold()
+        if key not in rooms_by_key:
+            rooms_by_key[key] = display_name
+            rooms.append(display_name)
+        return rooms_by_key[key]
+
     for row_number, row in enumerate(rows[1:], start=2):
         subject = value(row, "subject")
         subject_title = value(row, "subjectTitle")
         raw_day = value(row, "day")
         room = value(row, "room")
-        start = parse_time(value(row, "startTime"))
-        end = parse_time(value(row, "endTime"))
+
+        class_fields_have_data = any(
+            value(row, field)
+            for field in OFFICIAL_HEADER_LABELS.values()
+            if field not in {"room", "startTime", "endTime"}
+        )
+        raw_start = value(row, "startTime")
+        raw_end = value(row, "endTime")
+        if not class_fields_have_data and (room or raw_start or raw_end):
+            if room:
+                register_room(room)
+            invalid_time = False
+            for raw_time in (raw_start, raw_end):
+                if not raw_time:
+                    continue
+                parsed_time = parse_time(raw_time)
+                if parsed_time is None:
+                    invalid_time = True
+                elif parsed_time not in times:
+                    times.append(parsed_time)
+            if invalid_time:
+                invalid_rows.append(row_number)
+            continue
+
+        start = parse_time(raw_start)
+        end = parse_time(raw_end)
 
         is_tba = raw_day.upper() == "TBA" or room.upper() == "TBA" or (start == 0 and end == 0)
         if is_tba:
@@ -371,6 +415,8 @@ def _parse_official_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
         if not subject or start is None or end is None or end <= start or not day or not room:
             invalid_rows.append(row_number)
             continue
+
+        room = register_room(room)
 
         last_name = value(row, "lastName")
         first_name = value(row, "firstName")
@@ -397,9 +443,9 @@ def _parse_official_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
         preview = ", ".join(str(row) for row in invalid_rows[:10])
         suffix = "…" if len(invalid_rows) > 10 else ""
         raise ValueError(f"Invalid schedule data in row(s): {preview}{suffix}.")
-    if not events and not tba:
-        raise ValueError("The schedule contains no valid class rows.")
-    return {"events": events, "tbaSubjects": tba}
+    if not events and not tba and not rooms and not times:
+        raise ValueError("The schedule contains no valid class rows, rooms, or times.")
+    return {"events": events, "rooms": rooms, "times": sorted(times), "tbaSubjects": tba}
 
 
 def parse_schedule_rows(raw_rows: Any, format_name: str = "legacy") -> dict[str, list[Any]]:

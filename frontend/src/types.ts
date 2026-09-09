@@ -25,6 +25,8 @@ export interface CalendarEvent {
 
 export interface ScheduleImportResult {
   events: CalendarEvent[]
+  rooms: string[]
+  times: number[]
   tbaSubjects: string[]
   studentId?: string
 }

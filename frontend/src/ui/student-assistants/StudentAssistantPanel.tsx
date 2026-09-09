@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   DEFAULT_SCHEDULING_SETTINGS,
+  DAILY_DUTY_LIMIT_OPTIONS,
   DUTY_GAP_OPTIONS,
   loadSharedStudentAssistantData,
   normalizeSchedulingSettings,
@@ -9,6 +10,7 @@ import {
   subscribeToSharedStudentAssistantData,
   type SchedulingSettings,
   type StudentAssistantResult,
+  WEEKLY_DUTY_LIMIT_OPTIONS,
 } from '../../api/studentAssistantApi'
 import { readScheduleFile } from '../../api/scheduleParser'
 import { flushPendingAssistantSync, hasPendingAssistantSync } from '../../storage/localFirstSync'
@@ -22,9 +24,16 @@ const DAY_SORT: Record<string, number> = {
 
 function assistantDisplayName(assistant: UploadedAssistant) {
   if (assistant.lastName && assistant.firstName) {
-    return `${assistant.lastName}, ${Array.from(assistant.firstName.trim())[0]?.toLocaleUpperCase() ?? ''}.`
+    const middleInitial = assistant.middleName
+      ? Array.from(assistant.middleName.trim()).find(character => /\p{L}/u.test(character))
+      : undefined
+    return `${assistant.firstName}${middleInitial ? ` ${middleInitial.toLocaleUpperCase()}.` : ''} ${assistant.lastName}`
   }
   return assistant.label || assistant.fileName
+}
+
+function storedAssistantName(lastName: string, firstName: string, middleName: string) {
+  return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}`
 }
 
 function startOfWeek(date: Date) {
@@ -69,15 +78,21 @@ function dutyGapLabel(minutes: number) {
 export function StudentAssistantPanel({
   mainSchedule,
   mainScheduleName,
+  mainScheduleKey,
   adminEvents,
 }: {
   mainSchedule: CalendarEvent[]
   mainScheduleName: string
+  mainScheduleKey: string
   adminEvents: CalendarEvent[]
 }) {
   const localAssistantData = useMemo(() => loadLocalAssistantData(), [])
   const [assistants, setAssistants] = useState<UploadedAssistant[]>(localAssistantData.assistants)
-  const [result, setResult] = useState<StudentAssistantResult | null>(localAssistantData.result)
+  const [result, setResult] = useState<StudentAssistantResult | null>(() => mainScheduleKey
+    ? localAssistantData.resultsBySchedule[mainScheduleKey]
+      ?? (localAssistantData.activeScheduleKey === mainScheduleKey ? localAssistantData.result : null)
+      ?? localAssistantData.result
+    : null)
   const [settings, setSettings] = useState<SchedulingSettings>(localAssistantData.settings)
   const [error, setError] = useState('')
   const [solving, setSolving] = useState(false)
@@ -99,6 +114,12 @@ export function StudentAssistantPanel({
   const [draftDutyGapMinutes, setDraftDutyGapMinutes] = useState(
     localAssistantData.settings.minimumGapAfterThreeHourDutyMinutes,
   )
+  const [draftDailyDutyMinutes, setDraftDailyDutyMinutes] = useState(
+    localAssistantData.settings.maximumDailyDutyMinutes,
+  )
+  const [draftWeeklyDutyMinutes, setDraftWeeklyDutyMinutes] = useState(
+    localAssistantData.settings.maximumWeeklyDutyMinutes,
+  )
   const [viewedWeekStart, setViewedWeekStart] = useState(() => startOfWeek(new Date()))
   const assistantRevisionRef = useRef(0)
   useEffect(() => {
@@ -118,14 +139,31 @@ export function StudentAssistantPanel({
           const nextSettings = normalizeSchedulingSettings(
             saved.schedulingSettings ?? DEFAULT_SCHEDULING_SETTINGS,
           )
+          const currentLocal = loadLocalAssistantData()
+          const remoteResults = saved.solverResultsBySchedule ?? {}
+          const savedResults = { ...currentLocal.resultsBySchedule, ...remoteResults }
+          const legacyRemoteResult = Object.keys(remoteResults).length === 0
+            && !saved.activeScheduleKey
+            ? saved.solverResult
+            : null
+          const nextResult = mainScheduleKey
+            ? savedResults[mainScheduleKey]
+              ?? (saved.activeScheduleKey === mainScheduleKey ? saved.solverResult : null)
+              ?? (currentLocal.activeScheduleKey === mainScheduleKey ? currentLocal.result : null)
+              ?? legacyRemoteResult
+            : null
           setAssistants(saved.assistants)
-          setResult(saved.solverResult)
+          setResult(nextResult)
           setSettings(nextSettings)
           setDraftDutyGapMinutes(nextSettings.minimumGapAfterThreeHourDutyMinutes)
+          setDraftDailyDutyMinutes(nextSettings.maximumDailyDutyMinutes)
+          setDraftWeeklyDutyMinutes(nextSettings.maximumWeeklyDutyMinutes)
           saveLocalAssistantData({
             assistants: saved.assistants,
-            result: saved.solverResult,
+            result: nextResult,
             settings: nextSettings,
+            activeScheduleKey: mainScheduleKey,
+            resultsBySchedule: savedResults,
           }, false)
         }
       } catch (syncError) {
@@ -141,23 +179,29 @@ export function StudentAssistantPanel({
       cancelled = true
       unsubscribe()
     }
-  }, [])
+  }, [mainScheduleKey])
 
   const saveAssistantData = (
     nextAssistants: UploadedAssistant[],
     nextResult: StudentAssistantResult | null,
     nextSettings: SchedulingSettings = settings,
+    clearSavedResults = false,
   ) => {
     assistantRevisionRef.current += 1
+    const saved = loadLocalAssistantData()
     saveLocalAssistantData({
       assistants: nextAssistants,
       result: nextResult,
       settings: nextSettings,
+      activeScheduleKey: mainScheduleKey,
+      resultsBySchedule: clearSavedResults ? {} : saved.resultsBySchedule,
     })
   }
 
   const openSchedulingSettings = () => {
     setDraftDutyGapMinutes(settings.minimumGapAfterThreeHourDutyMinutes)
+    setDraftDailyDutyMinutes(settings.maximumDailyDutyMinutes)
+    setDraftWeeklyDutyMinutes(settings.maximumWeeklyDutyMinutes)
     setSidebarOpen(false)
     setSettingsOpen(true)
   }
@@ -166,9 +210,12 @@ export function StudentAssistantPanel({
     event.preventDefault()
     const nextSettings = {
       minimumGapAfterThreeHourDutyMinutes: draftDutyGapMinutes,
+      maximumDailyDutyMinutes: draftDailyDutyMinutes,
+      maximumWeeklyDutyMinutes: draftWeeklyDutyMinutes,
     }
     setSettings(nextSettings)
-    saveAssistantData(assistants, result, nextSettings)
+    setResult(null)
+    saveAssistantData(assistants, null, nextSettings, true)
     setSettingsOpen(false)
   }
 
@@ -241,7 +288,7 @@ export function StudentAssistantPanel({
       }
       const assistant: UploadedAssistant = {
         id: crypto.randomUUID(),
-        label: [lastName, firstName, middleName].filter(Boolean).join(', '),
+        label: storedAssistantName(lastName, firstName, middleName),
         fileName: profileFile.name,
         events: parsed.events,
         studentId,
@@ -253,7 +300,7 @@ export function StudentAssistantPanel({
       setAssistants(nextAssistants)
       setSelectedAssistantId(assistant.id)
       setResult(null)
-      saveAssistantData(nextAssistants, null)
+      saveAssistantData(nextAssistants, null, settings, true)
       closeAddProfile()
     } catch (uploadFailure) {
       setProfileError(uploadFailure instanceof Error ? uploadFailure.message : 'Could not read the class schedule file.')
@@ -306,7 +353,7 @@ export function StudentAssistantPanel({
 
       const updated: UploadedAssistant = {
         ...editingAssistant,
-        label: [lastName, firstName, middleName].filter(Boolean).join(', '),
+        label: storedAssistantName(lastName, firstName, middleName),
         fileName,
         events,
         studentId,
@@ -317,7 +364,7 @@ export function StudentAssistantPanel({
       const nextAssistants = assistants.map(assistant => assistant.id === updated.id ? updated : assistant)
       setAssistants(nextAssistants)
       setResult(null)
-      saveAssistantData(nextAssistants, null)
+      saveAssistantData(nextAssistants, null, settings, true)
       closeEditProfile()
     } catch (uploadFailure) {
       setEditError(uploadFailure instanceof Error ? uploadFailure.message : 'Could not read the class schedule file.')
@@ -332,7 +379,7 @@ export function StudentAssistantPanel({
     setAssistants(nextAssistants)
     setSelectedAssistantId(nextSelection)
     setResult(null)
-    saveAssistantData(nextAssistants, null)
+    saveAssistantData(nextAssistants, null, settings, true)
     setDeletingAssistant(null)
   }
 
@@ -444,7 +491,7 @@ export function StudentAssistantPanel({
       <header className="sa-schedule-toolbar">
         <button className="sa-menu-button" type="button" aria-label="Open student assistants" onClick={() => setSidebarOpen(true)}>☰</button>
         <div className="sa-selected-heading">
-          <h2>{selectedAssistant ? assistantDisplayName(selectedAssistant) : 'Student Assistant Scheduler'}</h2>
+          <h2 title={selectedAssistant ? assistantDisplayName(selectedAssistant) : undefined}>{selectedAssistant ? assistantDisplayName(selectedAssistant) : 'Student Assistant Scheduler'}</h2>
           <span>{selectedAssistant?.studentId || (assistants.length > 0 ? 'ID number unavailable' : 'No student assistant added')}</span>
         </div>
         <div className="sa-toolbar-actions">
@@ -454,7 +501,7 @@ export function StudentAssistantPanel({
       </header>
 
       {error && <p className="form-error">{error}</p>}
-      {result && <div className={`sa-result-status ${result.status.toLowerCase()}`}><strong>{result.status === 'OPTIMAL' || result.status === 'FEASIBLE' ? 'Schedule created' : 'No valid schedule found'}</strong></div>}
+      {result && result.status !== 'OPTIMAL' && result.status !== 'FEASIBLE' && <div className={`sa-result-status ${result.status.toLowerCase()}`}><strong>No valid schedule found</strong></div>}
       {visibleDiagnostics.length > 0 && <ul className="sa-diagnostics">{visibleDiagnostics.map(message => <li key={message}>{message}</li>)}</ul>}
 
       {selectedAssistant ? (
@@ -479,7 +526,7 @@ export function StudentAssistantPanel({
         <div className="sa-sidebar-list">
           {assistants.length === 0 && <p>No student assistants added.</p>}
           {assistants.length > 0 && filteredAssistants.length === 0 && <p>No student assistants found.</p>}
-          {filteredAssistants.map(assistant => <div className={`sa-sidebar-row${assistant.id === effectiveSelectedAssistantId ? ' selected' : ''}`} key={assistant.id}><button className="sa-student-select" type="button" onClick={() => { setSelectedAssistantId(assistant.id); setSidebarOpen(false) }}><span><strong>{assistantDisplayName(assistant)}</strong><small>{assistant.studentId || 'ID number unavailable'}</small></span></button><div className="sa-student-actions"><button type="button" aria-label={`Edit ${assistantDisplayName(assistant)}`} title="Edit student assistant" onClick={() => openEditProfile(assistant)}>✎</button><button className="delete" type="button" aria-label={`Delete ${assistantDisplayName(assistant)}`} title="Delete student assistant" onClick={() => setDeletingAssistant(assistant)}>×</button></div></div>)}
+          {filteredAssistants.map(assistant => <div className={`sa-sidebar-row${assistant.id === effectiveSelectedAssistantId ? ' selected' : ''}`} key={assistant.id}><button className="sa-student-select" type="button" onClick={() => { setSelectedAssistantId(assistant.id); setSidebarOpen(false) }}><span><strong title={assistantDisplayName(assistant)}>{assistantDisplayName(assistant)}</strong><small>{assistant.studentId || 'ID number unavailable'}</small></span></button><div className="sa-student-actions"><button type="button" aria-label={`Edit ${assistantDisplayName(assistant)}`} title="Edit student assistant" onClick={() => openEditProfile(assistant)}>✎</button><button className="delete" type="button" aria-label={`Delete ${assistantDisplayName(assistant)}`} title="Delete student assistant" onClick={() => setDeletingAssistant(assistant)}>×</button></div></div>)}
         </div>
         <button className="sa-sidebar-settings" type="button" onClick={openSchedulingSettings}><span aria-hidden="true">⚙</span><strong>Scheduling Settings</strong><b aria-hidden="true">›</b></button>
       </aside></div>}
@@ -487,8 +534,11 @@ export function StudentAssistantPanel({
       {settingsOpen && <div className="sa-profile-backdrop" role="presentation" onMouseDown={() => setSettingsOpen(false)}><form className="sa-profile-form sa-settings-form" onSubmit={saveSchedulingSettings} onMouseDown={event => event.stopPropagation()}>
         <div className="sa-profile-heading"><h3>Scheduling Settings</h3><button type="button" aria-label="Close" onClick={() => setSettingsOpen(false)}>×</button></div>
         <section className="sa-duty-break-setting">
+          <h4>Maximum Duty Workload</h4>
+          <div className="sa-settings-fields"><label>Maximum per day<select value={draftDailyDutyMinutes} onChange={event => { const minutes = Number(event.target.value); setDraftDailyDutyMinutes(minutes); setDraftWeeklyDutyMinutes(current => Math.max(current, minutes)) }}>{DAILY_DUTY_LIMIT_OPTIONS.map(minutes => <option value={minutes} key={minutes}>{workloadHoursLabel(minutes)}</option>)}</select></label><label>Maximum per week<select value={draftWeeklyDutyMinutes} onChange={event => setDraftWeeklyDutyMinutes(Number(event.target.value))}>{WEEKLY_DUTY_LIMIT_OPTIONS.filter(minutes => minutes >= draftDailyDutyMinutes).map(minutes => <option value={minutes} key={minutes}>{workloadHoursLabel(minutes)}</option>)}</select></label></div>
+        </section>
+        <section className="sa-duty-break-setting">
           <h4>Break After Duty</h4>
-          <p>After completing three continuous regular-duty hours, require a minimum gap before another regular duty.</p>
           <label>Minimum gap after three duty hours<select value={draftDutyGapMinutes} onChange={event => setDraftDutyGapMinutes(Number(event.target.value))}>{DUTY_GAP_OPTIONS.map(minutes => <option value={minutes} key={minutes}>{dutyGapLabel(minutes)}</option>)}</select></label>
         </section>
         <div className="sa-profile-actions"><button className="btn-secondary" type="button" onClick={() => setSettingsOpen(false)}>Cancel</button><button className="btn-primary" type="submit">Save</button></div>

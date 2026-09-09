@@ -10,8 +10,8 @@ from ortools.sat.python import cp_model
 
 
 DAY_ORDER = {"M": 0, "T": 1, "W": 2, "Th": 3, "F": 4, "S": 5, "Su": 6}
-MINUTES_PER_WEEK = 20 * 60
-MAX_MINUTES_PER_DAY = 6 * 60
+DEFAULT_MAXIMUM_WEEKLY_DUTY_MINUTES = 20 * 60
+DEFAULT_MAXIMUM_DAILY_DUTY_MINUTES = 4 * 60
 SLOT_MINUTES = 30
 THREE_HOUR_DUTY_MINUTES = 3 * 60
 DEFAULT_DUTY_GAP_MINUTES = 30
@@ -119,6 +119,30 @@ def _duty_gap_minutes(payload: dict[str, Any]) -> int:
     if minutes not in ALLOWED_DUTY_GAP_MINUTES:
         raise ValueError("The duty-break gap must be 0, 30, 60, 90, or 120 minutes.")
     return minutes
+
+
+def _workload_limits(payload: dict[str, Any]) -> tuple[int, int]:
+    settings = payload.get("schedulingSettings") or {}
+    if not isinstance(settings, dict):
+        raise ValueError("Scheduling settings must be a JSON object.")
+    try:
+        daily = int(settings.get(
+            "maximumDailyDutyMinutes",
+            DEFAULT_MAXIMUM_DAILY_DUTY_MINUTES,
+        ))
+        weekly = int(settings.get(
+            "maximumWeeklyDutyMinutes",
+            DEFAULT_MAXIMUM_WEEKLY_DUTY_MINUTES,
+        ))
+    except (TypeError, ValueError) as error:
+        raise ValueError("Duty workload limits must be numbers of minutes.") from error
+    if daily not in range(60, 8 * 60 + 1, 60):
+        raise ValueError("The daily duty limit must be between 1 and 8 hours.")
+    if weekly not in range(5 * 60, 40 * 60 + 1, 60):
+        raise ValueError("The weekly duty limit must be between 5 and 40 hours.")
+    if weekly < daily:
+        raise ValueError("The weekly duty limit cannot be lower than the daily duty limit.")
+    return daily, weekly
 
 
 def _add_duty_break_constraints(
@@ -282,6 +306,7 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
 
     try:
         minimum_duty_gap = _duty_gap_minutes(payload)
+        maximum_daily_duty, maximum_weekly_duty = _workload_limits(payload)
         main_meetings = _parse_meetings(main_events, "main schedule")
         coverage_units = _coverage_units(main_meetings)
         assistant_busy: dict[str, list[Meeting]] = {}
@@ -392,7 +417,7 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
         variables = assistant_unit_vars[assistant_id]
         total_minutes = model.new_int_var(
             0,
-            MINUTES_PER_WEEK,
+            maximum_weekly_duty,
             f"total_minutes_{assistant_id}",
         )
         model.add(total_minutes == sum(
@@ -406,7 +431,7 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
             if entries:
                 model.add(
                     sum(variable * duration for variable, duration in entries)
-                    <= MAX_MINUTES_PER_DAY
+                    <= maximum_daily_duty
                 )
 
     repeated_start_vars: list[cp_model.IntVar] = []
@@ -455,8 +480,8 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
 
     class_variables = list(class_assistant_vars.values())
     total_variables = list(assistant_total_vars.values())
-    minimum_assigned = model.new_int_var(0, MINUTES_PER_WEEK, "minimum_assigned")
-    maximum_assigned = model.new_int_var(0, MINUTES_PER_WEEK, "maximum_assigned")
+    minimum_assigned = model.new_int_var(0, maximum_weekly_duty, "minimum_assigned")
+    maximum_assigned = model.new_int_var(0, maximum_weekly_duty, "maximum_assigned")
     for total_minutes in total_variables:
         model.add(minimum_assigned <= total_minutes)
         model.add(maximum_assigned >= total_minutes)
@@ -487,7 +512,8 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
             "status": "INFEASIBLE",
             "diagnostics": [
                 "No assignment satisfies all class conflicts, available duty periods, "
-                "the duty-break rule, the six-hour daily limit, and the 20-hour weekly maximum."
+                f"the duty-break rule, the {maximum_daily_duty / 60:g}-hour daily limit, "
+                f"and the {maximum_weekly_duty / 60:g}-hour weekly maximum."
             ],
         }
 
@@ -523,13 +549,13 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
                 "assistantId": assistant_id,
                 "assistantLabel": assistant_labels[assistant_id],
                 "hours": totals[assistant_id] / 60,
-                "remainingHours": (MINUTES_PER_WEEK - totals[assistant_id]) / 60,
+                "remainingHours": (maximum_weekly_duty - totals[assistant_id]) / 60,
             }
             for assistant_id in assistant_labels
         ],
         "summary": {
             "assistantCount": len(assistants),
-            "capacityHours": len(assistants) * MINUTES_PER_WEEK / 60,
+            "capacityHours": len(assistants) * maximum_weekly_duty / 60,
             "coverageHours": coverage_minutes / 60,
             "assignmentCount": len(assignments),
             "assignedClassCount": len(assigned_class_ids),
@@ -538,6 +564,8 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
         "diagnostics": [],
         "appliedSettings": {
             "minimumGapAfterThreeHourDutyMinutes": minimum_duty_gap,
+            "maximumDailyDutyMinutes": maximum_daily_duty,
+            "maximumWeeklyDutyMinutes": maximum_weekly_duty,
             "dutyBreakConstraintCount": duty_break_constraint_count,
         },
     }

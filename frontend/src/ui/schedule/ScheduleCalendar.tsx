@@ -114,6 +114,7 @@ export function ScheduleCalendar({
   csvName,
   tbaSubjects,
   rooms,
+  times,
   onCsvUpload,
   onCsvRemove,
   onOpenEvents,
@@ -126,6 +127,7 @@ export function ScheduleCalendar({
   csvName: string
   tbaSubjects: string[]
   rooms: string[]
+  times: number[]
   onCsvUpload: (file: File) => Promise<void>
   onCsvRemove: () => void
   onOpenEvents: () => void
@@ -448,14 +450,19 @@ export function ScheduleCalendar({
   }, [conflictGroups, selectedDate])
 
   const { rangeStart, rangeEnd } = useMemo(() => {
-    if (allEvents.length === 0) return { rangeStart: DEFAULT_START, rangeEnd: DEFAULT_END }
-    const earliest = Math.min(...allEvents.map(event => event.startMinutes))
-    const latest = Math.max(...allEvents.map(event => event.endMinutes))
+    if (allEvents.length === 0) {
+      return {
+        rangeStart: Math.floor(Math.min(DEFAULT_START, ...times) / 30) * 30,
+        rangeEnd: Math.ceil(Math.max(DEFAULT_END, ...times) / 30) * 30,
+      }
+    }
+    const earliest = Math.min(...allEvents.map(event => event.startMinutes), ...times)
+    const latest = Math.max(...allEvents.map(event => event.endMinutes), ...times)
     return {
       rangeStart: Math.floor(earliest / 30) * 30,
       rangeEnd: Math.ceil(latest / 30) * 30,
     }
-  }, [allEvents])
+  }, [allEvents, times])
 
   const guideMinutes = useMemo(() => {
     const values = new Set<number>()
@@ -464,8 +471,9 @@ export function ScheduleCalendar({
       values.add(event.startMinutes)
       values.add(event.endMinutes)
     })
+    times.forEach(time => values.add(time))
     return [...values].filter(value => value >= rangeStart && value <= rangeEnd).sort((a, b) => a - b)
-  }, [allEvents, rangeEnd, rangeStart])
+  }, [allEvents, rangeEnd, rangeStart, times])
 
   const rowHeight = TIME_ROW_HEIGHT
   const positionForMinute = (minute: number) => {
@@ -770,17 +778,6 @@ export function ScheduleCalendar({
           <button className="remove-csv-button" type="button" disabled={!csvName} onClick={onCsvRemove}>
             Remove CSV
           </button>
-          <button
-            className={`schedule-filter-button${selectedTeachers.size > 0 || selectedRooms.size > 0 ? ' active' : ''}`}
-            type="button"
-            disabled={!csvName}
-            aria-label="Filter schedule"
-            onClick={openFilters}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 6h16M7 12h10M10 18h4" />
-            </svg>
-          </button>
         </div>
       </div>
 
@@ -792,7 +789,7 @@ export function ScheduleCalendar({
       )}
       {uploadError && <p className="msg-error">{uploadError}</p>}
 
-      {csvName && displayedRooms.length > 0 && <div className="calendar-view-room-row"><span aria-hidden="true" />{viewMode === 'weekly' ? <div className="weekly-room-navigation"><button type="button" disabled={displayedRooms.length < 2} onClick={() => moveWeeklyRoom(-1)} aria-label="Previous room">‹</button><div className="weekly-room-picker" ref={roomPickerRef}><button className="weekly-room-trigger" type="button" aria-haspopup="listbox" aria-expanded={roomPickerOpen} title="Choose room" onClick={() => setRoomPickerOpen(current => !current)}><span>{weeklyRoom}</span><span aria-hidden="true">{roomPickerOpen ? '▴' : '▾'}</span></button>{roomPickerOpen && <div className="weekly-room-menu" role="listbox" aria-label="Choose room">{displayedRooms.map(room => <button className={room === weeklyRoom ? 'selected' : ''} type="button" role="option" aria-selected={room === weeklyRoom} key={room} onClick={() => { setSelectedWeeklyRoom(room); setRoomPickerOpen(false) }}><span aria-hidden="true">{room === weeklyRoom ? '✓' : ''}</span><span>{room}</span></button>)}</div>}</div><button type="button" disabled={displayedRooms.length < 2} onClick={() => moveWeeklyRoom(1)} aria-label="Next room">›</button></div> : <span aria-hidden="true" />}<fieldset className="calendar-view-controls" aria-label="Schedule view"><label><input type="checkbox" checked={viewMode === 'daily'} onChange={() => { setViewMode('daily'); setRoomPickerOpen(false) }} />Daily</label><label><input type="checkbox" checked={viewMode === 'weekly'} onChange={() => setViewMode('weekly')} />Weekly</label></fieldset></div>}
+      {csvName && displayedRooms.length > 0 && <div className="calendar-view-room-row"><span aria-hidden="true" />{viewMode === 'weekly' ? <div className="weekly-room-navigation"><button type="button" disabled={displayedRooms.length < 2} onClick={() => moveWeeklyRoom(-1)} aria-label="Previous room">‹</button><div className="weekly-room-picker" ref={roomPickerRef}><button className="weekly-room-trigger" type="button" aria-haspopup="listbox" aria-expanded={roomPickerOpen} title="Choose room" onClick={() => setRoomPickerOpen(current => !current)}><span>{weeklyRoom}</span><span aria-hidden="true">{roomPickerOpen ? '▴' : '▾'}</span></button>{roomPickerOpen && <div className="weekly-room-menu" role="listbox" aria-label="Choose room">{displayedRooms.map(room => <button className={room === weeklyRoom ? 'selected' : ''} type="button" role="option" aria-selected={room === weeklyRoom} key={room} onClick={() => { setSelectedWeeklyRoom(room); setRoomPickerOpen(false) }}><span aria-hidden="true">{room === weeklyRoom ? '✓' : ''}</span><span>{room}</span></button>)}</div>}</div><button type="button" disabled={displayedRooms.length < 2} onClick={() => moveWeeklyRoom(1)} aria-label="Next room">›</button></div> : <span aria-hidden="true" />}<div className="calendar-view-actions"><fieldset className="calendar-view-controls" aria-label="Schedule view"><label><input type="checkbox" checked={viewMode === 'daily'} onChange={() => { setViewMode('daily'); setRoomPickerOpen(false) }} />Daily</label><label><input type="checkbox" checked={viewMode === 'weekly'} onChange={() => setViewMode('weekly')} />Weekly</label></fieldset><button className={`schedule-filter-button${selectedTeachers.size > 0 || selectedRooms.size > 0 ? ' active' : ''}`} type="button" aria-label="Filter schedule" onClick={openFilters}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg></button></div></div>}
 
       <div className="timetable-scroll">
         {!csvName ? (

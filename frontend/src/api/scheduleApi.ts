@@ -3,6 +3,9 @@ import { pollForChanges, requestJson } from './apiClient'
 export interface SharedSchedule<T> {
   csvName: string
   csvEvents: T[]
+  rooms: string[]
+  times: number[]
+  fingerprint: string
 }
 
 // Flask is always local to the desktop app. It decides whether cloud storage
