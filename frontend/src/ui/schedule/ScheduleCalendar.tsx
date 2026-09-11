@@ -14,8 +14,6 @@ const TIME_ROW_HEIGHT = 48
 const WEEKDAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const DATE_DAY_CODES = ['Su', 'M', 'T', 'W', 'Th', 'F', 'S']
 
-type AbsenceScope = 'duty' | 'day'
-
 interface DutyContext {
   event: CalendarEvent
   date: Date
@@ -90,10 +88,6 @@ function longestConsecutiveMinutes(intervals: Array<{ start: number, end: number
   return Math.max(longest, blockEnd - blockStart)
 }
 
-function hoursLabel(minutes: number) {
-  return `${(minutes / 60).toFixed(1).replace(/\.0$/, '')} hours`
-}
-
 function teacherKey(event: CalendarEvent) {
   return [event.lastName, event.firstName, event.middleName]
     .filter(Boolean)
@@ -151,7 +145,6 @@ export function ScheduleCalendar({
   const [warningDrawer, setWarningDrawer] = useState<'conflicts' | 'tba' | null>(null)
   const [assistantData, setAssistantData] = useState(loadLocalAssistantData)
   const [absenceDuty, setAbsenceDuty] = useState<DutyContext | null>(null)
-  const [absenceScope, setAbsenceScope] = useState<AbsenceScope>('duty')
   const [relieverProposals, setRelieverProposals] = useState<RelieverProposal[]>([])
   const [relieverStep, setRelieverStep] = useState<'report' | 'select' | 'confirm' | 'none-found' | null>(null)
   const roomPickerRef = useRef<HTMLDivElement>(null)
@@ -548,7 +541,6 @@ export function ScheduleCalendar({
 
   const closeRelieverFlow = () => {
     setAbsenceDuty(null)
-    setAbsenceScope('duty')
     setRelieverProposals([])
     setRelieverStep(null)
   }
@@ -559,7 +551,6 @@ export function ScheduleCalendar({
     const existingReliever = relieverForEvent(event, date)
     if (existingReliever?.replacementAssistantId) return
     setAbsenceDuty({ event, date: new Date(date), assignment })
-    setAbsenceScope('duty')
     setRelieverProposals([])
     setRelieverStep('report')
   }
@@ -683,16 +674,7 @@ export function ScheduleCalendar({
 
   const findRelievers = () => {
     if (!absenceDuty) return
-    const targets = absenceScope === 'day'
-      ? dutyAssignments
-        .filter(assignment => assignment.assistantId === absenceDuty.assignment.assistantId && assignment.day === absenceDuty.assignment.day)
-        .map(assignment => ({
-          assignment,
-          date: new Date(absenceDuty.date),
-          event: csvEvents.find(event => event.id === assignment.classId) ?? absenceDuty.event,
-        }))
-      : [absenceDuty]
-    const uniqueTargets = [...new Map(targets.map(target => [
+    const uniqueTargets = [...new Map([absenceDuty].map(target => [
       `${target.assignment.classId}|${target.assignment.startMinutes}|${target.assignment.endMinutes}`,
       target,
     ])).values()].sort((left, right) => left.assignment.startMinutes - right.assignment.startMinutes)
@@ -905,20 +887,20 @@ export function ScheduleCalendar({
           <section className="reliever-dialog" role="dialog" aria-modal="true" aria-labelledby="reliever-dialog-title">
             {relieverStep === 'report' && <>
               <div className="calendar-event-dialog-heading"><h3 id="reliever-dialog-title">Report Student Assistant Absence</h3><button type="button" aria-label="Close" onClick={closeRelieverFlow}>×</button></div>
-              <dl className="reliever-duty-details">
-                <div><dt>Student Assistant</dt><dd>{absenceDuty.assignment.assistantLabel}</dd></div>
-                <div><dt>Student ID</dt><dd>{assistantData.assistants.find(assistant => assistant.id === absenceDuty.assignment.assistantId)?.studentId || 'ID number unavailable'}</dd></div>
-                <div><dt>Duty</dt><dd>{absenceDuty.assignment.courseCode} · {formatTime(absenceDuty.assignment.startMinutes)}–{formatTime(absenceDuty.assignment.endMinutes)}</dd></div>
-              </dl>
-              <fieldset className="reliever-scope"><legend>Absence applies to</legend><label><input type="radio" name="absence-scope" checked={absenceScope === 'duty'} onChange={() => setAbsenceScope('duty')} />This duty only</label><label><input type="radio" name="absence-scope" checked={absenceScope === 'day'} onChange={() => setAbsenceScope('day')} />This day</label></fieldset>
               <div className="calendar-event-dialog-actions"><button className="btn-secondary" type="button" onClick={closeRelieverFlow}>Cancel</button><button className="btn-primary" type="button" onClick={findRelievers}>Find Reliever</button></div>
             </>}
 
             {relieverStep === 'select' && <>
-              <div className="calendar-event-dialog-heading"><div><h3 id="reliever-dialog-title">Select Reliever</h3><small>{absenceScope === 'day' ? absenceDuty.date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : `${absenceDuty.assignment.courseCode} · ${formatTime(absenceDuty.assignment.startMinutes)}–${formatTime(absenceDuty.assignment.endMinutes)}`}</small></div><button type="button" aria-label="Close" onClick={closeRelieverFlow}>×</button></div>
+              <div className="calendar-event-dialog-heading"><div><h3 id="reliever-dialog-title">Select Reliever</h3><small>{absenceDuty.assignment.courseCode} · {formatTime(absenceDuty.assignment.startMinutes)}–{formatTime(absenceDuty.assignment.endMinutes)}</small></div><button type="button" aria-label="Close" onClick={closeRelieverFlow}>×</button></div>
               <div className="reliever-proposal-list">{relieverProposals.map((proposal, proposalIndex) => <section className="reliever-proposal" key={`${proposal.duty.assignment.classId}-${proposal.duty.assignment.startMinutes}`}>
                 {relieverProposals.length > 1 && <h4>{proposal.duty.assignment.courseCode} · {formatTime(proposal.duty.assignment.startMinutes)}–{formatTime(proposal.duty.assignment.endMinutes)}</h4>}
-                {proposal.candidates.length === 0 ? <p className="reliever-none">No eligible reliever</p> : <div className="reliever-candidates">{proposal.candidates.map((candidate, index) => <label className={candidate.assistant.id === proposal.selectedAssistantId ? 'selected' : ''} key={candidate.assistant.id}><input type="radio" name={`reliever-${proposalIndex}`} checked={candidate.assistant.id === proposal.selectedAssistantId} onChange={() => selectRelieverCandidate(proposalIndex, candidate.assistant.id)} /><span><strong>{abbreviatedAssistantName(candidate.assistant.label)}</strong>{index === 0 && <b>Recommended</b>}<small>Weekly workload: {hoursLabel(candidate.weeklyMinutesAfter)} · Daily workload: {hoursLabel(candidate.dailyMinutesAfter)}{candidate.weeklyMinutesAfter > 20 * 60 ? ` · Overtime: ${hoursLabel(candidate.weeklyMinutesAfter - 20 * 60)}` : ''}</small><small>Available · No conflicts</small></span></label>)}</div>}
+                {proposal.candidates.length === 0 ? <p className="reliever-none">No eligible reliever</p> : <label className="reliever-select">
+                  <span>Student Assistant</span>
+                  <select value={proposal.selectedAssistantId} onChange={event => selectRelieverCandidate(proposalIndex, event.target.value)}>
+                    {proposal.candidates.map((candidate, index) => <option value={candidate.assistant.id} key={candidate.assistant.id}>{abbreviatedAssistantName(candidate.assistant.label)}{index === 0 ? ' — Recommended' : ''}</option>)}
+                  </select>
+                  <small>Available</small>
+                </label>}
               </section>)}</div>
               <div className="calendar-event-dialog-actions"><button className="btn-secondary" type="button" onClick={() => setRelieverStep('report')}>Back</button><button className="btn-primary" type="button" disabled={!relieverProposals.some(proposal => proposal.selectedAssistantId)} onClick={() => setRelieverStep('confirm')}>Assign Reliever</button></div>
             </>}
