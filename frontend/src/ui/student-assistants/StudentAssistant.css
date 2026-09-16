@@ -210,6 +210,19 @@
   background: transparent;
   color: #edf2f7;
   text-align: left;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.sa-sidebar-settings:hover {
+  border-top-color: #3f516b;
+  background: #1a2638;
+}
+
+.sa-sidebar-settings:focus-visible {
+  outline: 2px solid #4299e1;
+  outline-offset: -2px;
+  background: #1a2638;
 }
 
 .sa-sidebar-settings > span {
