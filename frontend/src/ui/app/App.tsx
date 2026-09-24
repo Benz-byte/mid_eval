@@ -34,6 +34,7 @@ function filenameScheduleKey(fileName: string) {
 export default function App() {
   const savedCsvSchedule = useMemo(() => loadCsvSchedule(), [])
   const [activeTab, setActiveTab] = useState<Tab>(loadActiveTab)
+  const [solverBusy, setSolverBusy] = useState(false)
   const [csvEvents, setCsvEvents] = useState<CalendarEvent[]>(savedCsvSchedule.events)
   const [csvName, setCsvName] = useState(savedCsvSchedule.name)
   const [csvRooms, setCsvRooms] = useState(savedCsvSchedule.rooms)
@@ -45,6 +46,7 @@ export default function App() {
   const [adminEvents, setAdminEvents] = useState<CalendarEvent[]>(loadAdminEvents)
   const [eventsPanelOpen, setEventsPanelOpen] = useState(false)
   const [eventEditRequest, setEventEditRequest] = useState<{ eventId: string, scope?: BookingEditScope } | null>(null)
+  const [scheduleFocusRequest, setScheduleFocusRequest] = useState<{ eventId: string, date: string, requestId: number, consumed: boolean } | null>(null)
   const [, setStorageStatus] = useState('Opening interface…')
   const [, setStorageStatusClass] = useState('api-connecting')
   const scheduleRevisionRef = useRef(0)
@@ -292,7 +294,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <nav className="tab-nav">
+      <nav className="tab-nav" inert={solverBusy}>
         {([
           ['schedule', 'Schedule'],
           ['student-assistant', 'Student Assistant'],
@@ -301,6 +303,7 @@ export default function App() {
             className={`tab-btn${activeTab === key ? ' active' : ''}`}
             type="button"
             key={key}
+            disabled={solverBusy}
             onClick={() => setActiveTab(key)}
           >
             {label}
@@ -324,6 +327,8 @@ export default function App() {
             onEditEvent={(eventId, scope) => { setEventEditRequest({ eventId, scope }); setEventsPanelOpen(true) }}
             onDeleteEvent={deleteAdminEvent}
             onAssignAssistant={assignEventAssistant}
+            focusRequest={scheduleFocusRequest}
+            onFocusHandled={requestId => setScheduleFocusRequest(current => current?.requestId === requestId ? { ...current, consumed: true } : current)}
           />
         )}
         {activeTab === 'student-assistant' && (
@@ -332,6 +337,11 @@ export default function App() {
             mainScheduleName={csvName}
             mainScheduleKey={csvFingerprint}
             adminEvents={availableAdminEvents}
+            onSolvingChange={setSolverBusy}
+            onViewDuty={(eventId, date) => {
+              setScheduleFocusRequest({ eventId, date, requestId: Date.now(), consumed: false })
+              setActiveTab('schedule')
+            }}
           />
         )}
       </main>

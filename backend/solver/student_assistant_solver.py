@@ -290,7 +290,165 @@ def _assignment_payload(
     }
 
 
+def _solve_incremental_schedule(payload: dict[str, Any]) -> dict[str, Any]:
+    incremental = payload["incremental"]
+    if not isinstance(incremental, dict):
+        return {"status": "INVALID", "diagnostics": ["Incremental schedule data is invalid."]}
+    existing = incremental.get("existingResult")
+    new_ids = incremental.get("newAssistantIds")
+    main_events = payload.get("mainSchedule")
+    assistants = payload.get("assistants")
+    if not isinstance(existing, dict) or not isinstance(new_ids, list) or not new_ids:
+        return {"status": "INVALID", "diagnostics": ["No new student assistants were provided."]}
+    if not isinstance(main_events, list) or not isinstance(assistants, list):
+        return {"status": "INVALID", "diagnostics": ["Schedule data is missing."]}
+
+    try:
+        minimum_gap = _duty_gap_minutes(payload)
+        maximum_daily, maximum_weekly = _workload_limits(payload)
+        applied = existing.get("appliedSettings") or {}
+        if any((
+            applied.get("minimumGapAfterThreeHourDutyMinutes") != minimum_gap,
+            applied.get("maximumDailyDutyMinutes") != maximum_daily,
+            applied.get("maximumWeeklyDutyMinutes") != maximum_weekly,
+        )):
+            raise ValueError(
+                "The scheduling settings differ from the existing schedule. "
+                "Its assignments were kept; use the original settings to add assistants."
+            )
+
+        meetings = _parse_meetings(main_events, "main schedule")
+        existing_assignments = existing.get("assignments") or []
+        existing_totals = existing.get("assistantTotals") or []
+        if not isinstance(existing_assignments, list) or not isinstance(existing_totals, list):
+            raise ValueError("The existing schedule cannot be read.")
+
+        assistant_by_id = {str(assistant.get("id")): assistant for assistant in assistants}
+        optimized_ids = existing.get("optimizedAssistantIds")
+        roster_ids = (
+            {str(assistant_id) for assistant_id in optimized_ids}
+            if isinstance(optimized_ids, list)
+            else {str(total.get("assistantId")) for total in existing_totals}
+        )
+        added_ids = {str(assistant_id) for assistant_id in new_ids}
+        if not added_ids.issubset(assistant_by_id) or added_ids & roster_ids:
+            raise ValueError("The new student assistant list does not match the saved schedule.")
+        if not roster_ids.issubset(assistant_by_id):
+            raise ValueError("An assistant from the saved schedule is missing.")
+
+        occupied: dict[tuple[str, str, int, int], list[tuple[int, int]]] = defaultdict(list)
+        for assignment in existing_assignments:
+            class_id = str(assignment["classId"])
+            day = str(assignment["day"])
+            start = int(assignment["startMinutes"])
+            end = int(assignment["endMinutes"])
+            assistant_id = str(assignment["assistantId"])
+            match = next((meeting for meeting in meetings
+                          if meeting.source_id == class_id and meeting.day == day
+                          and meeting.start <= start < end <= meeting.end), None)
+            if match is None or assistant_id not in assistant_by_id:
+                raise ValueError("The saved assignments do not match the current schedule.")
+            occupied[(match.source_id, match.day, match.start, match.end)].append((start, end))
+
+        fixed_by_assistant: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for assignment in existing_assignments:
+            assistant_id = str(assignment["assistantId"])
+            if assistant_id in added_ids:
+                fixed_by_assistant[assistant_id].append({
+                    "id": f"fixed-{assignment['classId']}-{assignment['day']}-{assignment['startMinutes']}",
+                    "dayCode": assignment["day"],
+                    "startMinutes": assignment["startMinutes"],
+                    "endMinutes": assignment["endMinutes"],
+                })
+
+        open_events: list[dict[str, Any]] = []
+        original_ids: dict[str, str] = {}
+        for meeting in meetings:
+            intervals = sorted(occupied[(meeting.source_id, meeting.day, meeting.start, meeting.end)])
+            cursor = meeting.start
+            for start, end in intervals + [(meeting.end, meeting.end)]:
+                if start < cursor:
+                    raise ValueError("The saved schedule contains overlapping assignments.")
+                if cursor < start:
+                    event_id = f"{meeting.source_id}::incremental::{meeting.day}::{cursor}"
+                    original_ids[event_id] = meeting.source_id
+                    open_events.append({
+                        "id": event_id,
+                        "dayCode": meeting.day,
+                        "startMinutes": cursor,
+                        "endMinutes": start,
+                        "courseCode": meeting.course_code,
+                        "subject": meeting.subject,
+                        "room": meeting.room,
+                        "section": meeting.section,
+                    })
+                cursor = end
+    except (KeyError, TypeError, ValueError) as error:
+        return {"status": "INVALID", "diagnostics": [str(error)]}
+
+    new_assignments: list[dict[str, Any]] = []
+    if open_events:
+        partial = solve_student_assistant_schedule({
+            **payload,
+            "mainSchedule": open_events,
+            "assistants": [
+                {**assistant, "fixedDuties": fixed_by_assistant[str(assistant.get("id"))]}
+                for assistant in assistants if str(assistant.get("id")) in added_ids
+            ],
+            "incremental": None,
+        })
+        if partial["status"] not in ("OPTIMAL", "FEASIBLE"):
+            return partial
+        new_assignments = [
+            {**assignment, "classId": original_ids[assignment["classId"]]}
+            for assignment in partial.get("assignments", [])
+        ]
+
+    assignments = [*existing_assignments, *new_assignments]
+    totals: dict[str, int] = defaultdict(int)
+    for assignment in assignments:
+        totals[str(assignment["assistantId"])] += (
+            int(assignment["endMinutes"]) - int(assignment["startMinutes"])
+        )
+    assigned_class_ids = {str(assignment["classId"]) for assignment in assignments}
+    class_ids = {meeting.source_id for meeting in meetings}
+    return {
+        "status": "FEASIBLE",
+        "assignments": sorted(assignments, key=lambda assignment: (
+            DAY_ORDER.get(str(assignment["day"]), 99),
+            int(assignment["startMinutes"]),
+            str(assignment["room"]),
+            str(assignment["assistantLabel"]),
+        )),
+        "assistantTotals": [
+            {
+                "assistantId": assistant_id,
+                "assistantLabel": str(assistant.get("label") or assistant_id),
+                "hours": totals[assistant_id] / 60,
+                "remainingHours": (maximum_weekly - totals[assistant_id]) / 60,
+            }
+            for assistant_id, assistant in assistant_by_id.items()
+        ],
+        "relieverAssignments": existing.get("relieverAssignments", []),
+        "optimizedAssistantIds": list(assistant_by_id),
+        "summary": {
+            "assistantCount": len(assistants),
+            "capacityHours": len(assistants) * maximum_weekly / 60,
+            "coverageHours": sum(meeting.end - meeting.start for meeting in meetings) / 60,
+            "assignmentCount": len(assignments),
+            "assignedClassCount": len(assigned_class_ids),
+            "unassignedClassCount": len(class_ids - assigned_class_ids),
+        },
+        "diagnostics": [] if new_assignments else [
+            "No eligible unassigned duties were available for the new assistant."
+        ],
+        "appliedSettings": applied,
+    }
+
+
 def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
+    if payload.get("incremental"):
+        return _solve_incremental_schedule(payload)
     main_events = payload.get("mainSchedule")
     assistants = payload.get("assistants")
     if not isinstance(main_events, list) or not main_events:
@@ -310,6 +468,7 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
         main_meetings = _parse_meetings(main_events, "main schedule")
         coverage_units = _coverage_units(main_meetings)
         assistant_busy: dict[str, list[Meeting]] = {}
+        assistant_fixed: dict[str, list[Meeting]] = {}
         assistant_labels: dict[str, str] = {}
         for index, assistant in enumerate(assistants):
             assistant_id = str(assistant.get("id") or f"assistant-{index}")
@@ -317,8 +476,20 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
             schedule = assistant.get("schedule")
             if not isinstance(schedule, list) or not schedule:
                 raise ValueError(f"{label} has no valid class meetings.")
+            personal_meetings = _parse_meetings(schedule, label)
+            fixed_duties = assistant.get("fixedDuties") or []
+            if not isinstance(fixed_duties, list):
+                raise ValueError(f"{label} has invalid fixed duties.")
+            fixed_meetings = _parse_meetings(fixed_duties, f"{label} fixed duty")
+            for index, fixed in enumerate(fixed_meetings):
+                if any(
+                    fixed.day == other.day and fixed.start < other.end and other.start < fixed.end
+                    for other in [*personal_meetings, *fixed_meetings[:index]]
+                ):
+                    raise ValueError(f"{label} has overlapping saved duties or classes.")
             assistant_labels[assistant_id] = label
-            assistant_busy[assistant_id] = _parse_meetings(schedule, label)
+            assistant_fixed[assistant_id] = fixed_meetings
+            assistant_busy[assistant_id] = [*personal_meetings, *fixed_meetings]
     except (TypeError, ValueError) as error:
         return {"status": "INVALID", "diagnostics": [str(error)]}
 
@@ -397,6 +568,20 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
                     )
                 )
 
+    fixed_weekly_minutes: dict[str, int] = defaultdict(int)
+    fixed_daily_minutes: dict[tuple[str, str], int] = defaultdict(int)
+    for assistant_id, fixed_meetings in assistant_fixed.items():
+        for index, meeting in enumerate(fixed_meetings):
+            fixed = model.new_bool_var(f"fixed_{assistant_id}_{index}")
+            model.add(fixed == 1)
+            assistant_start_vars[(assistant_id, meeting.start)].append(fixed)
+            assistant_day_vars[(assistant_id, meeting.day)].append(fixed)
+            assistant_occurrences[(assistant_id, meeting.day)].append(
+                (meeting.source_id, fixed, meeting.start, meeting.end)
+            )
+            fixed_weekly_minutes[assistant_id] += meeting.end - meeting.start
+            fixed_daily_minutes[(assistant_id, meeting.day)] += meeting.end - meeting.start
+
     duty_break_constraint_count = _add_duty_break_constraints(
         model,
         assistant_occurrences,
@@ -420,7 +605,7 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
             maximum_weekly_duty,
             f"total_minutes_{assistant_id}",
         )
-        model.add(total_minutes == sum(
+        model.add(total_minutes == fixed_weekly_minutes[assistant_id] + sum(
             variable * unit.duration for variable, unit in variables
         ))
         assistant_total_vars[assistant_id] = total_minutes
@@ -428,9 +613,10 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
 
         for day in DAY_ORDER:
             entries = daily_vars.get((assistant_id, day), [])
-            if entries:
+            if entries or fixed_daily_minutes[(assistant_id, day)]:
                 model.add(
-                    sum(variable * duration for variable, duration in entries)
+                    fixed_daily_minutes[(assistant_id, day)]
+                    + sum(variable * duration for variable, duration in entries)
                     <= maximum_daily_duty
                 )
 
@@ -544,6 +730,7 @@ def solve_student_assistant_schedule(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "status": "OPTIMAL" if status == cp_model.OPTIMAL else "FEASIBLE",
         "assignments": assignments,
+        "optimizedAssistantIds": list(assistant_labels),
         "assistantTotals": [
             {
                 "assistantId": assistant_id,

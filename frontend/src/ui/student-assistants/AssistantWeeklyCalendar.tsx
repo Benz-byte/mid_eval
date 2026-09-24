@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { DutyAssignment, RelieverAssignment } from '../../api/studentAssistantApi'
 import type { CalendarEvent, UploadedAssistant } from '../../types'
@@ -28,13 +29,28 @@ export function AssistantWeeklyCalendar({
   eventAssignments,
   relieverAssignments,
   weekStart,
+  onViewDuty,
+  onRemoveDuty,
 }: {
   assistant: UploadedAssistant
   assignments: DutyAssignment[]
   eventAssignments: CalendarEvent[]
   relieverAssignments: RelieverAssignment[]
   weekStart: Date
+  onViewDuty: (assignment: DutyAssignment, date: Date) => void
+  onRemoveDuty: (assignment: DutyAssignment) => void
 }) {
+  const [selectedDuty, setSelectedDuty] = useState<{ assignment: DutyAssignment, date: Date } | null>(null)
+  const [confirmRemove, setConfirmRemove] = useState(false)
+
+  useEffect(() => {
+    if (!selectedDuty) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedDuty(null)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [selectedDuty])
   const weekDates = WEEK_DAYS.map((_, index) => {
     const date = new Date(weekStart)
     date.setDate(date.getDate() + index)
@@ -111,6 +127,16 @@ export function AssistantWeeklyCalendar({
                   height: Math.max(position(item.endMinutes) - position(item.startMinutes), 28),
                 }}
                 title={reliever?.replacementAssistantLabel ? `Relieved by ${reliever.replacementAssistantLabel}` : reliever ? 'Reliever needed' : `Duty: ${item.courseCode || item.subject} in ${item.room}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => { setSelectedDuty({ assignment: item, date: weekDates[dayIndex] }); setConfirmRemove(false) }}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    setSelectedDuty({ assignment: item, date: weekDates[dayIndex] })
+                    setConfirmRemove(false)
+                  }
+                }}
               >
                 <small className="sa-block-label">{reliever ? reliever.replacementAssistantId ? 'Relieved' : 'Reliever Needed' : 'Duty'}</small>
                 <strong>{item.courseCode || item.subject || 'Duty'}</strong>
@@ -164,6 +190,19 @@ export function AssistantWeeklyCalendar({
         <span><i className="relieved" /> Relieved duty</span>
         <span><i className="reliever" /> Reliever duty</span>
       </div>
+      {selectedDuty && <div className="sa-duty-action-backdrop" role="presentation" onMouseDown={() => setSelectedDuty(null)}>
+        <section className="sa-duty-action-dialog" role="dialog" aria-modal="true" aria-labelledby="sa-duty-action-title" onMouseDown={event => event.stopPropagation()}>
+          {confirmRemove ? <>
+            <h3 id="sa-duty-action-title">Remove assignment?</h3>
+            <p>This duty will remain in the schedule without an assigned student assistant.</p>
+            <div className="sa-duty-action-buttons"><button className="btn-secondary" type="button" onClick={() => setConfirmRemove(false)}>Cancel</button><button className="sa-duty-remove-button" type="button" onClick={() => { onRemoveDuty(selectedDuty.assignment); setSelectedDuty(null) }}>Remove</button></div>
+          </> : <>
+            <h3 id="sa-duty-action-title">{selectedDuty.assignment.courseCode || selectedDuty.assignment.subject || 'Duty'}</h3>
+            <p>{selectedDuty.date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })} · {formatTime(selectedDuty.assignment.startMinutes)}–{formatTime(selectedDuty.assignment.endMinutes)} · {selectedDuty.assignment.room || 'TBA'}</p>
+            <div className="sa-duty-action-buttons"><button className="sa-duty-view-button" type="button" onClick={() => { onViewDuty(selectedDuty.assignment, selectedDuty.date); setSelectedDuty(null) }}>View</button><button className="sa-duty-remove-button" type="button" onClick={() => setConfirmRemove(true)}>Remove</button></div>
+          </>}
+        </section>
+      </div>}
     </div>
   )
 }

@@ -741,6 +741,23 @@
   outline-offset: 2px;
 }
 
+.calendar-event.focus-highlight {
+  z-index: 12;
+  outline: 3px solid #f6e05e;
+  outline-offset: 2px;
+  animation: calendar-focus-pulse 250ms ease-in-out 4;
+}
+
+@keyframes calendar-focus-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgb(246 224 94 / 35%);
+  }
+
+  50% {
+    box-shadow: 0 0 0 7px rgb(246 224 94 / 70%);
+  }
+}
+
 .calendar-event.booking,
 .calendar-event.booking.conflict {
   border-color: #2c7a7b;

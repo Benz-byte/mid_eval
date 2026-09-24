@@ -5,7 +5,7 @@ import type { DutyAssignment, RelieverAssignment, StudentAssistantResult } from 
 import { matchesSelectedDay, toDateInputValue } from '../../formatters/dateFormatter'
 import { formatTime } from '../../formatters/timeFormatter'
 import { SCHEDULE_DATE_STORAGE_KEY, loadScheduleDate } from '../../storage/preferenceStorage'
-import { loadLocalAssistantData, saveLocalAssistantData } from '../../storage/studentAssistantStorage'
+import { loadLocalAssistantData, saveLocalAssistantData, withManualDutyAssignments } from '../../storage/studentAssistantStorage'
 import { ScheduleFilter, type ScheduleFilterOption } from './ScheduleFilter'
 
 const DEFAULT_START = 7 * 60
@@ -88,6 +88,23 @@ function longestConsecutiveMinutes(intervals: Array<{ start: number, end: number
   return Math.max(longest, blockEnd - blockStart)
 }
 
+function violatesDutyGap(intervals: Array<{ start: number, end: number }>, minimumGap: number) {
+  if (minimumGap <= 0) return false
+  const ordered = [...intervals].sort((left, right) => left.start - right.start || left.end - right.end)
+  for (let index = 0; index < ordered.length; index += 1) {
+    let chainEnd = ordered[index].end
+    let continuousMinutes = ordered[index].end - ordered[index].start
+    let nextIndex = index + 1
+    while (nextIndex < ordered.length && ordered[nextIndex].start === chainEnd) {
+      continuousMinutes += ordered[nextIndex].end - ordered[nextIndex].start
+      chainEnd = ordered[nextIndex].end
+      nextIndex += 1
+    }
+    if (continuousMinutes >= 180 && ordered.slice(nextIndex).some(interval => interval.start >= chainEnd && interval.start < chainEnd + minimumGap)) return true
+  }
+  return false
+}
+
 function teacherKey(event: CalendarEvent) {
   return [event.lastName, event.firstName, event.middleName]
     .filter(Boolean)
@@ -115,6 +132,8 @@ export function ScheduleCalendar({
   onEditEvent,
   onDeleteEvent,
   onAssignAssistant,
+  focusRequest,
+  onFocusHandled,
 }: {
   csvEvents: CalendarEvent[]
   adminEvents: CalendarEvent[]
@@ -128,6 +147,8 @@ export function ScheduleCalendar({
   onEditEvent: (eventId: string, scope?: BookingEditScope) => void
   onDeleteEvent: (eventId: string) => void
   onAssignAssistant: (eventId: string, assistantId?: string, assistantLabel?: string) => void
+  focusRequest?: { eventId: string, date: string, requestId: number, consumed: boolean } | null
+  onFocusHandled?: (requestId: number) => void
 }) {
   const [selectedDate, setSelectedDate] = useState(loadScheduleDate)
   const [uploadError, setUploadError] = useState('')
@@ -143,13 +164,56 @@ export function ScheduleCalendar({
   const [selectedWeeklyRoom, setSelectedWeeklyRoom] = useState('')
   const [roomPickerOpen, setRoomPickerOpen] = useState(false)
   const [warningDrawer, setWarningDrawer] = useState<'conflicts' | 'tba' | null>(null)
+  const [focusedEventKey, setFocusedEventKey] = useState('')
   const [assistantData, setAssistantData] = useState(loadLocalAssistantData)
   const [absenceDuty, setAbsenceDuty] = useState<DutyContext | null>(null)
   const [relieverProposals, setRelieverProposals] = useState<RelieverProposal[]>([])
-  const [relieverStep, setRelieverStep] = useState<'report' | 'select' | 'confirm' | 'none-found' | null>(null)
+  const [relieverStep, setRelieverStep] = useState<'report' | 'select' | 'confirm' | null>(null)
+  const [unassignedDuty, setUnassignedDuty] = useState<{ event: CalendarEvent, date: Date, candidates: RelieverCandidate[] } | null>(null)
+  const [selectedDutyAssistantId, setSelectedDutyAssistantId] = useState('')
   const roomPickerRef = useRef<HTMLDivElement>(null)
   const dutyAssignments = assistantData.result?.assignments ?? []
   const relieverAssignments = assistantData.result?.relieverAssignments ?? []
+
+  useEffect(() => {
+    if (!focusRequest || focusRequest.consumed) return
+    const [year, month, day] = focusRequest.date.split('-').map(Number)
+    const date = new Date(year, month - 1, day)
+    const event = csvEvents.find(candidate => candidate.id === focusRequest.eventId)
+    if (!event || Number.isNaN(date.getTime())) return
+    const eventKey = calendarEventKey(date, event)
+    setSelectedDate(date)
+    setViewMode('daily')
+    setWarningDrawer(null)
+    setFocusedEventKey(eventKey)
+    onFocusHandled?.(focusRequest.requestId)
+    const scrollTimer = window.setTimeout(() => {
+      document.querySelector<HTMLElement>(`[data-calendar-event-key="${CSS.escape(eventKey)}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+    }, 120)
+    const highlightTimer = window.setTimeout(() => setFocusedEventKey(''), 1000)
+    return () => {
+      window.clearTimeout(scrollTimer)
+      window.clearTimeout(highlightTimer)
+    }
+  }, [csvEvents, focusRequest?.requestId])
+
+  useEffect(() => {
+    if (!focusedEventKey) return
+    const clearHighlight = () => setFocusedEventKey('')
+    document.addEventListener('pointerdown', clearHighlight)
+    return () => document.removeEventListener('pointerdown', clearHighlight)
+  }, [focusedEventKey])
+
+  useEffect(() => {
+    if (!unassignedDuty) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setUnassignedDuty(null)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [unassignedDuty])
+
   const assignmentForEvent = (event: CalendarEvent, date: Date) => dutyAssignments.find(value =>
     value.classId === event.id && value.day === DATE_DAY_CODES[date.getDay()],
   ) ?? dutyAssignments.find(value => value.classId === event.id)
@@ -550,7 +614,8 @@ export function ScheduleCalendar({
     if (!assignment) return
     const existingReliever = relieverForEvent(event, date)
     if (existingReliever?.replacementAssistantId) return
-    setAbsenceDuty({ event, date: new Date(date), assignment })
+    const duty = { event, date: new Date(date), assignment }
+    setAbsenceDuty(duty)
     setRelieverProposals([])
     setRelieverStep('report')
   }
@@ -640,6 +705,103 @@ export function ScheduleCalendar({
       )
   }
 
+  const regularDutyIntervalsFor = (assistantId: string, date: Date) => {
+    const day = DATE_DAY_CODES[date.getDay()]
+    const dateKey = toDateInputValue(date)
+    const relievedClassIds = new Set(relieverAssignments.filter(record =>
+      record.date === dateKey
+      && record.day === day
+      && record.originalAssistantId === assistantId,
+    ).map(record => record.classId))
+    return dutyAssignments
+      .filter(assignment => assignment.assistantId === assistantId && assignment.day === day && !relievedClassIds.has(assignment.classId))
+      .map(assignment => ({ start: assignment.startMinutes, end: assignment.endMinutes }))
+  }
+
+  const regularWeeklyMinutesFor = (assistantId: string, date: Date) => {
+    let minutes = dutyAssignments
+      .filter(assignment => assignment.assistantId === assistantId)
+      .reduce((total, assignment) => total + assignment.endMinutes - assignment.startMinutes, 0)
+    relieverAssignments.forEach(record => {
+      if (record.originalAssistantId !== assistantId || !sameWeek(dateFromInputValue(record.date), date)) return
+      minutes -= record.endMinutes - record.startMinutes
+    })
+    return Math.max(0, minutes)
+  }
+
+  const availableRegularDutyCandidates = (event: CalendarEvent, date: Date): RelieverCandidate[] => {
+    const duration = event.endMinutes - event.startMinutes
+    const dateValue = toDateInputValue(date)
+    return assistantData.assistants.flatMap(assistant => {
+      const hasPersonalClassConflict = assistant.events.some(personalEvent =>
+        matchesSelectedDay(personalEvent.dayCode, date)
+        && overlaps(event.startMinutes, event.endMinutes, personalEvent.startMinutes, personalEvent.endMinutes),
+      )
+      if (hasPersonalClassConflict) return []
+      const busyIntervals = effectiveIntervalsFor(assistant.id, date, [])
+      const hasDutyConflict = busyIntervals.some(interval => overlaps(event.startMinutes, event.endMinutes, interval.start, interval.end))
+      const hasEventConflict = adminEvents.some(adminEvent =>
+        adminEvent.assistantId === assistant.id
+        && adminEvent.date === dateValue
+        && overlaps(event.startMinutes, event.endMinutes, adminEvent.startMinutes, adminEvent.endMinutes),
+      )
+      if (hasDutyConflict || hasEventConflict) return []
+      const regularIntervalsAfter = [...regularDutyIntervalsFor(assistant.id, date), { start: event.startMinutes, end: event.endMinutes }]
+      const dailyMinutesAfter = regularIntervalsAfter.reduce((total, interval) => total + interval.end - interval.start, 0)
+      const weeklyMinutesAfter = regularWeeklyMinutesFor(assistant.id, date) + duration
+      if (dailyMinutesAfter > assistantData.settings.maximumDailyDutyMinutes
+        || weeklyMinutesAfter > assistantData.settings.maximumWeeklyDutyMinutes
+        || violatesDutyGap(regularIntervalsAfter, assistantData.settings.minimumGapAfterThreeHourDutyMinutes)) return []
+      return [{
+        assistant,
+        weeklyMinutesAfter,
+        dailyMinutesAfter,
+        consecutiveMinutesAfter: longestConsecutiveMinutes(regularIntervalsAfter),
+        dailyDutyCountAfter: regularIntervalsAfter.length,
+      }]
+    }).sort((left, right) =>
+      left.weeklyMinutesAfter - right.weeklyMinutesAfter
+      || left.dailyMinutesAfter - right.dailyMinutesAfter
+      || left.consecutiveMinutesAfter - right.consecutiveMinutesAfter
+      || left.dailyDutyCountAfter - right.dailyDutyCountAfter
+      || (left.assistant.studentId ?? left.assistant.id).localeCompare(right.assistant.studentId ?? right.assistant.id),
+    )
+  }
+
+  const openUnassignedDuty = (event: CalendarEvent, date: Date) => {
+    const candidates = availableRegularDutyCandidates(event, date)
+    setUnassignedDuty({ event, date: new Date(date), candidates })
+    setSelectedDutyAssistantId(candidates[0]?.assistant.id ?? '')
+  }
+
+  const assignRegularDuty = () => {
+    if (!unassignedDuty || assignmentForEvent(unassignedDuty.event, unassignedDuty.date)) return
+    const selected = availableRegularDutyCandidates(unassignedDuty.event, unassignedDuty.date).find(candidate => candidate.assistant.id === selectedDutyAssistantId)
+    if (!selected) return
+    const assignment: DutyAssignment = {
+      assistantId: selected.assistant.id,
+      assistantLabel: selected.assistant.label,
+      classId: unassignedDuty.event.id,
+      day: DATE_DAY_CODES[unassignedDuty.date.getDay()],
+      startMinutes: unassignedDuty.event.startMinutes,
+      endMinutes: unassignedDuty.event.endMinutes,
+      courseCode: unassignedDuty.event.courseCode,
+      subject: unassignedDuty.event.subject,
+      room: unassignedDuty.event.room,
+      section: unassignedDuty.event.section,
+    }
+    const nextResult = withManualDutyAssignments(
+      assistantData,
+      [...(assistantData.result?.assignments ?? []), assignment],
+      csvEvents,
+    )
+    const nextData = { ...assistantData, result: nextResult }
+    setAssistantData(nextData)
+    saveLocalAssistantData(nextData)
+    setUnassignedDuty(null)
+    setSelectedDutyAssistantId('')
+  }
+
   const recordsForProposals = (proposals: RelieverProposal[]): RelieverAssignment[] => proposals.map(proposal => {
     const selected = proposal.candidates.find(candidate => candidate.assistant.id === proposal.selectedAssistantId)
     return {
@@ -674,29 +836,13 @@ export function ScheduleCalendar({
 
   const findRelievers = () => {
     if (!absenceDuty) return
-    const uniqueTargets = [...new Map([absenceDuty].map(target => [
-      `${target.assignment.classId}|${target.assignment.startMinutes}|${target.assignment.endMinutes}`,
-      target,
-    ])).values()].sort((left, right) => left.assignment.startMinutes - right.assignment.startMinutes)
-    const reserved: Array<{ assistantId: string, date: Date, start: number, end: number }> = []
-    const proposals = uniqueTargets.map(duty => {
-      const candidates = rankRelievers(duty, reserved)
-      const selectedAssistantId = candidates[0]?.assistant.id ?? ''
-      if (selectedAssistantId) reserved.push({
-        assistantId: selectedAssistantId,
-        date: duty.date,
-        start: duty.assignment.startMinutes,
-        end: duty.assignment.endMinutes,
-      })
-      return { duty, candidates, selectedAssistantId }
-    })
-    setRelieverProposals(proposals)
-    if (proposals.every(proposal => proposal.candidates.length === 0)) {
-      persistRelieverRecords(recordsForProposals(proposals))
-      setRelieverStep('none-found')
-    } else {
-      setRelieverStep('select')
-    }
+    const candidates = rankRelievers(absenceDuty, [])
+    setRelieverProposals([{
+      duty: absenceDuty,
+      candidates,
+      selectedAssistantId: candidates[0]?.assistant.id ?? '',
+    }])
+    setRelieverStep('select')
   }
 
   const selectRelieverCandidate = (proposalIndex: number, assistantId: string) => {
@@ -785,15 +931,16 @@ export function ScheduleCalendar({
               <div className="time-axis">{guideMinutes.map(minute => <span className={`time-axis-label${minute === rangeStart ? ' first' : ''}${minute === rangeEnd ? ' last' : ''}`} key={minute} style={{ top: positionForMinute(minute) }}>{formatTime(minute)}</span>)}</div>
               <div className="weekly-day-lanes">{weekDates.map((date, dayIndex) => <div className="room-lane" key={toDateInputValue(date)}>{guideMinutes.map(minute => <span className="time-guide" key={minute} style={{ top: positionForMinute(minute) }} />)}{weeklyEvents[dayIndex].map(event => {
                 const assistant = assistantForEvent(event, date)
-                const isInteractive = event.source === 'admin' || Boolean(assistant && !assistant.isReliever)
+                const isInteractive = event.source === 'admin' || !assistant?.isReliever
                 const openCard = () => {
                   if (event.source === 'admin') {
                     setSelectedCalendarEvent(event)
                     setConfirmCardDelete(false)
                     setAssistantAssignmentOpen(false)
                   } else if (assistant && !assistant.isReliever) openAbsenceFlow(event, date)
+                  else if (!assistant) openUnassignedDuty(event, date)
                 }
-                return <article className={`calendar-event ${event.source}${event.id.startsWith('booking_') ? ' booking' : ''}${weeklyConflictingEventIds.has(event.id) ? ' conflict' : ''}${assistant?.isReliever ? ' has-reliever' : ''}${assistant?.isPending ? ' reliever-pending' : ''}`} data-calendar-event-key={calendarEventKey(date, event)} key={calendarEventKey(date, event)} style={{ top: positionForMinute(event.startMinutes), height: Math.max(positionForMinute(event.endMinutes) - positionForMinute(event.startMinutes), 28) }} title={`${event.courseCode} ${event.subject}\n${formatTime(event.startMinutes)}–${formatTime(event.endMinutes)}`} role={isInteractive ? 'button' : undefined} tabIndex={isInteractive ? 0 : undefined} onClick={openCard} onKeyDown={keyEvent => { if (isInteractive && (keyEvent.key === 'Enter' || keyEvent.key === ' ')) openCard() }}><strong>{event.courseCode || event.subject}</strong>{scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}{instructorName(event) && <small className="calendar-instructor-name">{instructorName(event)}</small>}{assistant?.isPending ? <small className="calendar-assistant-name pending">Absent: {assistant.absentName}<br />SA: Reliever needed</small> : assistant && <small className="calendar-assistant-name" title={assistant.fullName}>SA: {assistant.shortName}{assistant.isReliever && <b>RELIEVER</b>}</small>}{event.source === 'admin' && <em className="calendar-edit-hint">click to edit</em>}</article>
+                return <article className={`calendar-event ${event.source}${event.id.startsWith('booking_') ? ' booking' : ''}${weeklyConflictingEventIds.has(event.id) ? ' conflict' : ''}${assistant?.isReliever ? ' has-reliever' : ''}${assistant?.isPending ? ' reliever-pending' : ''}${focusedEventKey === calendarEventKey(date, event) ? ' focus-highlight' : ''}`} data-calendar-event-key={calendarEventKey(date, event)} key={calendarEventKey(date, event)} style={{ top: positionForMinute(event.startMinutes), height: Math.max(positionForMinute(event.endMinutes) - positionForMinute(event.startMinutes), 28) }} title={`${event.courseCode} ${event.subject}\n${formatTime(event.startMinutes)}–${formatTime(event.endMinutes)}`} role={isInteractive ? 'button' : undefined} tabIndex={isInteractive ? 0 : undefined} onClick={openCard} onKeyDown={keyEvent => { if (isInteractive && (keyEvent.key === 'Enter' || keyEvent.key === ' ')) openCard() }}><strong>{event.courseCode || event.subject}</strong>{scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}{instructorName(event) && <small className="calendar-instructor-name">{instructorName(event)}</small>}{assistant?.isPending ? <small className="calendar-assistant-name pending">Absent: {assistant.absentName}<br />SA: Reliever needed</small> : assistant ? <small className="calendar-assistant-name" title={assistant.fullName}>SA: {assistant.shortName}{assistant.isReliever && <b>RELIEVER</b>}</small> : assistantData.result && <small className="calendar-assistant-name pending">SA: None</small>}{event.source === 'admin' && <em className="calendar-edit-hint">click to edit</em>}</article>
               })}</div>)}</div>
             </div>
           </div>
@@ -831,16 +978,17 @@ export function ScheduleCalendar({
                     .filter(event => event.room === room)
                     .map(event => {
                       const assistant = assistantForEvent(event, selectedDate)
-                      const isInteractive = event.source === 'admin' || Boolean(assistant && !assistant.isReliever)
+                      const isInteractive = event.source === 'admin' || !assistant?.isReliever
                       const openCard = () => {
                         if (event.source === 'admin') {
                           setSelectedCalendarEvent(event)
                           setConfirmCardDelete(false)
                           setAssistantAssignmentOpen(false)
                         } else if (assistant && !assistant.isReliever) openAbsenceFlow(event, selectedDate)
+                        else if (!assistant) openUnassignedDuty(event, selectedDate)
                       }
                       return <article
-                        className={`calendar-event ${event.source}${event.id.startsWith('booking_') ? ' booking' : ''}${conflictingEventIds.has(event.id) ? ' conflict' : ''}${assistant?.isReliever ? ' has-reliever' : ''}${assistant?.isPending ? ' reliever-pending' : ''}`}
+                        className={`calendar-event ${event.source}${event.id.startsWith('booking_') ? ' booking' : ''}${conflictingEventIds.has(event.id) ? ' conflict' : ''}${assistant?.isReliever ? ' has-reliever' : ''}${assistant?.isPending ? ' reliever-pending' : ''}${focusedEventKey === calendarEventKey(selectedDate, event) ? ' focus-highlight' : ''}`}
                         data-calendar-event-key={calendarEventKey(selectedDate, event)}
                         key={event.id}
                         style={{
@@ -859,7 +1007,7 @@ export function ScheduleCalendar({
                         <strong>{event.courseCode || event.subject}</strong>
                         {scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}
                         {instructorName(event) && <small className="calendar-instructor-name">{instructorName(event)}</small>}
-                        {assistant?.isPending ? <small className="calendar-assistant-name pending">Absent: {assistant.absentName}<br />SA: Reliever needed</small> : assistant && <small className="calendar-assistant-name" title={assistant.fullName}>SA: {assistant.shortName}{assistant.isReliever && <b>RELIEVER</b>}</small>}
+                        {assistant?.isPending ? <small className="calendar-assistant-name pending">Absent: {assistant.absentName}<br />SA: Reliever needed</small> : assistant ? <small className="calendar-assistant-name" title={assistant.fullName}>SA: {assistant.shortName}{assistant.isReliever && <b>RELIEVER</b>}</small> : assistantData.result && <small className="calendar-assistant-name pending">SA: None</small>}
                         {event.source === 'admin' && <em className="calendar-edit-hint">click to edit</em>}
                       </article>
                     })}
@@ -882,8 +1030,26 @@ export function ScheduleCalendar({
         </div>
       )}
 
+      {unassignedDuty && (
+        <div className="calendar-event-dialog-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setUnassignedDuty(null) }}>
+          <section className="reliever-dialog" role="dialog" aria-modal="true" aria-labelledby="assign-duty-dialog-title">
+            <div className="calendar-event-dialog-heading"><div><h3 id="assign-duty-dialog-title">Assign Student Assistant</h3><small>{unassignedDuty.event.courseCode || unassignedDuty.event.subject} · {formatTime(unassignedDuty.event.startMinutes)}–{formatTime(unassignedDuty.event.endMinutes)}</small></div><button type="button" aria-label="Close" onClick={() => setUnassignedDuty(null)}>×</button></div>
+            <div className="reliever-proposal-list"><section className="reliever-proposal">
+              {unassignedDuty.candidates.length === 0 ? <p className="reliever-none">No one available</p> : <label className="reliever-select">
+                <span>Student Assistant</span>
+                <select value={selectedDutyAssistantId} onChange={event => setSelectedDutyAssistantId(event.target.value)}>
+                  {unassignedDuty.candidates.map((candidate, index) => <option value={candidate.assistant.id} key={candidate.assistant.id}>{abbreviatedAssistantName(candidate.assistant.label)}{candidate.weeklyMinutesAfter === unassignedDuty.event.endMinutes - unassignedDuty.event.startMinutes ? ' — 0 duty hours' : ''}{index === 0 ? ' — Recommended' : ''}</option>)}
+                </select>
+                <small>Available</small>
+              </label>}
+            </section></div>
+            <div className="calendar-event-dialog-actions"><button className="btn-secondary" type="button" onClick={() => setUnassignedDuty(null)}>Cancel</button><button className="btn-primary" type="button" disabled={!selectedDutyAssistantId} onClick={assignRegularDuty}>Assign</button></div>
+          </section>
+        </div>
+      )}
+
       {absenceDuty && relieverStep && (
-        <div className="calendar-event-dialog-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && relieverStep !== 'none-found') closeRelieverFlow() }}>
+        <div className="calendar-event-dialog-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) closeRelieverFlow() }}>
           <section className="reliever-dialog" role="dialog" aria-modal="true" aria-labelledby="reliever-dialog-title">
             {relieverStep === 'report' && <>
               <div className="calendar-event-dialog-heading"><h3 id="reliever-dialog-title">Report Student Assistant Absence</h3><button type="button" aria-label="Close" onClick={closeRelieverFlow}>×</button></div>
@@ -894,7 +1060,7 @@ export function ScheduleCalendar({
               <div className="calendar-event-dialog-heading"><div><h3 id="reliever-dialog-title">Select Reliever</h3><small>{absenceDuty.assignment.courseCode} · {formatTime(absenceDuty.assignment.startMinutes)}–{formatTime(absenceDuty.assignment.endMinutes)}</small></div><button type="button" aria-label="Close" onClick={closeRelieverFlow}>×</button></div>
               <div className="reliever-proposal-list">{relieverProposals.map((proposal, proposalIndex) => <section className="reliever-proposal" key={`${proposal.duty.assignment.classId}-${proposal.duty.assignment.startMinutes}`}>
                 {relieverProposals.length > 1 && <h4>{proposal.duty.assignment.courseCode} · {formatTime(proposal.duty.assignment.startMinutes)}–{formatTime(proposal.duty.assignment.endMinutes)}</h4>}
-                {proposal.candidates.length === 0 ? <p className="reliever-none">No eligible reliever</p> : <label className="reliever-select">
+                {proposal.candidates.length === 0 ? <p className="reliever-none">No one available</p> : <label className="reliever-select">
                   <span>Student Assistant</span>
                   <select value={proposal.selectedAssistantId} onChange={event => selectRelieverCandidate(proposalIndex, event.target.value)}>
                     {proposal.candidates.map((candidate, index) => <option value={candidate.assistant.id} key={candidate.assistant.id}>{abbreviatedAssistantName(candidate.assistant.label)}{index === 0 ? ' — Recommended' : ''}</option>)}
@@ -913,12 +1079,6 @@ export function ScheduleCalendar({
                 return <div key={`${proposal.duty.assignment.classId}-${proposal.duty.assignment.startMinutes}`}><strong>{proposal.duty.assignment.courseCode}</strong><span>{absenceDuty.date.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })} · {formatTime(proposal.duty.assignment.startMinutes)}–{formatTime(proposal.duty.assignment.endMinutes)} · {proposal.duty.assignment.room}</span><small>{candidate ? `${abbreviatedAssistantName(candidate.assistant.label)} replaces ${abbreviatedAssistantName(proposal.duty.assignment.assistantLabel)}` : 'No eligible reliever'}</small></div>
               })}</div>
               <div className="calendar-event-dialog-actions"><button className="btn-secondary" type="button" onClick={() => setRelieverStep('select')}>Cancel</button><button className="btn-primary" type="button" onClick={confirmRelievers}>Confirm Assignment</button></div>
-            </>}
-
-            {relieverStep === 'none-found' && <>
-              <div className="calendar-event-dialog-heading"><h3 id="reliever-dialog-title">No Eligible Reliever</h3><button type="button" aria-label="Close" onClick={closeRelieverFlow}>×</button></div>
-              <p>No Student Assistant is available for this duty without violating a scheduling constraint.</p>
-              <div className="calendar-event-dialog-actions"><button className="btn-secondary" type="button" onClick={closeRelieverFlow}>Close</button></div>
             </>}
           </section>
         </div>

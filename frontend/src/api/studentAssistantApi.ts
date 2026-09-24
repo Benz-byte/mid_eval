@@ -78,6 +78,7 @@ export interface StudentAssistantResult {
   diagnostics: string[]
   assignments?: DutyAssignment[]
   assistantTotals?: AssistantTotal[]
+  optimizedAssistantIds?: string[]
   relieverAssignments?: RelieverAssignment[]
   appliedSettings?: SchedulingSettings & {
     dutyBreakConstraintCount?: number
@@ -96,12 +97,13 @@ export async function solveStudentAssistantSchedule<EventType>(
   mainSchedule: EventType[],
   assistants: StudentAssistantInput<EventType>[],
   schedulingSettings: SchedulingSettings,
+  incremental?: { existingResult: StudentAssistantResult, newAssistantIds: string[] },
 ): Promise<StudentAssistantResult> {
   const randomSeed = crypto.getRandomValues(new Uint32Array(1))[0] & 0x7fffffff
   const response = await fetch(`${window.electron.flaskUrl}/api/student-assistant/solve`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mainSchedule, assistants, schedulingSettings, randomSeed }),
+    body: JSON.stringify({ mainSchedule, assistants, schedulingSettings, randomSeed, incremental }),
   })
 
   const result = await response.json() as StudentAssistantResult

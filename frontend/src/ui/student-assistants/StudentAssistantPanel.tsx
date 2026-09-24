@@ -9,12 +9,13 @@ import {
   solveStudentAssistantSchedule,
   subscribeToSharedStudentAssistantData,
   type SchedulingSettings,
+  type DutyAssignment,
   type StudentAssistantResult,
   WEEKLY_DUTY_LIMIT_OPTIONS,
 } from '../../api/studentAssistantApi'
 import { readScheduleFile } from '../../api/scheduleParser'
 import { flushPendingAssistantSync, hasPendingAssistantSync } from '../../storage/localFirstSync'
-import { loadLocalAssistantData, saveLocalAssistantData } from '../../storage/studentAssistantStorage'
+import { loadLocalAssistantData, saveLocalAssistantData, withManualDutyAssignments } from '../../storage/studentAssistantStorage'
 import type { CalendarEvent, UploadedAssistant } from '../../types'
 import { AssistantWeeklyCalendar } from './AssistantWeeklyCalendar'
 
@@ -80,11 +81,15 @@ export function StudentAssistantPanel({
   mainScheduleName,
   mainScheduleKey,
   adminEvents,
+  onViewDuty,
+  onSolvingChange,
 }: {
   mainSchedule: CalendarEvent[]
   mainScheduleName: string
   mainScheduleKey: string
   adminEvents: CalendarEvent[]
+  onViewDuty: (eventId: string, date: string) => void
+  onSolvingChange: (solving: boolean) => void
 }) {
   const localAssistantData = useMemo(() => loadLocalAssistantData(), [])
   const [assistants, setAssistants] = useState<UploadedAssistant[]>(localAssistantData.assistants)
@@ -110,6 +115,7 @@ export function StudentAssistantPanel({
   const [editError, setEditError] = useState('')
   const [deletingAssistant, setDeletingAssistant] = useState<UploadedAssistant | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [rescheduleEntire, setRescheduleEntire] = useState(false)
   const [weeklySummaryOpen, setWeeklySummaryOpen] = useState(false)
   const [draftDutyGapMinutes, setDraftDutyGapMinutes] = useState(
     localAssistantData.settings.minimumGapAfterThreeHourDutyMinutes,
@@ -202,21 +208,29 @@ export function StudentAssistantPanel({
     setDraftDutyGapMinutes(settings.minimumGapAfterThreeHourDutyMinutes)
     setDraftDailyDutyMinutes(settings.maximumDailyDutyMinutes)
     setDraftWeeklyDutyMinutes(settings.maximumWeeklyDutyMinutes)
-    setSidebarOpen(false)
+    setRescheduleEntire(false)
+    setError('')
     setSettingsOpen(true)
   }
 
-  const saveSchedulingSettings = (event: FormEvent) => {
+  const proceedWithSchedule = (event: FormEvent) => {
     event.preventDefault()
-    const nextSettings = {
+    if (solving) return
+    const nextSettings = normalizeSchedulingSettings({
       minimumGapAfterThreeHourDutyMinutes: draftDutyGapMinutes,
       maximumDailyDutyMinutes: draftDailyDutyMinutes,
       maximumWeeklyDutyMinutes: draftWeeklyDutyMinutes,
+    })
+    if (result && !rescheduleEntire && result.appliedSettings && (
+      result.appliedSettings.minimumGapAfterThreeHourDutyMinutes !== nextSettings.minimumGapAfterThreeHourDutyMinutes
+      || result.appliedSettings.maximumDailyDutyMinutes !== nextSettings.maximumDailyDutyMinutes
+      || result.appliedSettings.maximumWeeklyDutyMinutes !== nextSettings.maximumWeeklyDutyMinutes
+    )) {
+      setError('The settings differ from the current schedule. Use its original settings or select Reschedule the entire current schedule.')
+      return
     }
-    setSettings(nextSettings)
-    setResult(null)
-    saveAssistantData(assistants, null, nextSettings, true)
     setSettingsOpen(false)
+    void runSolver(nextSettings, rescheduleEntire)
   }
 
   const closeAddProfile = () => {
@@ -253,13 +267,13 @@ export function StudentAssistantPanel({
       if (deletingAssistant) setDeletingAssistant(null)
       else if (editingAssistant) closeEditProfile()
       else if (addProfileOpen) closeAddProfile()
-      else if (settingsOpen) setSettingsOpen(false)
+      else if (settingsOpen && !solving) setSettingsOpen(false)
       else if (weeklySummaryOpen) setWeeklySummaryOpen(false)
       else setSidebarOpen(false)
     }
     document.addEventListener('keydown', closeOnEscape)
     return () => document.removeEventListener('keydown', closeOnEscape)
-  }, [addProfileOpen, deletingAssistant, editingAssistant, settingsOpen, sidebarOpen, weeklySummaryOpen])
+  }, [addProfileOpen, deletingAssistant, editingAssistant, settingsOpen, sidebarOpen, solving, weeklySummaryOpen])
 
   const addStudentAssistant = async (event: FormEvent) => {
     event.preventDefault()
@@ -299,8 +313,7 @@ export function StudentAssistantPanel({
       const nextAssistants = [...assistants, assistant]
       setAssistants(nextAssistants)
       setSelectedAssistantId(assistant.id)
-      setResult(null)
-      saveAssistantData(nextAssistants, null, settings, true)
+      saveAssistantData(nextAssistants, result)
       closeAddProfile()
     } catch (uploadFailure) {
       setProfileError(uploadFailure instanceof Error ? uploadFailure.message : 'Could not read the class schedule file.')
@@ -383,10 +396,45 @@ export function StudentAssistantPanel({
     setDeletingAssistant(null)
   }
 
-  const runSolver = async () => {
+  const removeDutyAssignment = (assignment: DutyAssignment) => {
+    if (!result) return
+    const matchesAssignment = (candidate: DutyAssignment) =>
+      candidate.assistantId === assignment.assistantId
+      && candidate.classId === assignment.classId
+      && candidate.day === assignment.day
+      && candidate.startMinutes === assignment.startMinutes
+      && candidate.endMinutes === assignment.endMinutes
+    const nextResult: StudentAssistantResult = {
+      ...withManualDutyAssignments(
+        { assistants, result, settings, activeScheduleKey: mainScheduleKey, resultsBySchedule: {} },
+        (result.assignments ?? []).filter(candidate => !matchesAssignment(candidate)),
+        mainSchedule,
+      ),
+      relieverAssignments: (result.relieverAssignments ?? []).filter(record => !(
+        record.originalAssistantId === assignment.assistantId
+        && record.classId === assignment.classId
+        && record.day === assignment.day
+        && record.startMinutes === assignment.startMinutes
+        && record.endMinutes === assignment.endMinutes
+      )),
+    }
+    setResult(nextResult)
+    saveAssistantData(assistants, nextResult)
+  }
+
+  const runSolver = async (selectedSettings: SchedulingSettings, rebuildEntireSchedule: boolean) => {
     setError('')
-    setResult(null)
+    const optimizedAssistantIds = result?.optimizedAssistantIds ?? result?.assistantTotals?.map(total => total.assistantId)
+    const existingAssistantIds = new Set(optimizedAssistantIds ?? [])
+    const newAssistantIds = optimizedAssistantIds
+      ? assistants.filter(assistant => !existingAssistantIds.has(assistant.id)).map(assistant => assistant.id)
+      : []
+    if (result && !rebuildEntireSchedule && newAssistantIds.length === 0) {
+      setError('No new student assistants to add to the existing schedule.')
+      return
+    }
     setSolving(true)
+    onSolvingChange(true)
     try {
       const response = await solveStudentAssistantSchedule(
         mainSchedule,
@@ -395,15 +443,32 @@ export function StudentAssistantPanel({
           label: assistant.label.trim() || assistant.fileName,
           schedule: assistant.events,
         })),
-        settings,
+        selectedSettings,
+        result && !rebuildEntireSchedule ? { existingResult: result, newAssistantIds } : undefined,
       )
-      setResult(response)
-      saveAssistantData(assistants, response)
+      if (response.status !== 'OPTIMAL' && response.status !== 'FEASIBLE') {
+        setError(response.diagnostics?.join(' ') || 'No valid schedule found with these settings. Adjust them and try again.')
+        return
+      }
+      const retainedRelievers = rebuildEntireSchedule
+        ? (result?.relieverAssignments ?? []).filter(record => (response.assignments ?? []).some(assignment =>
+          assignment.assistantId === record.originalAssistantId
+          && assignment.classId === record.classId
+          && assignment.day === record.day
+          && assignment.startMinutes === record.startMinutes
+          && assignment.endMinutes === record.endMinutes,
+        ))
+        : response.relieverAssignments ?? []
+      const nextResult = { ...response, optimizedAssistantIds: assistants.map(assistant => assistant.id), relieverAssignments: retainedRelievers }
+      setResult(nextResult)
+      setSettings(selectedSettings)
+      saveAssistantData(assistants, nextResult, selectedSettings)
     } catch (solverError) {
       console.error(solverError)
       setError('Could not reach the scheduler. Make sure the Flask service started with the app.')
     } finally {
       setSolving(false)
+      onSolvingChange(false)
     }
   }
 
@@ -488,29 +553,30 @@ export function StudentAssistantPanel({
 
   return (
     <section className="sa-panel">
-      <header className="sa-schedule-toolbar">
-        <button className="sa-menu-button" type="button" aria-label="Open student assistants" onClick={() => setSidebarOpen(true)}>☰</button>
+      {solving && <div className="sa-solving-blocker" aria-hidden="true" />}
+      <header className={`sa-schedule-toolbar${solving ? ' is-solving' : ''}`}>
+        <button className="sa-menu-button" type="button" aria-label="Open student assistants" disabled={solving} onClick={() => setSidebarOpen(true)}>☰</button>
         <div className="sa-selected-heading">
           <h2 title={selectedAssistant ? assistantDisplayName(selectedAssistant) : undefined}>{selectedAssistant ? assistantDisplayName(selectedAssistant) : 'Student Assistant Scheduler'}</h2>
           <span>{selectedAssistant?.studentId || (assistants.length > 0 ? 'ID number unavailable' : 'No student assistant added')}</span>
         </div>
         <div className="sa-toolbar-actions">
           <span className={mainSchedule.length > 0 ? 'ready' : ''}>{mainSchedule.length > 0 ? mainScheduleName || 'Main schedule uploaded' : 'No main schedule uploaded'}</span>
-          <button className="btn-primary" type="button" disabled={solving || mainSchedule.length === 0 || assistants.length === 0} onClick={() => void runSolver()}>{solving ? 'Creating schedule…' : 'Create optimized schedule'}</button>
+          {solving ? <div className="btn-primary sa-toolbar-progress" role="progressbar" aria-label="Creating optimized schedule" aria-valuetext="Creating schedule"><span>Creating schedule…</span></div> : <button className="btn-primary" type="button" disabled={mainSchedule.length === 0 || assistants.length === 0} onClick={openSchedulingSettings}>Create optimized schedule</button>}
         </div>
       </header>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && !settingsOpen && <p className="form-error">{error}</p>}
       {result && result.status !== 'OPTIMAL' && result.status !== 'FEASIBLE' && <div className={`sa-result-status ${result.status.toLowerCase()}`}><strong>No valid schedule found</strong></div>}
       {visibleDiagnostics.length > 0 && <ul className="sa-diagnostics">{visibleDiagnostics.map(message => <li key={message}>{message}</li>)}</ul>}
 
       {selectedAssistant ? (
-        <div className="sa-calendar-section">
+        <div className="sa-calendar-section" inert={solving}>
           <div className="sa-calendar-switcher">
             <button className="sa-weekly-summary-button" type="button" onClick={() => setWeeklySummaryOpen(true)}>Weekly Summary</button>
             <div className="sa-week-navigation"><button type="button" aria-label="Previous week" onClick={() => moveViewedWeek(-1)}>←</button><button type="button" onClick={() => setViewedWeekStart(startOfWeek(new Date()))}>This Week</button><button type="button" aria-label="Next week" onClick={() => moveViewedWeek(1)}>→</button><strong>{weekRangeLabel(viewedWeekStart)}</strong></div>
           </div>
-          <AssistantWeeklyCalendar assistant={selectedAssistant} assignments={selectedAssignments} eventAssignments={selectedEventAssignments} relieverAssignments={selectedRelieverAssignments} weekStart={viewedWeekStart} />
+          <AssistantWeeklyCalendar assistant={selectedAssistant} assignments={selectedAssignments} eventAssignments={selectedEventAssignments} relieverAssignments={selectedRelieverAssignments} weekStart={viewedWeekStart} onViewDuty={(assignment, date) => onViewDuty(assignment.classId, dateKey(date))} onRemoveDuty={removeDutyAssignment} />
         </div>
       ) : (
         <div className="sa-empty-schedule"><strong>No student assistant added</strong></div>
@@ -528,20 +594,21 @@ export function StudentAssistantPanel({
           {assistants.length > 0 && filteredAssistants.length === 0 && <p>No student assistants found.</p>}
           {filteredAssistants.map(assistant => <div className={`sa-sidebar-row${assistant.id === effectiveSelectedAssistantId ? ' selected' : ''}`} key={assistant.id}><button className="sa-student-select" type="button" onClick={() => { setSelectedAssistantId(assistant.id); setSidebarOpen(false) }}><span><strong title={assistantDisplayName(assistant)}>{assistantDisplayName(assistant)}</strong><small>{assistant.studentId || 'ID number unavailable'}</small></span></button><div className="sa-student-actions"><button type="button" aria-label={`Edit ${assistantDisplayName(assistant)}`} title="Edit student assistant" onClick={() => openEditProfile(assistant)}>✎</button><button className="delete" type="button" aria-label={`Delete ${assistantDisplayName(assistant)}`} title="Delete student assistant" onClick={() => setDeletingAssistant(assistant)}>×</button></div></div>)}
         </div>
-        <button className="sa-sidebar-settings" type="button" onClick={openSchedulingSettings}><span aria-hidden="true">⚙</span><strong>Scheduling Settings</strong><b aria-hidden="true">›</b></button>
       </aside></div>}
 
-      {settingsOpen && <div className="sa-profile-backdrop" role="presentation" onMouseDown={() => setSettingsOpen(false)}><form className="sa-profile-form sa-settings-form" onSubmit={saveSchedulingSettings} onMouseDown={event => event.stopPropagation()}>
-        <div className="sa-profile-heading"><h3>Scheduling Settings</h3><button type="button" aria-label="Close" onClick={() => setSettingsOpen(false)}>×</button></div>
+      {settingsOpen && <div className="sa-profile-backdrop" role="presentation" onMouseDown={() => { if (!solving) setSettingsOpen(false) }}><form className="sa-profile-form sa-settings-form" onSubmit={proceedWithSchedule} onMouseDown={event => event.stopPropagation()}>
+        <div className="sa-profile-heading"><h3>Scheduling Settings</h3><button type="button" aria-label="Close" disabled={solving} onClick={() => setSettingsOpen(false)}>×</button></div>
         <section className="sa-duty-break-setting">
           <h4>Maximum Duty Workload</h4>
-          <div className="sa-settings-fields"><label>Maximum per day<select value={draftDailyDutyMinutes} onChange={event => { const minutes = Number(event.target.value); setDraftDailyDutyMinutes(minutes); setDraftWeeklyDutyMinutes(current => Math.max(current, minutes)) }}>{DAILY_DUTY_LIMIT_OPTIONS.map(minutes => <option value={minutes} key={minutes}>{workloadHoursLabel(minutes)}</option>)}</select></label><label>Maximum per week<select value={draftWeeklyDutyMinutes} onChange={event => setDraftWeeklyDutyMinutes(Number(event.target.value))}>{WEEKLY_DUTY_LIMIT_OPTIONS.filter(minutes => minutes >= draftDailyDutyMinutes).map(minutes => <option value={minutes} key={minutes}>{workloadHoursLabel(minutes)}</option>)}</select></label></div>
+          <div className="sa-settings-fields"><label>Maximum per day<select disabled={solving} value={draftDailyDutyMinutes} onChange={event => { const minutes = Number(event.target.value); setDraftDailyDutyMinutes(minutes); setDraftWeeklyDutyMinutes(current => Math.max(current, minutes)) }}>{DAILY_DUTY_LIMIT_OPTIONS.map(minutes => <option value={minutes} key={minutes}>{workloadHoursLabel(minutes)}</option>)}</select></label><label>Maximum per week<select disabled={solving} value={draftWeeklyDutyMinutes} onChange={event => setDraftWeeklyDutyMinutes(Number(event.target.value))}>{WEEKLY_DUTY_LIMIT_OPTIONS.filter(minutes => minutes >= draftDailyDutyMinutes).map(minutes => <option value={minutes} key={minutes}>{workloadHoursLabel(minutes)}</option>)}</select></label></div>
         </section>
         <section className="sa-duty-break-setting">
           <h4>Break After Duty</h4>
-          <label>Minimum gap after three duty hours<select value={draftDutyGapMinutes} onChange={event => setDraftDutyGapMinutes(Number(event.target.value))}>{DUTY_GAP_OPTIONS.map(minutes => <option value={minutes} key={minutes}>{dutyGapLabel(minutes)}</option>)}</select></label>
+          <label>Minimum gap after three duty hours<select disabled={solving} value={draftDutyGapMinutes} onChange={event => setDraftDutyGapMinutes(Number(event.target.value))}>{DUTY_GAP_OPTIONS.map(minutes => <option value={minutes} key={minutes}>{dutyGapLabel(minutes)}</option>)}</select></label>
         </section>
-        <div className="sa-profile-actions"><button className="btn-secondary" type="button" onClick={() => setSettingsOpen(false)}>Cancel</button><button className="btn-primary" type="submit">Save</button></div>
+        {result && <label className="sa-reschedule-option"><input type="checkbox" checked={rescheduleEntire} onChange={event => { setRescheduleEntire(event.target.checked); setError('') }} /><span><strong>Reschedule the entire current schedule</strong><small>Existing duty assignments may change.</small></span></label>}
+        {error && <p className="form-error" role="alert">{error}</p>}
+        <div className="sa-profile-actions"><button className="btn-secondary" type="button" disabled={solving} onClick={() => setSettingsOpen(false)}>Cancel</button><button className="btn-primary" type="submit" disabled={solving}>{solving ? 'Creating schedule…' : 'Proceed'}</button></div>
       </form></div>}
 
       {weeklySummaryOpen && selectedAssistant && <div className="sa-profile-backdrop" role="presentation" onMouseDown={() => setWeeklySummaryOpen(false)}><section className="sa-weekly-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="sa-weekly-summary-title" onMouseDown={event => event.stopPropagation()}>
