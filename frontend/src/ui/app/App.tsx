@@ -43,6 +43,7 @@ export default function App() {
     savedCsvSchedule.fingerprint || filenameScheduleKey(savedCsvSchedule.name),
   )
   const [tbaSubjects, setTbaSubjects] = useState(savedCsvSchedule.tbaSubjects)
+  const [scheduleMetadata, setScheduleMetadata] = useState(savedCsvSchedule.metadata)
   const [adminEvents, setAdminEvents] = useState<CalendarEvent[]>(loadAdminEvents)
   const [eventsPanelOpen, setEventsPanelOpen] = useState(false)
   const [eventEditRequest, setEventEditRequest] = useState<{ eventId: string, scope?: BookingEditScope } | null>(null)
@@ -57,8 +58,8 @@ export default function App() {
   }, [adminEvents])
 
   useEffect(() => {
-    localStorage.setItem(CSV_STORAGE_KEY, JSON.stringify({ events: csvEvents, name: csvName, rooms: csvRooms, times: csvTimes, fingerprint: csvFingerprint, tbaSubjects }))
-  }, [csvEvents, csvFingerprint, csvName, csvRooms, csvTimes, tbaSubjects])
+    localStorage.setItem(CSV_STORAGE_KEY, JSON.stringify({ events: csvEvents, name: csvName, rooms: csvRooms, times: csvTimes, fingerprint: csvFingerprint, tbaSubjects, metadata: scheduleMetadata }))
+  }, [csvEvents, csvFingerprint, csvName, csvRooms, csvTimes, tbaSubjects, scheduleMetadata])
 
   useEffect(() => {
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab)
@@ -91,7 +92,12 @@ export default function App() {
           setCsvFingerprint(scheduleKey)
           activateLocalAssistantSchedule(scheduleKey, false, filenameScheduleKey(schedule.csvName))
           const local = loadCsvSchedule()
-          saveCsvScheduleLocally({ events: schedule.csvEvents, name: schedule.csvName, rooms: importedRooms, times: schedule.times ?? [], fingerprint: scheduleKey, tbaSubjects: local.tbaSubjects })
+          const sameSchedule = local.fingerprint === scheduleKey
+          const importedTba = schedule.tbaSubjects ?? (sameSchedule ? local.tbaSubjects : [])
+          const metadata = schedule.metadata ?? (sameSchedule ? local.metadata : undefined)
+          setTbaSubjects(importedTba)
+          setScheduleMetadata(metadata)
+          saveCsvScheduleLocally({ events: schedule.csvEvents, name: schedule.csvName, rooms: importedRooms, times: schedule.times ?? [], fingerprint: scheduleKey, tbaSubjects: importedTba, metadata })
           setStorageStatus('Database schedule loaded')
           setStorageStatusClass('api-online')
         } else {
@@ -165,21 +171,22 @@ export default function App() {
 
   const uploadCsv = async (file: File) => {
     const [parsed, digest] = await Promise.all([
-      readScheduleFile(file, 'official'),
+      readScheduleFile(file, 'auto'),
       crypto.subtle.digest('SHA-256', await file.arrayBuffer()),
     ])
     const fingerprint = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
-    if (parsed.events.length === 0 && parsed.rooms.length === 0 && parsed.times.length === 0) throw new Error('No valid class rows, rooms, or times were found in this schedule file.')
+    if (parsed.events.length === 0 && parsed.rooms.length === 0 && parsed.times.length === 0 && parsed.tbaSubjects.length === 0) throw new Error('No class rows, TBA schedules, rooms, or times were found in this schedule file.')
     setCsvEvents(parsed.events)
     setCsvName(file.name)
     setCsvRooms(parsed.rooms)
     setCsvTimes(parsed.times)
     setCsvFingerprint(fingerprint)
     setTbaSubjects(parsed.tbaSubjects)
-    saveCsvScheduleLocally({ events: parsed.events, name: file.name, rooms: parsed.rooms, times: parsed.times, fingerprint, tbaSubjects: parsed.tbaSubjects })
+    setScheduleMetadata(parsed.metadata)
+    saveCsvScheduleLocally({ events: parsed.events, name: file.name, rooms: parsed.rooms, times: parsed.times, fingerprint, tbaSubjects: parsed.tbaSubjects, metadata: parsed.metadata })
     activateLocalAssistantSchedule(fingerprint, true, filenameScheduleKey(file.name))
     scheduleRevisionRef.current += 1
-    queueScheduleSync({ csvEvents: parsed.events, csvName: file.name, rooms: parsed.rooms, times: parsed.times, fingerprint })
+    queueScheduleSync({ csvEvents: parsed.events, csvName: file.name, rooms: parsed.rooms, times: parsed.times, fingerprint, tbaSubjects: parsed.tbaSubjects, metadata: parsed.metadata })
   }
 
   const removeCsv = () => {
@@ -189,10 +196,11 @@ export default function App() {
     setCsvTimes([])
     setCsvFingerprint('')
     setTbaSubjects([])
+    setScheduleMetadata(undefined)
     saveCsvScheduleLocally({ events: [], name: '', rooms: [], times: [], fingerprint: '', tbaSubjects: [] })
     activateLocalAssistantSchedule('')
     scheduleRevisionRef.current += 1
-    queueScheduleSync({ csvEvents: [], csvName: '', rooms: [], times: [], fingerprint: '' })
+    queueScheduleSync({ csvEvents: [], csvName: '', rooms: [], times: [], fingerprint: '', tbaSubjects: [], metadata: {} })
   }
 
   const saveAdminEvent = (form: AdminEventForm, editingId: string | null) => {

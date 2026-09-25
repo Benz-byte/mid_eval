@@ -13,6 +13,8 @@ export interface CalendarEvent {
   date?: string
   classType: string
   section: string
+  sections?: string[]
+  credits?: number
   room: string
   studentCount: string
   instructorLastName?: string
@@ -23,12 +25,18 @@ export interface CalendarEvent {
   assistantLabel?: string
 }
 
+export interface ScheduleMetadata {
+  semester?: string
+  schoolYear?: string
+}
+
 export interface ScheduleImportResult {
   events: CalendarEvent[]
   rooms: string[]
   times: number[]
   tbaSubjects: string[]
   studentId?: string
+  metadata?: ScheduleMetadata
 }
 
 export interface ScheduleConflict {

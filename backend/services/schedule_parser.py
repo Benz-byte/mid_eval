@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+import hashlib
+import json
 from typing import Any
 
 ALIASES = {
@@ -448,7 +450,147 @@ def _parse_official_schedule_rows(raw_rows: Any) -> dict[str, list[Any]]:
     return {"events": events, "rooms": rooms, "times": sorted(times), "tbaSubjects": tba}
 
 
-def parse_schedule_rows(raw_rows: Any, format_name: str = "legacy") -> dict[str, list[Any]]:
+OFFERING_HEADERS = {
+    "stubno": "stubCode", "stubnumber": "stubCode", "stubcode": "stubCode",
+    "coursenodescription": "course", "coursenoanddescription": "course",
+    "time": "time", "day": "day", "days": "day", "room": "room",
+    "teacher": "instructor", "instructor": "instructor", "credits": "credits",
+}
+
+
+def offering_header(row: list[str]) -> dict[str, int] | None:
+    columns: dict[str, int] = {}
+    for index, label in enumerate(row):
+        field = OFFERING_HEADERS.get(header_key(label))
+        if field:
+            if field in columns:
+                return None
+            columns[field] = index
+    required = {"stubCode", "course", "time", "day", "room", "instructor", "credits"}
+    return columns if required <= columns.keys() else None
+
+
+def offering_time(value: str) -> int | None:
+    """Validate clocks without rolling malformed minutes into the next hour."""
+    text = clean(value).upper()
+    if re.fullmatch(r"\d{1,2}(?::\d{2})?\s*(AM|PM)", text):
+        return parse_time(text)
+    match = re.fullmatch(r"(\d{1,2}):(\d{2})", text)
+    if match:
+        hour, minute = map(int, match.groups())
+    elif re.fullmatch(r"\d{3,4}", text):
+        hour, minute = divmod(int(text), 100)
+    else:
+        return None
+    if not (0 <= hour <= 24 and 0 <= minute < 60) or (hour == 24 and minute != 0):
+        return None
+    return hour * 60 + minute
+
+
+def _parse_course_offering_rows(rows: list[list[str]]) -> dict[str, Any]:
+    columns: dict[str, int] | None = None
+    section = ""
+    metadata: dict[str, str] = {}
+    meetings: dict[tuple, dict[str, Any]] = {}
+    unresolved: dict[tuple, dict[str, Any]] = {}
+    rooms_by_key: dict[str, str] = {}
+
+    def value(row: list[str], field: str) -> str:
+        # Report headers span merged cells; values can sit inside that span.
+        index = columns[field]
+        end = min((other for other in columns.values() if other > index), default=len(row))
+        return next((cell for cell in row[index:end] if cell), "")
+
+    for row in rows:
+        title = " ".join(row)
+        period = re.search(r"\b(1st|2nd|3rd|first|second|third)\s+semester\s+(\d{4}\s*[-–]\s*\d{4})", title, re.IGNORECASE)
+        if period:
+            metadata = {"semester": period.group(1).lower(), "schoolYear": re.sub(r"\s+", "", period.group(2)).replace("–", "-")}
+        detected = offering_header(row)
+        if detected:
+            columns = detected
+            section = ""
+            continue
+        if columns is None:
+            continue
+        section_index = next((index for index, cell in enumerate(row) if header_key(cell) == "section"), None)
+        if section_index is not None:
+            section = next((cell for cell in row[section_index + 1:] if cell), "")
+            continue
+        course = value(row, "course")
+        if not course:
+            continue
+        # Ignore repeated report labels, totals, and footers, not class data.
+        if not re.search(r"[A-Za-z].*\d", course):
+            continue
+        class_type = ""
+        embedded = re.fullmatch(r"(.*?)\s*[-–—]\s*(LEC|LAB|LECTURE|LABORATORY|SEM|PRACTICUM)", course, re.IGNORECASE)
+        if embedded:
+            course, class_type = clean(embedded.group(1)), embedded.group(2).upper()
+            class_type = {"LECTURE": "LEC", "LABORATORY": "LAB"}.get(class_type, class_type)
+        raw_time, raw_day = value(row, "time"), value(row, "day")
+        parts = re.split(r"[-–—]", raw_time)
+        start, end = (offering_time(part) for part in parts) if len(parts) == 2 else (None, None)
+        day = normalize_day(raw_day)
+        if day:
+            tokens = set(re.findall(r"Th|Su|M|T|W|F|S", day))
+            day = "".join(token for token in ("M", "T", "W", "Th", "F", "S", "Su") if token in tokens)
+        room = value(row, "room")
+        if room and room.upper() != "TBA":
+            room = rooms_by_key.setdefault(room.casefold(), room)
+        stub, instructor = value(row, "stubCode"), value(row, "instructor")
+        event = {
+            "source": "csv", "stubCode": stub, "courseCode": course, "subject": "",
+            "startMinutes": start, "endMinutes": end, "dayCode": day,
+            "classType": class_type, "section": section, "sections": [section] if section else [],
+            "room": room, "studentCount": "", "instructorLastName": instructor,
+        }
+        credits = value(row, "credits")
+        if re.fullmatch(r"\d+(?:\.\d+)?", credits):
+            event["credits"] = float(credits)
+        invalid = start is None or end is None or end <= start or not day or not room or room.upper() == "TBA"
+        # Section is deliberately excluded only when a real stub identifies a
+        # shared meeting. Separate lecture/lab meetings retain separate IDs.
+        identity = (stub or section, course.casefold(), class_type, day or raw_day.casefold(),
+                    raw_time if invalid else (start, end), room.casefold(), instructor.casefold())
+        target = unresolved if invalid else meetings
+        if identity in target:
+            existing = target[identity]
+            if section and section not in existing["sections"]:
+                existing["sections"].append(section)
+                existing["section"] = ", ".join(existing["sections"])
+            continue
+        event["id"] = "offering-" + hashlib.sha256(json.dumps(identity, ensure_ascii=False).encode()).hexdigest()[:24]
+        if invalid:
+            event["rawTime"] = raw_time
+        target[identity] = event
+
+    if not meetings and not unresolved:
+        raise ValueError("The course offering contains no subject rows.")
+    tba = []
+    for event in unresolved.values():
+        label = event["courseCode"] + (f" - {event['classType']}" if event["classType"] else "")
+        if event["stubCode"]:
+            label += f" ({event['stubCode']})"
+        details = [event["section"], event["rawTime"] or "Time not specified", event["room"]]
+        tba.append(" · ".join([label, *(detail for detail in details if detail)]))
+    return {"events": list(meetings.values()), "rooms": list(rooms_by_key.values()), "times": [],
+            "tbaSubjects": list(dict.fromkeys(tba)), "metadata": metadata}
+
+
+def parse_schedule_rows(raw_rows: Any, format_name: str = "legacy") -> dict[str, Any]:
+    if format_name == "auto":
+        if not isinstance(raw_rows, list):
+            raise ValueError("Schedule rows must be a list.")
+        rows = [[clean(value) for value in row] for row in raw_rows if isinstance(row, list)]
+        rows = [row for row in rows if any(row)]
+        if not rows:
+            raise ValueError("The schedule file is empty.")
+        if any(offering_header(row) for row in rows[:50]):
+            return _parse_course_offering_rows(rows)
+        if any(header_key(cell) in OFFICIAL_HEADERS for cell in rows[0]):
+            return _parse_official_schedule_rows(rows)
+        raise ValueError("Unknown schedule format. Use the original schedule template or the course-offering report with Stub No., Course No. & Description, Time, Day, Room, Teacher, and Credits labels.")
     if format_name == "official":
         return _parse_official_schedule_rows(raw_rows)
     if format_name == "legacy":

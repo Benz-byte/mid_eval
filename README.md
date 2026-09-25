@@ -35,6 +35,19 @@ npm run dev
 This starts Vite at `http://localhost:5173`, Electron, and Flask at
 `http://127.0.0.1:5000`. The Flask health check is `GET /api/health`.
 
+## Schedule imports
+
+Schedule uploads accept the original CSV template and Excel course-offering
+reports (`.xls`/`.xlsx`), detected by their labels. Reports must include
+`Stub No.`, `Course No. & Description`, `Time`, `Day`, `Room`, `Teacher`, and
+`Credits`. Section headings and semester/year metadata are retained. Identical
+shared meetings are combined across sections, while lecture/lab meetings remain
+separate. Invalid times, including end-before-start and `0000-0000`, appear in
+TBA with their original values and do not create calendar meetings.
+
+Run `npm run test:schedule-import` to check both formats. To check an additional
+file without saving it, run `node scripts/test-schedule-import.mjs "path/to/report.xls"`.
+
 ## Build
 
 ```powershell

@@ -1,4 +1,14 @@
-import type { CalendarEvent } from '../types'
+import type { CalendarEvent, ScheduleMetadata } from '../types'
+
+interface SavedSchedule {
+  events: CalendarEvent[]
+  name: string
+  rooms: string[]
+  times: number[]
+  fingerprint: string
+  tbaSubjects: string[]
+  metadata?: ScheduleMetadata
+}
 
 export const CSV_STORAGE_KEY = 'auto-scheduler-imported-schedule'
 
@@ -27,11 +37,11 @@ function validTimes(value: unknown): number[] {
   return [...new Set(value.filter(time => Number.isInteger(time) && time >= 0 && time <= 1440))].sort((left, right) => left - right)
 }
 
-export function loadCsvSchedule(): { events: CalendarEvent[]; name: string; rooms: string[]; times: number[]; fingerprint: string; tbaSubjects: string[] } {
+export function loadCsvSchedule(): SavedSchedule {
   try {
     const saved = localStorage.getItem(CSV_STORAGE_KEY)
     if (!saved) return { events: [], name: '', rooms: [], times: [], fingerprint: '', tbaSubjects: [] }
-    const parsed = JSON.parse(saved) as { events?: CalendarEvent[]; name?: string; rooms?: string[]; times?: number[]; fingerprint?: string; tbaSubjects?: string[] }
+    const parsed = JSON.parse(saved) as Partial<SavedSchedule>
     const events = Array.isArray(parsed.events) ? parsed.events : []
     return {
       events,
@@ -40,12 +50,13 @@ export function loadCsvSchedule(): { events: CalendarEvent[]; name: string; room
       times: validTimes(parsed.times),
       fingerprint: typeof parsed.fingerprint === 'string' ? parsed.fingerprint : '',
       tbaSubjects: validTbaSubjects(parsed.tbaSubjects),
+      metadata: parsed.metadata,
     }
   } catch {
     return { events: [], name: '', rooms: [], times: [], fingerprint: '', tbaSubjects: [] }
   }
 }
 
-export function saveCsvScheduleLocally(value: { events: CalendarEvent[]; name: string; rooms: string[]; times: number[]; fingerprint: string; tbaSubjects: string[] }) {
+export function saveCsvScheduleLocally(value: SavedSchedule) {
   localStorage.setItem(CSV_STORAGE_KEY, JSON.stringify(value))
 }

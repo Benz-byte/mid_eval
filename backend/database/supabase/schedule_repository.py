@@ -24,7 +24,7 @@ def load_schedule() -> dict[str, Any] | None:
         rooms = []
         times = []
         fingerprint = ""
-    return {
+    result = {
         "csvName": row.get("csv_name", ""),
         "csvEvents": events,
         "rooms": rooms,
@@ -32,6 +32,11 @@ def load_schedule() -> dict[str, Any] | None:
         "fingerprint": fingerprint,
         "updatedAt": row.get("updated_at"),
     }
+    if isinstance(stored_schedule, dict):
+        for field in ("tbaSubjects", "metadata"):
+            if field in stored_schedule:
+                result[field] = stored_schedule[field]
+    return result
 
 
 def save_schedule(value: dict[str, Any]) -> None:
@@ -43,5 +48,6 @@ def save_schedule(value: dict[str, Any]) -> None:
             "rooms": value.get("rooms") or [],
             "times": value.get("times") or [],
             "fingerprint": value.get("fingerprint") or "",
+            **{field: value[field] for field in ("tbaSubjects", "metadata") if field in value},
         },
     }, prefer="resolution=merge-duplicates,return=minimal")

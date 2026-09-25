@@ -1,4 +1,5 @@
 import { pollForChanges, requestJson } from './apiClient'
+import type { ScheduleMetadata } from '../types'
 
 export interface SharedSchedule<T> {
   csvName: string
@@ -6,6 +7,8 @@ export interface SharedSchedule<T> {
   rooms: string[]
   times: number[]
   fingerprint: string
+  tbaSubjects?: string[]
+  metadata?: ScheduleMetadata
 }
 
 // Flask is always local to the desktop app. It decides whether cloud storage

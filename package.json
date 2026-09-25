@@ -14,6 +14,7 @@
     "lint": "eslint .",
     "test:conflicts": "node scripts/test-conflicts-database.mjs",
     "test:conflicts:sample": "node scripts/test-conflicts.mjs",
+    "test:schedule-import": "python -m unittest backend.tests.test_schedule_parser && node scripts/test-schedule-import.mjs",
     "preview": "vite preview --config frontend/vite.config.ts",
     "build:backend": "node scripts/build-backend.mjs",
     "transpile:electron": "tsc --project frontend/src/desktop/tsconfig.json && tsc --project frontend/src/desktop/tsconfig.preload.json",

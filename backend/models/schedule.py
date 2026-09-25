@@ -15,6 +15,7 @@ def validate_shared_schedule(value: Any) -> dict[str, Any]:
         "id", "source", "stubCode", "courseCode", "subject", "startMinutes",
         "endMinutes", "dayCode", "classType", "room", "studentCount",
         "instructorLastName", "lastName", "firstName", "middleName",
+        "section", "sections", "credits",
     }
     cleaned_events = [
         {field: event[field] for field in allowed_fields if field in event}
@@ -32,4 +33,16 @@ def validate_shared_schedule(value: Any) -> dict[str, Any]:
             seen_rooms.add(key)
             cleaned_rooms.append(display_name)
     cleaned_times = sorted({time for time in times if isinstance(time, int) and not isinstance(time, bool) and 0 <= time <= 1440})
-    return {"csvName": name, "csvEvents": cleaned_events, "rooms": cleaned_rooms, "times": cleaned_times, "fingerprint": fingerprint}
+    result = {"csvName": name, "csvEvents": cleaned_events, "rooms": cleaned_rooms, "times": cleaned_times, "fingerprint": fingerprint}
+    if "tbaSubjects" in value:
+        if not isinstance(value["tbaSubjects"], list):
+            raise ValueError("TBA schedules must be a list.")
+        result["tbaSubjects"] = list(dict.fromkeys(
+            label.strip() for label in value["tbaSubjects"] if isinstance(label, str) and label.strip()
+        ))
+    if "metadata" in value:
+        metadata = value["metadata"]
+        if not isinstance(metadata, dict):
+            raise ValueError("Schedule metadata must be an object.")
+        result["metadata"] = {key: metadata[key].strip() for key in ("semester", "schoolYear") if isinstance(metadata.get(key), str)}
+    return result
