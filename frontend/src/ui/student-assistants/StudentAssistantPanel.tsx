@@ -14,6 +14,7 @@ import {
   WEEKLY_DUTY_LIMIT_OPTIONS,
 } from '../../api/studentAssistantApi'
 import { readScheduleFile } from '../../api/scheduleParser'
+import { isExamDate, isExamPeriod } from '../../formatters/examPeriod'
 import { flushPendingAssistantSync, hasPendingAssistantSync } from '../../storage/localFirstSync'
 import { loadLocalAssistantData, saveLocalAssistantData, withManualDutyAssignments } from '../../storage/studentAssistantStorage'
 import type { CalendarEvent, UploadedAssistant } from '../../types'
@@ -486,7 +487,12 @@ export function StudentAssistantPanel({
     assistant => assistant.id === effectiveSelectedAssistantId,
   )
   const selectedAssignments = assignments.filter(
-    assignment => assignment.assistantId === effectiveSelectedAssistantId,
+    assignment => {
+      const index = ['M', 'T', 'W', 'Th', 'F', 'S', 'Su'].indexOf(assignment.day)
+      const date = new Date(viewedWeekStart)
+      date.setDate(date.getDate() + index)
+      return assignment.assistantId === effectiveSelectedAssistantId && !isExamDate(adminEvents, dateKey(date))
+    },
   )
   const selectedEventAssignments = useMemo(() => {
     const weekEnd = new Date(viewedWeekStart)
@@ -494,7 +500,7 @@ export function StudentAssistantPanel({
     const startKey = dateKey(viewedWeekStart)
     const endKey = dateKey(weekEnd)
     return adminEvents.filter(event =>
-      event.assistantId === effectiveSelectedAssistantId
+      !isExamPeriod(event) && event.assistantId === effectiveSelectedAssistantId
       && Boolean(event.date)
       && event.date! >= startKey
       && event.date! < endKey,
@@ -507,11 +513,12 @@ export function StudentAssistantPanel({
     const endKey = dateKey(weekEnd)
     return (result?.relieverAssignments ?? []).filter(record =>
       record.date >= startKey
+      && !isExamDate(adminEvents, record.date)
       && record.date < endKey
       && (record.originalAssistantId === effectiveSelectedAssistantId
         || record.replacementAssistantId === effectiveSelectedAssistantId),
     )
-  }, [effectiveSelectedAssistantId, result?.relieverAssignments, viewedWeekStart])
+  }, [effectiveSelectedAssistantId, result?.relieverAssignments, viewedWeekStart, adminEvents])
   const performedRelieverAssignments = selectedRelieverAssignments.filter(
     record => record.replacementAssistantId === effectiveSelectedAssistantId,
   )
@@ -576,7 +583,7 @@ export function StudentAssistantPanel({
             <button className="sa-weekly-summary-button" type="button" onClick={() => setWeeklySummaryOpen(true)}>Weekly Summary</button>
             <div className="sa-week-navigation"><button type="button" aria-label="Previous week" onClick={() => moveViewedWeek(-1)}>←</button><button type="button" onClick={() => setViewedWeekStart(startOfWeek(new Date()))}>This Week</button><button type="button" aria-label="Next week" onClick={() => moveViewedWeek(1)}>→</button><strong>{weekRangeLabel(viewedWeekStart)}</strong></div>
           </div>
-          <AssistantWeeklyCalendar assistant={selectedAssistant} assignments={selectedAssignments} eventAssignments={selectedEventAssignments} relieverAssignments={selectedRelieverAssignments} weekStart={viewedWeekStart} onViewDuty={(assignment, date) => onViewDuty(assignment.classId, dateKey(date))} onRemoveDuty={removeDutyAssignment} />
+          <AssistantWeeklyCalendar assistant={selectedAssistant} assignments={selectedAssignments} eventAssignments={selectedEventAssignments} relieverAssignments={selectedRelieverAssignments} weekStart={viewedWeekStart} examPeriods={adminEvents} onViewDuty={(assignment, date) => onViewDuty(assignment.classId, dateKey(date))} onRemoveDuty={removeDutyAssignment} />
         </div>
       ) : (
         <div className="sa-empty-schedule"><strong>No student assistant added</strong></div>

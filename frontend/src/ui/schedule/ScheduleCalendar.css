@@ -946,6 +946,18 @@
   cursor: pointer;
 }
 
+.calendar-event-dialog > strong,
+.calendar-event-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.calendar-event-description {
+  max-height: 240px;
+  overflow-y: auto;
+  color: #a0aec0;
+}
+
 .calendar-event-dialog dl {
   margin: 1rem 0;
 }
@@ -1071,3 +1083,8 @@
   color: #fbd38d;
 }
 
+.exam-period-indicator {
+  color: #9fc9ea;
+  font-size: 13px;
+  margin-bottom: 8px;
+}

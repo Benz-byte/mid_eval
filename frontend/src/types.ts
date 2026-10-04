@@ -2,6 +2,7 @@ export type Tab = 'schedule' | 'student-assistant'
 export type EventSource = 'csv' | 'admin'
 
 export interface CalendarEvent {
+  description?: string
   id: string
   source: EventSource
   courseCode: string
@@ -47,6 +48,7 @@ export interface ScheduleConflict {
 }
 
 export interface AdminEventForm {
+  description?: string
   title: string
   date: string
   room: string
@@ -58,6 +60,8 @@ export type BookingRepeat = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly'
 export type BookingEditScope = 'room-date' | 'all-rooms-date' | 'entire-booking' | 'day-time' | 'time-only'
 
 export interface RoomBookingForm {
+  description?: string
+  examPeriod?: boolean
   title: string
   startDate: string
   endDate: string

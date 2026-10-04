@@ -3,6 +3,7 @@ import { loadSharedAdminEvents, subscribeToSharedAdminEvents } from '../../api/a
 import { isCloudConfigured, loadSharedSchedule, subscribeToSharedSchedule } from '../../api/scheduleApi'
 import { readScheduleFile } from '../../api/scheduleParser'
 import { parseInputTime } from '../../formatters/timeFormatter'
+import { createExamPeriodEvents, examBelongsToSchedule, examPeriodPrefix, isExamBooking, isExamPeriod } from '../../formatters/examPeriod'
 import { ADMIN_STORAGE_KEY, loadAdminEvents, saveAdminEventsLocally } from '../../storage/adminEventStorage'
 import {
   flushPendingAdminSync,
@@ -46,6 +47,7 @@ export default function App() {
   const [scheduleMetadata, setScheduleMetadata] = useState(savedCsvSchedule.metadata)
   const [adminEvents, setAdminEvents] = useState<CalendarEvent[]>(loadAdminEvents)
   const [eventsPanelOpen, setEventsPanelOpen] = useState(false)
+  const [examDatePreview, setExamDatePreview] = useState<string[]>([])
   const [eventEditRequest, setEventEditRequest] = useState<{ eventId: string, scope?: BookingEditScope } | null>(null)
   const [scheduleFocusRequest, setScheduleFocusRequest] = useState<{ eventId: string, date: string, requestId: number, consumed: boolean } | null>(null)
   const [, setStorageStatus] = useState('Opening interface…')
@@ -164,10 +166,16 @@ export default function App() {
   const availableAdminEvents = useMemo(() => {
     const roomNames = new Map(rooms.map(room => [room.toLocaleLowerCase(), room]))
     return adminEvents.flatMap(event => {
+      if (isExamPeriod(event)) return examBelongsToSchedule(event, csvFingerprint) ? [event] : []
+      if (isExamBooking(event) && !examBelongsToSchedule(event, csvFingerprint)) return []
       const room = roomNames.get(event.room.trim().toLocaleLowerCase())
       return room ? [{ ...event, room }] : []
     })
-  }, [adminEvents, rooms])
+  }, [adminEvents, rooms, csvFingerprint])
+
+  const calendarAdminEvents = useMemo(() => eventsPanelOpen && examDatePreview.length > 0
+    ? [...availableAdminEvents, ...createExamPeriodEvents(csvFingerprint, 'Exam date', examDatePreview)]
+    : availableAdminEvents, [availableAdminEvents, csvFingerprint, eventsPanelOpen, examDatePreview])
 
   const uploadCsv = async (file: File) => {
     const [parsed, digest] = await Promise.all([
@@ -208,6 +216,7 @@ export default function App() {
       id: editingId ?? `admin-${crypto.randomUUID()}`,
       source: 'admin',
       courseCode: form.title.trim(),
+      description: form.description?.trim() ?? '',
       subject: '',
       date: form.date,
       startMinutes: parseInputTime(form.startTime),
@@ -231,11 +240,12 @@ export default function App() {
   }
 
   const saveRoomBooking = (form: RoomBookingForm, schedules: BookingDateSchedule[]) => {
-    const seriesId = crypto.randomUUID()
+    const seriesId = `${form.examPeriod ? examPeriodPrefix(csvFingerprint) : ''}${crypto.randomUUID()}`
     const bookingEvents: CalendarEvent[] = schedules.flatMap(({ date, rooms, timeRanges }) => rooms.flatMap((room, roomIndex) => timeRanges.map((range, timeIndex) => ({
       id: `booking_${seriesId}_${roomIndex}_${timeIndex}_${date}`,
       source: 'admin',
       courseCode: form.title.trim(),
+      description: form.description?.trim() ?? '',
       subject: '',
       date,
       startMinutes: parseInputTime(range.startTime),
@@ -324,7 +334,7 @@ export default function App() {
           <ScheduleCalendar
             key={`${csvFingerprint}:${csvName}:${csvEvents.length}:${csvRooms.join('|')}:${csvEvents[0]?.id ?? ''}`}
             csvEvents={csvEvents}
-            adminEvents={availableAdminEvents}
+            adminEvents={calendarAdminEvents}
             csvName={csvName}
             tbaSubjects={tbaSubjects}
             rooms={rooms}
@@ -344,7 +354,7 @@ export default function App() {
             mainSchedule={csvEvents}
             mainScheduleName={csvName}
             mainScheduleKey={csvFingerprint}
-            adminEvents={availableAdminEvents}
+            adminEvents={calendarAdminEvents}
             onSolvingChange={setSolverBusy}
             onViewDuty={(eventId, date) => {
               setScheduleFocusRequest({ eventId, date, requestId: Date.now(), consumed: false })
@@ -375,6 +385,8 @@ export default function App() {
               </button>
             </div>
             <AdminEventsPanel
+              onExamDatesChange={setExamDatePreview}
+              canCreateExamPeriod={Boolean(csvFingerprint)}
               events={availableAdminEvents}
               csvEvents={csvEvents}
               rooms={rooms}

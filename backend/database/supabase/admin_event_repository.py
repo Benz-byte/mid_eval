@@ -24,16 +24,22 @@ def _load_event_rows(select: str) -> list[dict[str, Any]]:
 def load_events() -> list[dict[str, Any]]:
     try:
         rows = _load_event_rows(
-            "id,title,event_date,room,start_minutes,end_minutes,assistant_id,assistant_label,updated_at",
+            "id,title,description,event_date,room,start_minutes,end_minutes,assistant_id,assistant_label,updated_at",
         )
     except RuntimeError:
-        rows = _load_event_rows(
-            "id,title,event_date,room,start_minutes,end_minutes,updated_at",
-        )
+        try:
+            rows = _load_event_rows(
+                "id,title,event_date,room,start_minutes,end_minutes,assistant_id,assistant_label,updated_at",
+            )
+        except RuntimeError:
+            rows = _load_event_rows(
+                "id,title,event_date,room,start_minutes,end_minutes,updated_at",
+            )
     return [{
         "id": row["id"],
         "source": "admin",
         "courseCode": row["title"],
+        "description": row.get("description") or "",
         "subject": "",
         "date": row["event_date"],
         "startMinutes": row["start_minutes"],
@@ -52,6 +58,7 @@ def save_event(event: dict[str, Any]) -> None:
     payload = {
         "id": event["id"],
         "title": event["courseCode"],
+        "description": event.get("description") or "",
         "event_date": event["date"],
         "room": event["room"],
         "start_minutes": event["startMinutes"],
@@ -62,6 +69,10 @@ def save_event(event: dict[str, Any]) -> None:
     try:
         request("POST", "admin_events", payload=payload, prefer="resolution=merge-duplicates,return=minimal")
     except RuntimeError:
+        # Never report a description as synced if the database discarded it.
+        if payload["description"]:
+            raise
+        payload.pop("description", None)
         payload.pop("assistant_id", None)
         payload.pop("assistant_label", None)
         request("POST", "admin_events", payload=payload, prefer="resolution=merge-duplicates,return=minimal")

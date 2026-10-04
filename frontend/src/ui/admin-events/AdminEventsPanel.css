@@ -5,6 +5,19 @@
   margin: 0 auto;
 }
 
+.event-room-warning {
+  position: sticky;
+  top: 64px;
+  z-index: 4;
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #b7791f;
+  border-radius: 6px;
+  background: #3d2c12;
+  color: #fbd38d;
+  font-size: 0.85rem;
+}
+
 .event-drawer-backdrop {
   position: fixed;
   z-index: 100;
@@ -116,6 +129,7 @@
 }
 
 .event-form input,
+.event-form textarea,
 .event-form select {
   min-height: 36px;
   box-sizing: border-box;
@@ -133,8 +147,17 @@
   appearance: auto;
 }
 
-.event-form input:focus {
+.event-form input:focus,
+.event-form textarea:focus {
   border-color: #90cdf4;
+}
+
+.event-form .auto-expanding-textarea {
+  width: 100%;
+  max-height: 160px;
+  resize: none;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .vacant-room-picker {
@@ -920,3 +943,15 @@
   background: #642222;
 }
 
+.event-form .exam-period-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.event-form .exam-period-toggle input {
+  width: auto;
+  margin: 0;
+}

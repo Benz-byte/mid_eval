@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import type { DutyAssignment, RelieverAssignment } from '../../api/studentAssistantApi'
 import type { CalendarEvent, UploadedAssistant } from '../../types'
 import { formatTime } from '../../formatters/timeFormatter'
+import { isExamDate } from '../../formatters/examPeriod'
 
 const DEFAULT_START = 7 * 60
 const DEFAULT_END = 21 * 60
@@ -29,6 +30,7 @@ export function AssistantWeeklyCalendar({
   eventAssignments,
   relieverAssignments,
   weekStart,
+  examPeriods,
   onViewDuty,
   onRemoveDuty,
 }: {
@@ -37,6 +39,7 @@ export function AssistantWeeklyCalendar({
   eventAssignments: CalendarEvent[]
   relieverAssignments: RelieverAssignment[]
   weekStart: Date
+  examPeriods: CalendarEvent[]
   onViewDuty: (assignment: DutyAssignment, date: Date) => void
   onRemoveDuty: (assignment: DutyAssignment) => void
 }) {
@@ -83,7 +86,7 @@ export function AssistantWeeklyCalendar({
     <div className="sa-weekly-calendar">
       <div className="sa-week-header">
         <div className="sa-week-corner">Time</div>
-        {WEEK_DAYS.map((day, index) => <div key={day.code}><strong>{day.label}</strong><small>{weekDates[index].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</small></div>)}
+        {WEEK_DAYS.map((day, index) => <div key={day.code}><strong>{day.label}</strong><small>{weekDates[index].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</small>{isExamDate(examPeriods, dateKey(weekDates[index])) && <small>Exam period</small>}</div>)}
       </div>
       <div className="sa-week-body" style={{ '--sa-calendar-height': `${calendarHeight}px` } as CSSProperties}>
         <div className="sa-week-time-axis">
@@ -96,7 +99,7 @@ export function AssistantWeeklyCalendar({
             {hourLabels.map(minute => (
               <span className="sa-hour-line" key={minute} style={{ top: position(minute) }} />
             ))}
-            {personalClasses.filter(item => item.day === day.code).map(item => (
+            {personalClasses.filter(item => item.day === day.code && !isExamDate(examPeriods, dateKey(weekDates[dayIndex]))).map(item => (
               <article
                 className="sa-calendar-block personal"
                 key={`personal-${item.id}-${day.code}`}
@@ -112,7 +115,7 @@ export function AssistantWeeklyCalendar({
                 <small>{formatTime(item.startMinutes)}–{formatTime(item.endMinutes)}</small>
               </article>
             ))}
-            {assignments.filter(item => item.day === day.code).map((item, index) => {
+            {assignments.filter(item => item.day === day.code && !isExamDate(examPeriods, dateKey(weekDates[dayIndex]))).map((item, index) => {
               const reliever = relieverAssignments.find(record =>
                 record.originalAssistantId === assistant.id
                 && record.classId === item.classId
@@ -147,6 +150,7 @@ export function AssistantWeeklyCalendar({
             })}
             {relieverAssignments.filter(record =>
               record.replacementAssistantId === assistant.id
+              && !isExamDate(examPeriods, dateKey(weekDates[dayIndex]))
               && record.date === dateKey(weekDates[dayIndex]),
             ).map(record => (
               <article

@@ -4,6 +4,7 @@ import type { BookingEditScope, CalendarEvent, ScheduleConflict, UploadedAssista
 import type { DutyAssignment, RelieverAssignment, StudentAssistantResult } from '../../api/studentAssistantApi'
 import { matchesSelectedDay, toDateInputValue } from '../../formatters/dateFormatter'
 import { formatTime } from '../../formatters/timeFormatter'
+import { isExamDate, isExamPeriod } from '../../formatters/examPeriod'
 import { SCHEDULE_DATE_STORAGE_KEY, loadScheduleDate } from '../../storage/preferenceStorage'
 import { loadLocalAssistantData, saveLocalAssistantData, withManualDutyAssignments } from '../../storage/studentAssistantStorage'
 import { ScheduleFilter, type ScheduleFilterOption } from './ScheduleFilter'
@@ -261,7 +262,8 @@ export function ScheduleCalendar({
     const assignments = assistantData.result?.assignments ?? []
     const relieverRecords = assistantData.result?.relieverAssignments ?? []
     return assistantData.assistants.filter(assistant => {
-      const hasPersonalClassConflict = assistant.events.some(event =>
+      const examDay = isExamDate(adminEvents, selectedCalendarEvent.date!)
+      const hasPersonalClassConflict = !examDay && assistant.events.some(event =>
         matchesSelectedDay(event.dayCode, eventDate)
         && overlaps(selectedCalendarEvent.startMinutes, selectedCalendarEvent.endMinutes, event.startMinutes, event.endMinutes),
       )
@@ -276,7 +278,7 @@ export function ScheduleCalendar({
         && assignment.replacementAssistantId === assistant.id
         && overlaps(selectedCalendarEvent.startMinutes, selectedCalendarEvent.endMinutes, assignment.startMinutes, assignment.endMinutes),
       )
-      if (hasDutyConflict) return false
+      if (!examDay && hasDutyConflict) return false
 
       return !adminEvents.some(event =>
         event.id !== selectedCalendarEvent.id
@@ -297,13 +299,14 @@ export function ScheduleCalendar({
     const assistant = availableEventAssistants.find(value => value.id === selectedEventAssistantId)
     if (!assistant) return
     onAssignAssistant(selectedCalendarEvent.id, assistant.id, assistant.label)
-    setSelectedCalendarEvent(current => current ? { ...current, assistantId: assistant.id, assistantLabel: assistant.label } : current)
+    setSelectedCalendarEvent(null)
+    setSelectedEventAssistantId('')
     setAssistantAssignmentOpen(false)
   }
   const removeEventAssistant = () => {
     if (!selectedCalendarEvent) return
     onAssignAssistant(selectedCalendarEvent.id)
-    setSelectedCalendarEvent(current => current ? { ...current, assistantId: undefined, assistantLabel: undefined } : current)
+    setSelectedCalendarEvent(null)
     setSelectedEventAssistantId('')
     setAssistantAssignmentOpen(false)
   }
@@ -363,9 +366,10 @@ export function ScheduleCalendar({
 
   const weeklyRoom = displayedRooms.includes(selectedWeeklyRoom) ? selectedWeeklyRoom : displayedRooms[0] ?? ''
 
-  const allEvents = useMemo(() => [...csvEvents, ...adminEvents], [csvEvents, adminEvents])
+  const allEvents = useMemo(() => [...csvEvents, ...adminEvents.filter(event => !isExamPeriod(event))], [csvEvents, adminEvents])
   const visibleEvents = useMemo(() => {
     const eventsForDate = allEvents.filter(event => {
+    if (event.source === 'csv' && isExamDate(adminEvents, selectedDateKey)) return false
     const matchesDate = event.source === 'csv'
       ? matchesSelectedDay(event.dayCode, selectedDate)
       : event.date === selectedDateKey
@@ -380,7 +384,7 @@ export function ScheduleCalendar({
       && booking.startMinutes < event.endMinutes
       && booking.endMinutes > event.startMinutes,
     ))
-  }, [allEvents, selectedDate, selectedDateKey, selectedRooms, selectedTeachers])
+  }, [allEvents, selectedDate, selectedDateKey, selectedRooms, selectedTeachers, adminEvents])
   const weekDates = useMemo(() => {
     const first = startOfWeek(selectedDate)
     return WEEKDAY_LABELS.map((_, index) => {
@@ -392,6 +396,7 @@ export function ScheduleCalendar({
   const weeklyAllRoomEvents = useMemo(() => weekDates.map(date => {
     const dateKey = toDateInputValue(date)
     const eventsForDate = allEvents.filter(event => {
+      if (event.source === 'csv' && isExamDate(adminEvents, dateKey)) return false
       const matchesDate = event.source === 'csv' ? matchesSelectedDay(event.dayCode, date) : event.date === dateKey
       if (!matchesDate) return false
       if (selectedRooms.size > 0 && !selectedRooms.has(event.room)) return false
@@ -404,7 +409,7 @@ export function ScheduleCalendar({
       && booking.startMinutes < event.endMinutes
       && booking.endMinutes > event.startMinutes,
     ))
-  }), [allEvents, selectedRooms, selectedTeachers, weekDates])
+  }), [allEvents, selectedRooms, selectedTeachers, weekDates, adminEvents])
   const weeklyEvents = useMemo(
     () => weeklyAllRoomEvents.map(dayEvents => dayEvents.filter(event => event.room === weeklyRoom)),
     [weeklyAllRoomEvents, weeklyRoom],
@@ -447,7 +452,7 @@ export function ScheduleCalendar({
         const date = new Date(day.date)
         date.setDate(date.getDate() + offset)
         return date
-      })
+      }).filter(date => !isExamDate(adminEvents, toDateInputValue(date)))
       const nearestDate = candidates.reduce((nearest, candidate) =>
         Math.abs(candidate.getTime() - selectedDate.getTime()) < Math.abs(nearest.getTime() - selectedDate.getTime()) ? candidate : nearest,
       )
@@ -456,7 +461,7 @@ export function ScheduleCalendar({
       Math.abs(left.date.getTime() - selectedDate.getTime())
       - Math.abs(right.date.getTime() - selectedDate.getTime()),
     )
-  }, [selectedDate, viewMode, weeklyConflictDays])
+  }, [selectedDate, viewMode, weeklyConflictDays, adminEvents])
   const displayedConflictCount = displayedConflictDays.reduce((total, day) => total + day.conflicts.length, 0)
   const weeklyConflictingEventIds = useMemo(() => {
     const ids = new Set<string>()
@@ -894,6 +899,7 @@ export function ScheduleCalendar({
 
   return (
     <section className={`schedule-calendar${showConflictColors ? '' : ' hide-conflict-colors'}`}>
+      {(viewMode === 'daily' ? isExamDate(adminEvents, selectedDateKey) : weekDates.some(date => isExamDate(adminEvents, toDateInputValue(date)))) && <div className="exam-period-indicator">Exam period{viewMode === 'weekly' ? ` · ${weekDates.filter(date => isExamDate(adminEvents, toDateInputValue(date))).map(date => date.toLocaleDateString(undefined, { weekday: 'short' })).join(', ')}` : ''}</div>}
       <div className="calendar-toolbar">
         <div className="calendar-nav">
           <button type="button" onClick={() => moveDate(viewMode === 'weekly' ? -7 : -1)} aria-label={viewMode === 'weekly' ? 'Previous week' : 'Previous date'}>←</button>
@@ -1109,6 +1115,7 @@ export function ScheduleCalendar({
             </> : !confirmCardDelete ? <>
               <div className="calendar-event-dialog-heading"><h3 id="calendar-event-dialog-title">{selectedCalendarEvent.id.startsWith('booking_') ? 'Booking details' : 'Event details'}</h3><button type="button" onClick={() => { setSelectedCalendarEvent(null); setAssistantAssignmentOpen(false) }}>Close</button></div>
               <strong>{selectedCalendarEvent.courseCode}</strong>
+              {selectedCalendarEvent.description?.trim() && <p className="calendar-event-description">{selectedCalendarEvent.description}</p>}
               <dl><div><dt>Date</dt><dd>{selectedCalendarEvent.date}</dd></div><div><dt>Time</dt><dd>{formatTime(selectedCalendarEvent.startMinutes)}–{formatTime(selectedCalendarEvent.endMinutes)}</dd></div><div><dt>Room</dt><dd>{selectedCalendarEvent.room}</dd></div>{selectedCalendarEvent.assistantLabel && <div><dt>Assistant</dt><dd>{abbreviatedAssistantName(selectedCalendarEvent.assistantLabel)}</dd></div>}</dl>
               <div className="calendar-event-dialog-actions"><button className="btn-danger" type="button" onClick={() => setConfirmCardDelete(true)}>Delete</button><button className="btn-secondary" type="button" onClick={openAssistantAssignment}>Add Assistant</button><button className="btn-primary" type="button" onClick={() => openEventEditor(selectedCalendarEvent.id)}>Edit</button></div>
             </> : <>
