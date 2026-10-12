@@ -15,6 +15,7 @@ import {
 } from '../../api/studentAssistantApi'
 import { readScheduleFile } from '../../api/scheduleParser'
 import { isExamDate, isExamPeriod } from '../../formatters/examPeriod'
+import { sortWeeklyWorkloads, weeklyWorkloads } from '../../formatters/weeklyWorkload'
 import { flushPendingAssistantSync, hasPendingAssistantSync } from '../../storage/localFirstSync'
 import { loadLocalAssistantData, saveLocalAssistantData, withManualDutyAssignments } from '../../storage/studentAssistantStorage'
 import type { CalendarEvent, UploadedAssistant } from '../../types'
@@ -118,6 +119,8 @@ export function StudentAssistantPanel({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [rescheduleEntire, setRescheduleEntire] = useState(false)
   const [weeklySummaryOpen, setWeeklySummaryOpen] = useState(false)
+  const [calendarZoom, setCalendarZoom] = useState(100)
+  const [workloadAscending, setWorkloadAscending] = useState(false)
   const [draftDutyGapMinutes, setDraftDutyGapMinutes] = useState(
     localAssistantData.settings.minimumGapAfterThreeHourDutyMinutes,
   )
@@ -519,22 +522,10 @@ export function StudentAssistantPanel({
         || record.replacementAssistantId === effectiveSelectedAssistantId),
     )
   }, [effectiveSelectedAssistantId, result?.relieverAssignments, viewedWeekStart, adminEvents])
-  const performedRelieverAssignments = selectedRelieverAssignments.filter(
-    record => record.replacementAssistantId === effectiveSelectedAssistantId,
-  )
-  const regularDutyMinutes = selectedAssignments.reduce(
-    (total, assignment) => total + Math.max(0, assignment.endMinutes - assignment.startMinutes),
-    0,
-  )
-  const eventOvertimeMinutes = selectedEventAssignments.reduce(
-    (total, event) => total + Math.max(0, event.endMinutes - event.startMinutes),
-    0,
-  )
-  const relieverOvertimeMinutes = performedRelieverAssignments.reduce(
-    (total, record) => total + Math.max(0, record.endMinutes - record.startMinutes),
-    0,
-  )
-  const totalWorkloadMinutes = regularDutyMinutes + eventOvertimeMinutes + relieverOvertimeMinutes
+  const workloadRanking = useMemo(() => sortWeeklyWorkloads(weeklyWorkloads(
+    assistants.map(assistant => ({ id: assistant.id, name: assistantDisplayName(assistant) })),
+    result?.assignments ?? [], adminEvents, result?.relieverAssignments ?? [], viewedWeekStart,
+  ), workloadAscending), [assistants, result, adminEvents, viewedWeekStart, workloadAscending])
   const moveViewedWeek = (offset: number) => {
     setViewedWeekStart(current => {
       const next = new Date(current)
@@ -580,10 +571,15 @@ export function StudentAssistantPanel({
       {selectedAssistant ? (
         <div className="sa-calendar-section" inert={solving}>
           <div className="sa-calendar-switcher">
+            <div className="sa-calendar-zoom" role="group" aria-label="Calendar zoom">
+              <button type="button" aria-label="Zoom out calendar" disabled={calendarZoom <= 75} onClick={() => setCalendarZoom(current => Math.max(75, current - 25))}>−</button>
+              <button type="button" aria-label={`Reset calendar zoom to 100 percent; current zoom ${calendarZoom} percent`} onClick={() => setCalendarZoom(100)}>{calendarZoom}%</button>
+              <button type="button" aria-label="Zoom in calendar" disabled={calendarZoom >= 200} onClick={() => setCalendarZoom(current => Math.min(200, current + 25))}>+</button>
+            </div>
             <button className="sa-weekly-summary-button" type="button" onClick={() => setWeeklySummaryOpen(true)}>Weekly Summary</button>
             <div className="sa-week-navigation"><button type="button" aria-label="Previous week" onClick={() => moveViewedWeek(-1)}>←</button><button type="button" onClick={() => setViewedWeekStart(startOfWeek(new Date()))}>This Week</button><button type="button" aria-label="Next week" onClick={() => moveViewedWeek(1)}>→</button><strong>{weekRangeLabel(viewedWeekStart)}</strong></div>
           </div>
-          <AssistantWeeklyCalendar assistant={selectedAssistant} assignments={selectedAssignments} eventAssignments={selectedEventAssignments} relieverAssignments={selectedRelieverAssignments} weekStart={viewedWeekStart} examPeriods={adminEvents} onViewDuty={(assignment, date) => onViewDuty(assignment.classId, dateKey(date))} onRemoveDuty={removeDutyAssignment} />
+          <AssistantWeeklyCalendar assistant={selectedAssistant} assignments={selectedAssignments} eventAssignments={selectedEventAssignments} relieverAssignments={selectedRelieverAssignments} weekStart={viewedWeekStart} examPeriods={adminEvents} zoom={calendarZoom} onViewDuty={(assignment, date) => onViewDuty(assignment.classId, dateKey(date))} onRemoveDuty={removeDutyAssignment} />
         </div>
       ) : (
         <div className="sa-empty-schedule"><strong>No student assistant added</strong></div>
@@ -618,14 +614,10 @@ export function StudentAssistantPanel({
         <div className="sa-profile-actions"><button className="btn-secondary" type="button" disabled={solving} onClick={() => setSettingsOpen(false)}>Cancel</button><button className="btn-primary" type="submit" disabled={solving}>{solving ? 'Creating schedule…' : 'Proceed'}</button></div>
       </form></div>}
 
-      {weeklySummaryOpen && selectedAssistant && <div className="sa-profile-backdrop" role="presentation" onMouseDown={() => setWeeklySummaryOpen(false)}><section className="sa-weekly-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="sa-weekly-summary-title" onMouseDown={event => event.stopPropagation()}>
-        <div className="sa-profile-heading"><div><h3 id="sa-weekly-summary-title">Weekly Summary</h3><p>{assistantDisplayName(selectedAssistant)} · {selectedAssistant.studentId || 'ID number unavailable'}</p><small>{weekRangeLabel(viewedWeekStart)}</small></div><button type="button" aria-label="Close" onClick={() => setWeeklySummaryOpen(false)}>×</button></div>
-        <dl className="sa-weekly-summary-totals">
-          <div><dt>Regular duty scheduled</dt><dd>{workloadHoursLabel(regularDutyMinutes)}</dd></div>
-          <div><dt>Event overtime</dt><dd>{workloadHoursLabel(eventOvertimeMinutes)}</dd></div>
-          <div><dt>Reliever overtime</dt><dd>{workloadHoursLabel(relieverOvertimeMinutes)}</dd></div>
-          <div className="total"><dt>Total workload</dt><dd>{workloadHoursLabel(totalWorkloadMinutes)}</dd></div>
-        </dl>
+      {weeklySummaryOpen && <div className="sa-profile-backdrop" role="presentation" onMouseDown={() => setWeeklySummaryOpen(false)}><section className="sa-weekly-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="sa-weekly-summary-title" onMouseDown={event => event.stopPropagation()}>
+        <div className="sa-profile-heading"><div><h3 id="sa-weekly-summary-title">Weekly Summary</h3><small>{weekRangeLabel(viewedWeekStart)}</small></div><button type="button" aria-label="Close" onClick={() => setWeeklySummaryOpen(false)}>×</button></div>
+        <label className="sa-workload-sort">Sort<select value={workloadAscending ? 'ascending' : 'descending'} onChange={event => setWorkloadAscending(event.target.value === 'ascending')}><option value="descending">Most workload first</option><option value="ascending">Least workload first</option></select></label>
+        <div className="sa-workload-table-scroll"><table className="sa-workload-table"><thead><tr><th scope="col">#</th><th scope="col">Student</th><th scope="col">Duty</th><th scope="col">Event overtime</th><th scope="col">Reliever overtime</th><th scope="col">Total</th></tr></thead><tbody>{workloadRanking.map((row, index) => <tr key={row.id}><td>{index + 1}</td><th scope="row">{row.name}</th><td>{workloadHoursLabel(row.dutyMinutes)}</td><td>{workloadHoursLabel(row.eventMinutes)}</td><td>{workloadHoursLabel(row.relieverMinutes)}</td><td className="sa-workload-total">{workloadHoursLabel(row.totalMinutes)}</td></tr>)}</tbody></table></div>
         <div className="sa-profile-actions"><button className="btn-secondary" type="button" onClick={() => setWeeklySummaryOpen(false)}>Close</button></div>
       </section></div>}
 

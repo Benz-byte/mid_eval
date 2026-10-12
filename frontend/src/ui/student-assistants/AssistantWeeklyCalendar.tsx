@@ -31,6 +31,7 @@ export function AssistantWeeklyCalendar({
   relieverAssignments,
   weekStart,
   examPeriods,
+  zoom = 100,
   onViewDuty,
   onRemoveDuty,
 }: {
@@ -40,11 +41,19 @@ export function AssistantWeeklyCalendar({
   relieverAssignments: RelieverAssignment[]
   weekStart: Date
   examPeriods: CalendarEvent[]
+  zoom?: number
   onViewDuty: (assignment: DutyAssignment, date: Date) => void
   onRemoveDuty: (assignment: DutyAssignment) => void
 }) {
   const [selectedDuty, setSelectedDuty] = useState<{ assignment: DutyAssignment, date: Date } | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [viewportHeight, setViewportHeight] = useState(() => typeof window === 'undefined' ? 900 : window.innerHeight)
+
+  useEffect(() => {
+    const updateHeight = () => setViewportHeight(window.innerHeight)
+    window.addEventListener('resize', updateHeight)
+    return () => window.removeEventListener('resize', updateHeight)
+  }, [])
 
   useEffect(() => {
     if (!selectedDuty) return
@@ -76,7 +85,9 @@ export function AssistantWeeklyCalendar({
   const rangeEnd = allPeriods.length
     ? Math.ceil(Math.max(...allPeriods.map(item => item.endMinutes)) / 60) * 60
     : DEFAULT_END
-  const pixelsPerHour = 64
+  // Compact the time scale, not the text. Keep a readable minimum on short screens.
+  const hours = Math.max((rangeEnd - rangeStart) / 60, 1)
+  const pixelsPerHour = Math.max(40, Math.min(52, (viewportHeight - 290) / hours)) * zoom / 100
   const calendarHeight = Math.max(((rangeEnd - rangeStart) / 60) * pixelsPerHour, pixelsPerHour)
   const position = (minutes: number) => ((minutes - rangeStart) / 60) * pixelsPerHour
   const hourLabels: number[] = []

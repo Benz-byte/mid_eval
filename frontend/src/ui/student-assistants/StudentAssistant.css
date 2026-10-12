@@ -624,10 +624,37 @@
 
 .sa-calendar-switcher {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 1rem;
   margin-bottom: 0.75rem;
+}
+
+.sa-calendar-zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: auto;
+}
+
+.sa-calendar-zoom button {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #4a5568;
+  border-radius: 5px;
+  background: #151b29;
+  color: #edf2f7;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sa-calendar-zoom button:hover:not(:disabled) {
+  border-color: #63b3ed;
+}
+
+.sa-calendar-zoom button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .sa-weekly-summary-button {
@@ -674,7 +701,7 @@
 
 .sa-weekly-summary-dialog {
   box-sizing: border-box;
-  width: min(680px, 100%);
+  width: min(850px, 100%);
   max-height: min(820px, calc(100vh - 2rem));
   overflow-y: auto;
   padding: 1rem;
@@ -698,64 +725,65 @@
   color: #a0aec0;
 }
 
-.sa-weekly-summary-totals {
-  margin: 1rem 0 0;
-  padding: 0.8rem 1rem;
-  border: 1px solid #3a4a63;
-  border-radius: 7px;
-  background: #111722;
-}
-
-.sa-weekly-summary-totals > div {
+.sa-workload-sort {
   display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.3rem 0;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
 }
 
-.sa-weekly-summary-totals dt {
-  color: #cbd5e0;
-}
-
-.sa-weekly-summary-totals dd {
-  margin: 0;
+.sa-workload-sort select {
+  padding: 0.5rem;
+  border: 1px solid #3a4a63;
+  border-radius: 5px;
+  background: #111722;
   color: #edf2f7;
-  font-weight: 700;
+  font: inherit;
 }
 
-.sa-weekly-summary-totals .total {
-  margin-top: 0.4rem;
-  padding-top: 0.7rem;
-  border-top: 1px solid #3a4a63;
+.sa-workload-table-scroll {
+  overflow: auto;
+  max-height: 55vh;
+}
+
+.sa-workload-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.sa-workload-table th,
+.sa-workload-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #3a4a63;
+}
+
+.sa-workload-table thead th {
+  position: sticky;
+  top: 0;
+  background: #1a2035;
+}
+
+.sa-workload-table tbody th {
+  min-width: 150px;
+  overflow-wrap: anywhere;
+}
+
+.sa-workload-table td {
+  white-space: nowrap;
+}
+
+.sa-workload-total {
+  font-weight: 700;
+  color: #90cdf4;
 }
 
 .sa-weekly-calendar {
-  max-height: 70vh;
-  overflow: auto;
+  overflow: visible;
   border: 1px solid #2d3748;
   border-radius: 7px;
   background: #101520;
-  scrollbar-color: #4a5568 #161b27;
-  scrollbar-width: thin;
-}
-
-.sa-weekly-calendar::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.sa-weekly-calendar::-webkit-scrollbar-track {
-  background: #161b27;
-}
-
-.sa-weekly-calendar::-webkit-scrollbar-thumb {
-  border: 2px solid #161b27;
-  border-radius: 8px;
-  background: #4a5568;
-}
-
-.sa-weekly-calendar::-webkit-scrollbar-thumb:hover {
-  background: #718096;
 }
 
 .sa-week-header,
@@ -767,15 +795,13 @@
 }
 
 .sa-week-header {
-  position: sticky;
-  top: 0;
-  z-index: 3;
+  position: static;
   background: #1a202c;
 }
 
 .sa-week-header > div {
   overflow: hidden;
-  padding: 0.7rem 0.25rem;
+  padding: 0.45rem 0.25rem;
   border-right: 1px solid #2d3748;
   color: #cbd5e0;
   font-weight: 600;
@@ -821,6 +847,14 @@
   transform: translateY(-50%);
 }
 
+.sa-week-time-axis span:first-child {
+  transform: none;
+}
+
+.sa-week-time-axis span:last-child {
+  transform: translateY(-100%);
+}
+
 .sa-day-lane {
   overflow: hidden;
 }
@@ -837,13 +871,19 @@
   right: 4px;
   left: 4px;
   z-index: 2;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  align-items: center;
+  column-gap: 0.35rem;
+  row-gap: 0.1rem;
+  box-sizing: border-box;
   overflow: hidden;
-  flex-direction: column;
-  padding: 0.25rem 0.3rem;
+  padding: 0.2rem 0.3rem;
   border: 1px solid;
   border-radius: 5px;
   font-size: 0.72rem;
+  line-height: 1.3;
 }
 
 .sa-calendar-block[role='button'] {
@@ -904,8 +944,8 @@
 }
 
 .sa-calendar-block .sa-block-label {
-  align-self: flex-start;
-  margin-bottom: 0.15rem;
+  justify-self: start;
+  margin-bottom: 0;
   padding: 0.1rem 0.3rem;
   border-radius: 3px;
   background: rgb(0 0 0 / 28%);
@@ -917,8 +957,13 @@
   text-transform: uppercase;
 }
 
+.sa-calendar-block span:nth-of-type(2) {
+  grid-column: 1 / -1;
+}
+
 .sa-calendar-legend {
   display: flex;
+  flex-wrap: wrap;
   gap: 1.25rem;
   min-width: 0;
   padding: 0.7rem 1rem;

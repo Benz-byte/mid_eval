@@ -233,6 +233,31 @@
   gap: 0.75rem;
 }
 
+.schedule-calendar-zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.schedule-calendar-zoom button {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #4a5568;
+  border-radius: 5px;
+  background: #151b29;
+  color: #edf2f7;
+  font: inherit;
+  cursor: pointer;
+}
+
+.schedule-calendar-zoom button:hover:not(:disabled) {
+  border-color: #63b3ed;
+}
+
+.schedule-calendar-zoom button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .calendar-view-controls label {
   display: inline-flex;
   align-items: center;
