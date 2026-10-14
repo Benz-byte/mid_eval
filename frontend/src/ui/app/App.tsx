@@ -35,7 +35,6 @@ function filenameScheduleKey(fileName: string) {
 export default function App() {
   const savedCsvSchedule = useMemo(() => loadCsvSchedule(), [])
   const [activeTab, setActiveTab] = useState<Tab>(loadActiveTab)
-  const [solverBusy, setSolverBusy] = useState(false)
   const [csvEvents, setCsvEvents] = useState<CalendarEvent[]>(savedCsvSchedule.events)
   const [csvName, setCsvName] = useState(savedCsvSchedule.name)
   const [csvRooms, setCsvRooms] = useState(savedCsvSchedule.rooms)
@@ -312,7 +311,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <nav className="tab-nav" inert={solverBusy}>
+      <nav className="tab-nav">
         {([
           ['schedule', 'Schedule'],
           ['student-assistant', 'Student Assistant'],
@@ -321,7 +320,6 @@ export default function App() {
             className={`tab-btn${activeTab === key ? ' active' : ''}`}
             type="button"
             key={key}
-            disabled={solverBusy}
             onClick={() => setActiveTab(key)}
           >
             {label}
@@ -349,19 +347,19 @@ export default function App() {
             onFocusHandled={requestId => setScheduleFocusRequest(current => current?.requestId === requestId ? { ...current, consumed: true } : current)}
           />
         )}
-        {activeTab === 'student-assistant' && (
+        <div hidden={activeTab !== 'student-assistant'}>
           <StudentAssistantPanel
+            isActive={activeTab === 'student-assistant'}
             mainSchedule={csvEvents}
             mainScheduleName={csvName}
             mainScheduleKey={csvFingerprint}
             adminEvents={calendarAdminEvents}
-            onSolvingChange={setSolverBusy}
             onViewDuty={(eventId, date) => {
               setScheduleFocusRequest({ eventId, date, requestId: Date.now(), consumed: false })
               setActiveTab('schedule')
             }}
           />
-        )}
+        </div>
       </main>
 
       {eventsPanelOpen && (

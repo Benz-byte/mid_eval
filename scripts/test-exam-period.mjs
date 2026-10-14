@@ -73,6 +73,18 @@ const booking = {...lesson,id:'admin-1',source:'admin',courseCode:'BOOKED_EVENT'
 const calendarProps = {csvEvents:[lesson],csvName:'file_A.csv',tbaSubjects:[],rooms:['MT102'],times:[],onCsvUpload:noop,onCsvRemove:noop,onOpenEvents:noop,onEditEvent:noop,onDeleteEvent:noop,onAssignAssistant:noop}
 const calendar = events => renderToStaticMarkup(React.createElement(ScheduleCalendar,{...calendarProps,adminEvents:events}))
 assert.ok(calendar([booking]).includes('REGULAR_CLASS'))
+assert.ok(calendar([booking]).includes('Remove CSV'))
+assert.ok(calendar([booking]).includes('schedule-date-trigger'))
+assert.ok(calendar([booking]).includes('aria-haspopup="dialog"'))
+assert.ok(calendar([booking]).includes('schedule-date-arrow'))
+assert.ok(!calendar([booking]).includes('>Today<'), 'Today is inside the closed picker, not on the toolbar')
+assert.ok(!calendar([booking]).includes('type="date"'), 'Date picker is combined with the heading')
+assert.ok(!calendar([booking]).includes('Upload Schedule'), 'Loaded schedule shows Remove CSV only')
+const emptyCalendar = renderToStaticMarkup(React.createElement(ScheduleCalendar, {
+  ...calendarProps, csvName:'', csvEvents:[], adminEvents:[], rooms:[],
+}))
+assert.ok(emptyCalendar.includes('Upload Schedule'))
+assert.ok(!emptyCalendar.includes('Remove CSV'), 'Empty schedule shows Upload Schedule only')
 const examCalendar = calendar([...restored,booking])
 assert.ok(!examCalendar.includes('REGULAR_CLASS'))
 assert.ok(examCalendar.includes('BOOKED_EVENT'))

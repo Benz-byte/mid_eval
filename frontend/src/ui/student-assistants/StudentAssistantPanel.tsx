@@ -84,14 +84,14 @@ export function StudentAssistantPanel({
   mainScheduleKey,
   adminEvents,
   onViewDuty,
-  onSolvingChange,
+  isActive = true,
 }: {
   mainSchedule: CalendarEvent[]
   mainScheduleName: string
   mainScheduleKey: string
   adminEvents: CalendarEvent[]
   onViewDuty: (eventId: string, date: string) => void
-  onSolvingChange: (solving: boolean) => void
+  isActive?: boolean
 }) {
   const localAssistantData = useMemo(() => loadLocalAssistantData(), [])
   const [assistants, setAssistants] = useState<UploadedAssistant[]>(localAssistantData.assistants)
@@ -132,6 +132,16 @@ export function StudentAssistantPanel({
   )
   const [viewedWeekStart, setViewedWeekStart] = useState(() => startOfWeek(new Date()))
   const assistantRevisionRef = useRef(0)
+  const currentScheduleKeyRef = useRef(mainScheduleKey)
+  useEffect(() => {
+    currentScheduleKeyRef.current = mainScheduleKey
+    if (!isActive) return
+    const saved = loadLocalAssistantData()
+    setAssistants(saved.assistants)
+    setSettings(saved.settings)
+    setResult(mainScheduleKey ? saved.resultsBySchedule[mainScheduleKey]
+      ?? (saved.activeScheduleKey === mainScheduleKey ? saved.result : null) : null)
+  }, [mainScheduleKey, isActive])
   useEffect(() => {
     let cancelled = false
 
@@ -427,6 +437,7 @@ export function StudentAssistantPanel({
   }
 
   const runSolver = async (selectedSettings: SchedulingSettings, rebuildEntireSchedule: boolean) => {
+    if (solving) return
     setError('')
     const optimizedAssistantIds = result?.optimizedAssistantIds ?? result?.assistantTotals?.map(total => total.assistantId)
     const existingAssistantIds = new Set(optimizedAssistantIds ?? [])
@@ -438,7 +449,13 @@ export function StudentAssistantPanel({
       return
     }
     setSolving(true)
-    onSolvingChange(true)
+    const savedAtStart = loadLocalAssistantData()
+    const workloadSnapshot = (saved: ReturnType<typeof loadLocalAssistantData>) => JSON.stringify({
+      assistants: saved.assistants,
+      result: saved.resultsBySchedule[mainScheduleKey] ?? (saved.activeScheduleKey === mainScheduleKey ? saved.result : null),
+      settings: saved.settings,
+    })
+    const startingSnapshot = workloadSnapshot(savedAtStart)
     try {
       const response = await solveStudentAssistantSchedule(
         mainSchedule,
@@ -450,6 +467,11 @@ export function StudentAssistantPanel({
         selectedSettings,
         result && !rebuildEntireSchedule ? { existingResult: result, newAssistantIds } : undefined,
       )
+      if (currentScheduleKeyRef.current !== mainScheduleKey
+        || workloadSnapshot(loadLocalAssistantData()) !== startingSnapshot) {
+        setError('The schedule or student assistants changed while creating. Your changes were kept. Create schedule again to use them.')
+        return
+      }
       if (response.status !== 'OPTIMAL' && response.status !== 'FEASIBLE') {
         setError(response.diagnostics?.join(' ') || 'No valid schedule found with these settings. Adjust them and try again.')
         return
@@ -472,7 +494,6 @@ export function StudentAssistantPanel({
       setError('Could not reach the scheduler. Make sure the Flask service started with the app.')
     } finally {
       setSolving(false)
-      onSolvingChange(false)
     }
   }
 
@@ -551,16 +572,15 @@ export function StudentAssistantPanel({
 
   return (
     <section className="sa-panel">
-      {solving && <div className="sa-solving-blocker" aria-hidden="true" />}
-      <header className={`sa-schedule-toolbar${solving ? ' is-solving' : ''}`}>
-        <button className="sa-menu-button" type="button" aria-label="Open student assistants" disabled={solving} onClick={() => setSidebarOpen(true)}>☰</button>
+      <header className="sa-schedule-toolbar">
+        <button className="sa-menu-button" type="button" aria-label="Open student assistants" onClick={() => setSidebarOpen(true)}>☰</button>
         <div className="sa-selected-heading">
           <h2 title={selectedAssistant ? assistantDisplayName(selectedAssistant) : undefined}>{selectedAssistant ? assistantDisplayName(selectedAssistant) : 'Student Assistant Scheduler'}</h2>
           <span>{selectedAssistant?.studentId || (assistants.length > 0 ? 'ID number unavailable' : 'No student assistant added')}</span>
         </div>
         <div className="sa-toolbar-actions">
           <span className={mainSchedule.length > 0 ? 'ready' : ''}>{mainSchedule.length > 0 ? mainScheduleName || 'Main schedule uploaded' : 'No main schedule uploaded'}</span>
-          {solving ? <div className="btn-primary sa-toolbar-progress" role="progressbar" aria-label="Creating optimized schedule" aria-valuetext="Creating schedule"><span>Creating schedule…</span></div> : <button className="btn-primary" type="button" disabled={mainSchedule.length === 0 || assistants.length === 0} onClick={openSchedulingSettings}>Create optimized schedule</button>}
+          {solving ? <div className="btn-primary sa-toolbar-progress" role="progressbar" aria-label="Creating schedule" aria-valuetext="Creating schedule"><span>Creating schedule…</span></div> : <button className="btn-primary" type="button" disabled={mainSchedule.length === 0 || assistants.length === 0} onClick={openSchedulingSettings}>Create schedule</button>}
         </div>
       </header>
 
@@ -569,7 +589,7 @@ export function StudentAssistantPanel({
       {visibleDiagnostics.length > 0 && <ul className="sa-diagnostics">{visibleDiagnostics.map(message => <li key={message}>{message}</li>)}</ul>}
 
       {selectedAssistant ? (
-        <div className="sa-calendar-section" inert={solving}>
+        <div className="sa-calendar-section">
           <div className="sa-calendar-switcher">
             <div className="sa-calendar-zoom" role="group" aria-label="Calendar zoom">
               <button type="button" aria-label="Zoom out calendar" disabled={calendarZoom <= 75} onClick={() => setCalendarZoom(current => Math.max(75, current - 25))}>−</button>
