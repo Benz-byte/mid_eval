@@ -72,6 +72,12 @@ export interface RoomBookingForm {
   weekdays: number[]
 }
 
+export interface BookingDateSchedule {
+  date: string
+  rooms: string[]
+  timeRanges: Array<{ startTime: string, endTime: string }>
+}
+
 export interface UploadedAssistant {
   id: string
   label: string

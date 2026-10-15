@@ -88,6 +88,8 @@ Run these files in order through **Supabase Dashboard → SQL Editor**:
 - `frontend/src/ui/` — React screens, components, and styles
 - `frontend/src/api/` — HTTP calls to Flask
 - `frontend/src/storage/` — local device cache and preferences
+- `frontend/src/formatters/` — shared date, time, name, and workload helpers
+- `frontend/src/export/` — Excel workbook generation and downloads
 - `frontend/src/desktop/` — Electron main and preload processes
 - `backend/routes/` — Flask API endpoints
 - `backend/services/` — parsing and business processing
@@ -97,3 +99,15 @@ Run these files in order through **Supabase Dashboard → SQL Editor**:
 - `samples/` — example schedule files
 - `scripts/` — setup and conflict-check commands
 - `docs/EXPLANATION.md` — detailed project guide
+- `docs/CODE_STRUCTURE.md` — folder conventions and where to make changes
+
+## Checks
+
+```powershell
+npm test
+npm run build
+npm run lint
+```
+
+`npm test` runs the local backend, UI component, calendar, workload, Excel export,
+and schedule-import checks. It does not write to Supabase or change saved schedules.

@@ -1,5 +1,6 @@
 import type { DutyAssignment, RelieverAssignment } from '../api/studentAssistantApi'
 import type { CalendarEvent } from '../types'
+import { toDateInputValue as dateKey } from './dateFormatter'
 import { isExamDate, isExamPeriod } from './examPeriod'
 
 export interface WeeklyWorkload {
@@ -9,10 +10,6 @@ export interface WeeklyWorkload {
   eventMinutes: number
   relieverMinutes: number
   totalMinutes: number
-}
-
-function dateKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 export function weeklyWorkloads(

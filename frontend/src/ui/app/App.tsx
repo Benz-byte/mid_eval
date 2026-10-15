@@ -17,9 +17,8 @@ import {
 import { ACTIVE_TAB_STORAGE_KEY, loadActiveTab } from '../../storage/preferenceStorage'
 import { CSV_STORAGE_KEY, loadCsvSchedule, saveCsvScheduleLocally } from '../../storage/scheduleStorage'
 import { activateLocalAssistantSchedule } from '../../storage/studentAssistantStorage'
-import type { AdminEventForm, BookingEditScope, CalendarEvent, RoomBookingForm, Tab } from '../../types'
+import type { AdminEventForm, BookingDateSchedule, BookingEditScope, CalendarEvent, RoomBookingForm, Tab } from '../../types'
 import { AdminEventsPanel } from '../admin-events/AdminEventsPanel'
-import type { BookingDateSchedule } from '../admin-events/AdminEventsPanel'
 import { ScheduleCalendar } from '../schedule/ScheduleCalendar'
 import { StudentAssistantPanel } from '../student-assistants/StudentAssistantPanel'
 import './App.css'
@@ -299,11 +298,6 @@ export default function App() {
     })
   }
 
-  const updateAdminEvents = (ids: string[], forms: AdminEventForm[]) => {
-    deleteAdminEvents(ids)
-    forms.forEach(form => saveAdminEvent(form, null))
-  }
-
   const updateRoomBooking = (ids: string[], form: RoomBookingForm, schedules: BookingDateSchedule[]) => {
     deleteAdminEvents(ids)
     saveRoomBooking(form, schedules)
@@ -389,7 +383,6 @@ export default function App() {
               csvEvents={csvEvents}
               rooms={rooms}
               onSave={saveAdminEvent}
-              onUpdateEvents={updateAdminEvents}
               onBook={saveRoomBooking}
               onUpdateBooking={updateRoomBooking}
               onDeleteMany={deleteAdminEvents}

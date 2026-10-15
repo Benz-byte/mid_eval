@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { DutyAssignment, RelieverAssignment } from '../../api/studentAssistantApi'
 import type { CalendarEvent, UploadedAssistant } from '../../types'
+import { toDateInputValue as dateKey } from '../../formatters/dateFormatter'
 import { formatTime } from '../../formatters/timeFormatter'
 import { isExamDate } from '../../formatters/examPeriod'
 
@@ -68,12 +69,6 @@ export function AssistantWeeklyCalendar({
     date.setDate(date.getDate() + index)
     return date
   })
-  const dateKey = (date: Date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
   const personalClasses = assistant.events.flatMap(event =>
     expandedDayCodes(event.dayCode).map(day => ({ ...event, day })),
   )

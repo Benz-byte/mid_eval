@@ -32,7 +32,7 @@ function cell(address: string, text: string, style: number) {
 function sheetNames(rooms: string[]) {
   const used = new Set<string>()
   return rooms.map(room => {
-    const base = room.replace(/[\[\]:*?/\\]/g, '_').replace(/^'+|'+$/g, '').trim() || 'Room'
+    const base = room.replace(/[[\]:*?/\\]/g, '_').replace(/^'+|'+$/g, '').trim() || 'Room'
     let name = base.slice(0, 31)
     let index = 2
     while (used.has(name.toLocaleLowerCase())) {

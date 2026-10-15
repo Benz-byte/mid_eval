@@ -1,26 +1,8 @@
+import './register-typescript.mjs'
 import assert from 'node:assert/strict'
-import { registerHooks } from 'node:module'
-import { readFileSync, writeFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import ts from 'typescript'
+import { writeFileSync } from 'node:fs'
 import XLSX from 'xlsx'
 
-registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier === 'xlsx' && context.parentURL?.endsWith('.ts')) return next('xlsx/xlsx.mjs', context)
-    if (specifier.startsWith('.') && context.parentURL?.endsWith('.ts') && !specifier.endsWith('.ts')) {
-      return { url: new URL(`${specifier}.ts`, context.parentURL).href, shortCircuit: true }
-    }
-    return next(specifier, context)
-  },
-  load(url, context, next) {
-    if (url.endsWith('.ts')) return { format: 'module', shortCircuit: true,
-      source: ts.transpileModule(readFileSync(fileURLToPath(url), 'utf8'), {
-        compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-      }).outputText }
-    return next(url, context)
-  },
-})
 const { createRoomScheduleExcel } = await import('../frontend/src/export/roomScheduleExcel.ts')
 const { examPeriodPrefix } = await import('../frontend/src/formatters/examPeriod.ts')
 const lesson = { id:'lesson', source:'csv', courseCode:'CCS1301', subject:'', stubCode:'5',

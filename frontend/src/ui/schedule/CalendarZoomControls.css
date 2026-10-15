@@ -1,0 +1,24 @@
+.calendar-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.calendar-zoom-controls button {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #4a5568;
+  border-radius: 5px;
+  background: #151b29;
+  color: #edf2f7;
+  font: inherit;
+  cursor: pointer;
+}
+
+.calendar-zoom-controls button:hover:not(:disabled) {
+  border-color: #63b3ed;
+}
+
+.calendar-zoom-controls button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

@@ -14,60 +14,24 @@ import {
   WEEKLY_DUTY_LIMIT_OPTIONS,
 } from '../../api/studentAssistantApi'
 import { readScheduleFile } from '../../api/scheduleParser'
+import { startOfWeek, toDateInputValue as dateKey, weekRangeLabel } from '../../formatters/dateFormatter'
+import { CalendarZoomControls } from '../schedule/CalendarZoomControls'
 import { isExamDate, isExamPeriod } from '../../formatters/examPeriod'
 import { sortWeeklyWorkloads, weeklyWorkloads } from '../../formatters/weeklyWorkload'
 import { flushPendingAssistantSync, hasPendingAssistantSync } from '../../storage/localFirstSync'
 import { loadLocalAssistantData, saveLocalAssistantData, withManualDutyAssignments } from '../../storage/studentAssistantStorage'
 import type { CalendarEvent, UploadedAssistant } from '../../types'
 import { AssistantWeeklyCalendar } from './AssistantWeeklyCalendar'
+import { WeeklyWorkloadSummary } from './WeeklyWorkloadSummary'
+import { assistantDisplayName } from '../../formatters/assistantNameFormatter'
+import { workloadHoursLabel } from '../../formatters/timeFormatter'
 
 const DAY_SORT: Record<string, number> = {
   M: 0, T: 1, W: 2, Th: 3, F: 4, S: 5, Su: 6,
 }
 
-function assistantDisplayName(assistant: UploadedAssistant) {
-  if (assistant.lastName && assistant.firstName) {
-    const middleInitial = assistant.middleName
-      ? Array.from(assistant.middleName.trim()).find(character => /\p{L}/u.test(character))
-      : undefined
-    return `${assistant.firstName}${middleInitial ? ` ${middleInitial.toLocaleUpperCase()}.` : ''} ${assistant.lastName}`
-  }
-  return assistant.label || assistant.fileName
-}
-
 function storedAssistantName(lastName: string, firstName: string, middleName: string) {
   return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}`
-}
-
-function startOfWeek(date: Date) {
-  const start = new Date(date)
-  const day = start.getDay()
-  start.setDate(start.getDate() - (day === 0 ? 6 : day - 1))
-  start.setHours(0, 0, 0, 0)
-  return start
-}
-
-function dateKey(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function weekRangeLabel(weekStart: Date) {
-  const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekEnd.getDate() + 6)
-  const sameYear = weekStart.getFullYear() === weekEnd.getFullYear()
-  const sameMonth = sameYear && weekStart.getMonth() === weekEnd.getMonth()
-  if (sameMonth) {
-    return `${weekStart.toLocaleDateString(undefined, { month: 'long' })} ${weekStart.getDate()}–${weekEnd.getDate()}, ${weekStart.getFullYear()}`
-  }
-  return `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}–${weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
-}
-
-function workloadHoursLabel(minutes: number) {
-  const hours = minutes / 60
-  return `${hours.toFixed(1).replace(/\.0$/, '')} ${hours === 1 ? 'hour' : 'hours'}`
 }
 
 const EMPTY_PROFILE = { lastName: '', firstName: '', middleName: '' }
@@ -591,11 +555,7 @@ export function StudentAssistantPanel({
       {selectedAssistant ? (
         <div className="sa-calendar-section">
           <div className="sa-calendar-switcher">
-            <div className="sa-calendar-zoom" role="group" aria-label="Calendar zoom">
-              <button type="button" aria-label="Zoom out calendar" disabled={calendarZoom <= 75} onClick={() => setCalendarZoom(current => Math.max(75, current - 25))}>−</button>
-              <button type="button" aria-label={`Reset calendar zoom to 100 percent; current zoom ${calendarZoom} percent`} onClick={() => setCalendarZoom(100)}>{calendarZoom}%</button>
-              <button type="button" aria-label="Zoom in calendar" disabled={calendarZoom >= 200} onClick={() => setCalendarZoom(current => Math.min(200, current + 25))}>+</button>
-            </div>
+            <CalendarZoomControls className="sa-calendar-zoom" value={calendarZoom} onChange={setCalendarZoom} />
             <button className="sa-weekly-summary-button" type="button" onClick={() => setWeeklySummaryOpen(true)}>Weekly Summary</button>
             <div className="sa-week-navigation"><button type="button" aria-label="Previous week" onClick={() => moveViewedWeek(-1)}>←</button><button type="button" onClick={() => setViewedWeekStart(startOfWeek(new Date()))}>This Week</button><button type="button" aria-label="Next week" onClick={() => moveViewedWeek(1)}>→</button><strong>{weekRangeLabel(viewedWeekStart)}</strong></div>
           </div>
@@ -634,12 +594,7 @@ export function StudentAssistantPanel({
         <div className="sa-profile-actions"><button className="btn-secondary" type="button" disabled={solving} onClick={() => setSettingsOpen(false)}>Cancel</button><button className="btn-primary" type="submit" disabled={solving}>{solving ? 'Creating schedule…' : 'Proceed'}</button></div>
       </form></div>}
 
-      {weeklySummaryOpen && <div className="sa-profile-backdrop" role="presentation" onMouseDown={() => setWeeklySummaryOpen(false)}><section className="sa-weekly-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="sa-weekly-summary-title" onMouseDown={event => event.stopPropagation()}>
-        <div className="sa-profile-heading"><div><h3 id="sa-weekly-summary-title">Weekly Summary</h3><small>{weekRangeLabel(viewedWeekStart)}</small></div><button type="button" aria-label="Close" onClick={() => setWeeklySummaryOpen(false)}>×</button></div>
-        <label className="sa-workload-sort">Sort<select value={workloadAscending ? 'ascending' : 'descending'} onChange={event => setWorkloadAscending(event.target.value === 'ascending')}><option value="descending">Most workload first</option><option value="ascending">Least workload first</option></select></label>
-        <div className="sa-workload-table-scroll"><table className="sa-workload-table"><thead><tr><th scope="col">#</th><th scope="col">Student</th><th scope="col">Duty</th><th scope="col">Event overtime</th><th scope="col">Reliever overtime</th><th scope="col">Total</th></tr></thead><tbody>{workloadRanking.map((row, index) => <tr key={row.id}><td>{index + 1}</td><th scope="row">{row.name}</th><td>{workloadHoursLabel(row.dutyMinutes)}</td><td>{workloadHoursLabel(row.eventMinutes)}</td><td>{workloadHoursLabel(row.relieverMinutes)}</td><td className="sa-workload-total">{workloadHoursLabel(row.totalMinutes)}</td></tr>)}</tbody></table></div>
-        <div className="sa-profile-actions"><button className="btn-secondary" type="button" onClick={() => setWeeklySummaryOpen(false)}>Close</button></div>
-      </section></div>}
+      {weeklySummaryOpen && <WeeklyWorkloadSummary weekStart={viewedWeekStart} rows={workloadRanking} ascending={workloadAscending} onSortChange={setWorkloadAscending} onClose={() => setWeeklySummaryOpen(false)} />}
 
       {addProfileOpen && <div className="sa-profile-backdrop" role="presentation" onMouseDown={closeAddProfile}><form className="sa-profile-form" onSubmit={addStudentAssistant} onMouseDown={event => event.stopPropagation()}>
         <div className="sa-profile-heading"><h3>Add Student Assistant</h3><button type="button" aria-label="Close" onClick={closeAddProfile}>×</button></div>

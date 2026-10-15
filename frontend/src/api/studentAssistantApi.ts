@@ -1,3 +1,6 @@
+import { pollForChanges, requestJson } from './apiClient'
+import { isCloudConfigured } from './scheduleApi'
+
 export interface StudentAssistantInput<EventType> {
   id: string
   label: string
@@ -142,5 +145,3 @@ export async function saveSharedStudentAssistantData<AssistantType, ResultType>(
 export function subscribeToSharedStudentAssistantData(onChange: () => void) {
   return isCloudConfigured ? pollForChanges(onChange) : () => undefined
 }
-import { pollForChanges, requestJson } from './apiClient'
-import { isCloudConfigured } from './scheduleApi'

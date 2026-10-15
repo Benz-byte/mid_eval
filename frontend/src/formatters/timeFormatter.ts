@@ -9,3 +9,8 @@ export function formatTime(minutes: number) {
   const period = hour >= 12 ? 'PM' : 'AM'
   return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${period}`
 }
+
+export function workloadHoursLabel(minutes: number) {
+  const hours = minutes / 60
+  return `${hours.toFixed(1).replace(/\.0$/, '')} ${hours === 1 ? 'hour' : 'hours'}`
+}

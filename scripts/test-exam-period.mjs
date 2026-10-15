@@ -1,33 +1,9 @@
+import './register-typescript.mjs'
 import assert from 'node:assert/strict'
-import { registerHooks } from 'node:module'
-import { readFileSync, existsSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import ts from 'typescript'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { spawnSync } from 'node:child_process'
 
-// Compile the actual UI for read-only render checks, with isolated storage.
-registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier.endsWith('.css')) return { url: 'data:text/javascript,export default {}', shortCircuit: true }
-    if (specifier.startsWith('.') && context.parentURL?.includes('/frontend/')) {
-      const base = new URL(specifier, context.parentURL)
-      for (const extension of ['.ts', '.tsx']) {
-        const candidate = new URL(base.href + extension)
-        if (existsSync(fileURLToPath(candidate))) return { url: candidate.href, shortCircuit: true }
-      }
-    }
-    return next(specifier, context)
-  },
-  load(url, context, next) {
-    if (/\.tsx?$/.test(url)) return { format: 'module', shortCircuit: true,
-      source: ts.transpileModule(readFileSync(fileURLToPath(url), 'utf8'), {
-        compilerOptions: { module: ts.ModuleKind.ESNext, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 },
-      }).outputText }
-    return next(url, context)
-  },
-})
 const storage = new Map([['auto-scheduler-selected-date', '2026-10-05']])
 globalThis.localStorage = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) }
 const { createExamPeriodEvents, examBelongsToSchedule, examPeriodPrefix, isExamBooking, isExamDate } = await import('../frontend/src/formatters/examPeriod.ts')
@@ -106,7 +82,7 @@ assert.ok(!weekly(restored).includes('PERSONAL_CLASS'))
 assert.ok(!weekly(restored).includes('REGULAR_DUTY'))
 assert.ok(weekly(restored).includes('BOOKED_EVENT'))
 const form = renderToStaticMarkup(React.createElement(AdminEventsPanel,{
-  events:[],csvEvents:[lesson],rooms:['MT102'],onSave:noop,onUpdateEvents:noop,onBook:noop,
+  events:[],csvEvents:[lesson],rooms:['MT102'],onSave:noop,onBook:noop,
   onUpdateBooking:noop,onDeleteMany:noop,editRequest:null,onClose:noop,onExamDatesChange:noop,canCreateExamPeriod:true,
 }))
 assert.ok(form.includes('Exam date'))
@@ -122,7 +98,7 @@ const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2
 const todayClass = {...lesson,dayCode:['Su','M','T','W','Th','F','S'][today.getDay()]}
 const todayExam = createExamPeriodEvents('file_A','Exam',[todayKey])
 const roomForm = events => renderToStaticMarkup(React.createElement(AdminEventsPanel,{
-  events,csvEvents:[todayClass],rooms:['MT102'],onSave:noop,onUpdateEvents:noop,onBook:noop,
+  events,csvEvents:[todayClass],rooms:['MT102'],onSave:noop,onBook:noop,
   onUpdateBooking:noop,onDeleteMany:noop,editRequest:null,onClose:noop,onExamDatesChange:noop,canCreateExamPeriod:true,
 }))
 assert.ok(roomForm([]).includes('Occupied'))

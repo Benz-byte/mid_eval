@@ -619,29 +619,7 @@
 }
 
 .sa-calendar-zoom {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
   margin-right: auto;
-}
-
-.sa-calendar-zoom button {
-  padding: 0.5rem 0.7rem;
-  border: 1px solid #4a5568;
-  border-radius: 5px;
-  background: #151b29;
-  color: #edf2f7;
-  font: inherit;
-  cursor: pointer;
-}
-
-.sa-calendar-zoom button:hover:not(:disabled) {
-  border-color: #63b3ed;
-}
-
-.sa-calendar-zoom button:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 
 .sa-weekly-summary-button {

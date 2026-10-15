@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ChangeEvent } from 'react'
-import Calendar from 'react-calendar'
-import 'react-calendar/dist/Calendar.css'
 import type { BookingEditScope, CalendarEvent, ScheduleConflict, UploadedAssistant } from '../../types'
 import type { DutyAssignment, RelieverAssignment, StudentAssistantResult } from '../../api/studentAssistantApi'
-import { matchesSelectedDay, toDateInputValue } from '../../formatters/dateFormatter'
+import { dateFromInputValue, matchesSelectedDay, startOfWeek, toDateInputValue } from '../../formatters/dateFormatter'
 import { formatTime } from '../../formatters/timeFormatter'
 import { isExamDate, isExamPeriod } from '../../formatters/examPeriod'
 import { SCHEDULE_DATE_STORAGE_KEY, loadScheduleDate } from '../../storage/preferenceStorage'
 import { loadLocalAssistantData, saveLocalAssistantData, withManualDutyAssignments } from '../../storage/studentAssistantStorage'
+import { CalendarZoomControls } from './CalendarZoomControls'
+import { ScheduleDateNavigation } from './ScheduleDateNavigation'
 import { ScheduleFilter, type ScheduleFilterOption } from './ScheduleFilter'
 import { downloadRoomScheduleExcel } from '../../export/roomScheduleExcel'
 
@@ -32,14 +32,6 @@ interface RelieverCandidate {
   dailyDutyCountAfter: number
 }
 
-function startOfWeek(date: Date) {
-  const start = new Date(date)
-  const day = start.getDay()
-  start.setDate(start.getDate() - (day === 0 ? 6 : day - 1))
-  start.setHours(0, 0, 0, 0)
-  return start
-}
-
 function scheduleIdentifier(event: CalendarEvent) {
   if (event.stubCode) return event.stubCode
   return /^\d{2}-[A-Z]\d{3}-\d{2}$/i.test(event.section) ? '' : event.section
@@ -61,11 +53,6 @@ function sameWeek(left: Date, right: Date) {
 
 function overlaps(start: number, end: number, otherStart: number, otherEnd: number) {
   return start < otherEnd && end > otherStart
-}
-
-function dateFromInputValue(value: string) {
-  const [year, month, day] = value.split('-').map(Number)
-  return new Date(year, month - 1, day)
 }
 
 function longestConsecutiveMinutes(intervals: Array<{ start: number, end: number }>) {
@@ -149,9 +136,6 @@ export function ScheduleCalendar({
   onFocusHandled?: (requestId: number) => void
 }) {
   const [selectedDate, setSelectedDate] = useState(loadScheduleDate)
-  const [scheduleDatePickerOpen, setScheduleDatePickerOpen] = useState(false)
-  const scheduleDatePickerRef = useRef<HTMLDivElement>(null)
-  const scheduleDateButtonRef = useRef<HTMLButtonElement>(null)
   const [uploadError, setUploadError] = useState('')
   const [exportError, setExportError] = useState('')
   const [showConflictColors, setShowConflictColors] = useState(true)
@@ -331,25 +315,6 @@ export function ScheduleCalendar({
   useEffect(() => {
     localStorage.setItem(SCHEDULE_DATE_STORAGE_KEY, selectedDateKey)
   }, [selectedDateKey])
-
-  useEffect(() => {
-    if (!scheduleDatePickerOpen) return
-    const closeOutside = (event: MouseEvent) => {
-      if (!scheduleDatePickerRef.current?.contains(event.target as Node)) setScheduleDatePickerOpen(false)
-    }
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      setScheduleDatePickerOpen(false)
-      scheduleDateButtonRef.current?.focus()
-    }
-    scheduleDatePickerRef.current?.querySelector<HTMLButtonElement>('.react-calendar__tile--active')?.focus()
-    document.addEventListener('mousedown', closeOutside)
-    document.addEventListener('keydown', closeOnEscape)
-    return () => {
-      document.removeEventListener('mousedown', closeOutside)
-      document.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [scheduleDatePickerOpen])
 
   useEffect(() => {
     if (!roomPickerOpen) return
@@ -590,25 +555,11 @@ export function ScheduleCalendar({
     setFilterOpen(false)
   }
 
-  const moveDate = (days: number) => {
-    setSelectedDate(current => {
-      const next = new Date(current)
-      next.setDate(next.getDate() + days)
-      return next
-    })
-  }
-
   const moveWeeklyRoom = (direction: number) => {
     if (displayedRooms.length < 2) return
     const currentIndex = Math.max(displayedRooms.indexOf(weeklyRoom), 0)
     const nextIndex = (currentIndex + direction + displayedRooms.length) % displayedRooms.length
     setSelectedWeeklyRoom(displayedRooms[nextIndex])
-  }
-
-  const selectDate = (value: string) => {
-    if (!value) return
-    const [year, month, day] = value.split('-').map(Number)
-    setSelectedDate(new Date(year, month - 1, day))
   }
 
   const navigateToConflict = (date: Date, event: CalendarEvent) => {
@@ -928,28 +879,7 @@ export function ScheduleCalendar({
     <section className={`schedule-calendar${showConflictColors ? '' : ' hide-conflict-colors'}`}>
       {(viewMode === 'daily' ? isExamDate(adminEvents, selectedDateKey) : weekDates.some(date => isExamDate(adminEvents, toDateInputValue(date)))) && <div className="exam-period-indicator">Exam period{viewMode === 'weekly' ? ` · ${weekDates.filter(date => isExamDate(adminEvents, toDateInputValue(date))).map(date => date.toLocaleDateString(undefined, { weekday: 'short' })).join(', ')}` : ''}</div>}
       <div className="calendar-toolbar">
-        <div className="schedule-date-heading" ref={scheduleDatePickerRef}>
-        <button className="schedule-date-arrow" type="button" onClick={() => { setScheduleDatePickerOpen(false); moveDate(viewMode === 'weekly' ? -7 : -1) }} aria-label={viewMode === 'weekly' ? 'Previous week' : 'Previous date'}>←</button>
-        <h2><button className="schedule-date-trigger" type="button" ref={scheduleDateButtonRef} aria-haspopup="dialog" aria-expanded={scheduleDatePickerOpen} aria-controls={scheduleDatePickerOpen ? 'schedule-date-picker' : undefined} onClick={() => setScheduleDatePickerOpen(current => !current)}>
-          {viewMode === 'weekly' ? `${weekDates[0].toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}–${weekDates[6].toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}` : selectedDate.toLocaleDateString(undefined, {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-          <span aria-hidden="true"> ▾</span>
-        </button></h2>
-        <button className="schedule-date-arrow" type="button" onClick={() => { setScheduleDatePickerOpen(false); moveDate(viewMode === 'weekly' ? 7 : 1) }} aria-label={viewMode === 'weekly' ? 'Next week' : 'Next date'}>→</button>
-        {scheduleDatePickerOpen && <div className="schedule-date-picker" id="schedule-date-picker" role="dialog" aria-label="Choose schedule date"><Calendar value={selectedDate} onClickDay={date => {
-          selectDate(toDateInputValue(date))
-          setScheduleDatePickerOpen(false)
-          scheduleDateButtonRef.current?.focus()
-        }} /><div className="schedule-date-picker-footer"><button type="button" onClick={() => {
-          setSelectedDate(new Date())
-          setScheduleDatePickerOpen(false)
-          scheduleDateButtonRef.current?.focus()
-        }}>Today</button></div></div>}
-        </div>
+        <ScheduleDateNavigation date={selectedDate} viewMode={viewMode} onChange={setSelectedDate} />
 
         <div className="calendar-actions">
           {csvName ? (
@@ -978,7 +908,7 @@ export function ScheduleCalendar({
       {uploadError && <p className="msg-error">{uploadError}</p>}
       {exportError && <p className="msg-error" role="alert">{exportError}</p>}
 
-      {csvName && displayedRooms.length > 0 && <div className="calendar-view-room-row"><div className="schedule-calendar-zoom" role="group" aria-label="Calendar zoom"><button type="button" aria-label="Zoom out calendar" disabled={calendarZoom <= 75} onClick={() => setCalendarZoom(current => Math.max(75, current - 25))}>−</button><button type="button" aria-label={`Reset calendar zoom to 100 percent; current zoom ${calendarZoom} percent`} onClick={() => setCalendarZoom(100)}>{calendarZoom}%</button><button type="button" aria-label="Zoom in calendar" disabled={calendarZoom >= 200} onClick={() => setCalendarZoom(current => Math.min(200, current + 25))}>+</button></div>{viewMode === 'weekly' ? <div className="weekly-room-navigation"><button type="button" disabled={displayedRooms.length < 2} onClick={() => moveWeeklyRoom(-1)} aria-label="Previous room">‹</button><div className="weekly-room-picker" ref={roomPickerRef}><button className="weekly-room-trigger" type="button" aria-haspopup="listbox" aria-expanded={roomPickerOpen} title="Choose room" onClick={() => setRoomPickerOpen(current => !current)}><span>{weeklyRoom}</span><span aria-hidden="true">{roomPickerOpen ? '▴' : '▾'}</span></button>{roomPickerOpen && <div className="weekly-room-menu" role="listbox" aria-label="Choose room">{displayedRooms.map(room => <button className={room === weeklyRoom ? 'selected' : ''} type="button" role="option" aria-selected={room === weeklyRoom} key={room} onClick={() => { setSelectedWeeklyRoom(room); setRoomPickerOpen(false) }}><span aria-hidden="true">{room === weeklyRoom ? '✓' : ''}</span><span>{room}</span></button>)}</div>}</div><button type="button" disabled={displayedRooms.length < 2} onClick={() => moveWeeklyRoom(1)} aria-label="Next room">›</button></div> : <span aria-hidden="true" />}<div className="calendar-view-actions"><fieldset className="calendar-view-controls" aria-label="Schedule view"><label><input type="checkbox" checked={viewMode === 'daily'} onChange={() => { setViewMode('daily'); setRoomPickerOpen(false) }} />Daily</label><label><input type="checkbox" checked={viewMode === 'weekly'} onChange={() => setViewMode('weekly')} />Weekly</label></fieldset><button className={`schedule-filter-button${selectedTeachers.size > 0 || selectedRooms.size > 0 ? ' active' : ''}`} type="button" aria-label="Filter schedule" onClick={openFilters}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg></button></div></div>}
+      {csvName && displayedRooms.length > 0 && <div className="calendar-view-room-row"><CalendarZoomControls value={calendarZoom} onChange={setCalendarZoom} />{viewMode === 'weekly' ? <div className="weekly-room-navigation"><button type="button" disabled={displayedRooms.length < 2} onClick={() => moveWeeklyRoom(-1)} aria-label="Previous room">‹</button><div className="weekly-room-picker" ref={roomPickerRef}><button className="weekly-room-trigger" type="button" aria-haspopup="listbox" aria-expanded={roomPickerOpen} title="Choose room" onClick={() => setRoomPickerOpen(current => !current)}><span>{weeklyRoom}</span><span aria-hidden="true">{roomPickerOpen ? '▴' : '▾'}</span></button>{roomPickerOpen && <div className="weekly-room-menu" role="listbox" aria-label="Choose room">{displayedRooms.map(room => <button className={room === weeklyRoom ? 'selected' : ''} type="button" role="option" aria-selected={room === weeklyRoom} key={room} onClick={() => { setSelectedWeeklyRoom(room); setRoomPickerOpen(false) }}><span aria-hidden="true">{room === weeklyRoom ? '✓' : ''}</span><span>{room}</span></button>)}</div>}</div><button type="button" disabled={displayedRooms.length < 2} onClick={() => moveWeeklyRoom(1)} aria-label="Next room">›</button></div> : <span aria-hidden="true" />}<div className="calendar-view-actions"><fieldset className="calendar-view-controls" aria-label="Schedule view"><label><input type="checkbox" checked={viewMode === 'daily'} onChange={() => { setViewMode('daily'); setRoomPickerOpen(false) }} />Daily</label><label><input type="checkbox" checked={viewMode === 'weekly'} onChange={() => setViewMode('weekly')} />Weekly</label></fieldset><button className={`schedule-filter-button${selectedTeachers.size > 0 || selectedRooms.size > 0 ? ' active' : ''}`} type="button" aria-label="Filter schedule" onClick={openFilters}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg></button></div></div>}
 
       <div className="timetable-scroll">
         {!csvName ? (

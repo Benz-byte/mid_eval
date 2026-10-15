@@ -1,24 +1,6 @@
+import './register-typescript.mjs'
 import assert from 'node:assert/strict'
-import { registerHooks } from 'node:module'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import ts from 'typescript'
 
-registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier.startsWith('.') && context.parentURL?.endsWith('.ts') && !specifier.endsWith('.ts')) {
-      return { url: new URL(`${specifier}.ts`, context.parentURL).href, shortCircuit: true }
-    }
-    return next(specifier, context)
-  },
-  load(url, context, next) {
-    if (url.endsWith('.ts')) return { format: 'module', shortCircuit: true,
-      source: ts.transpileModule(readFileSync(fileURLToPath(url), 'utf8'), {
-        compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-      }).outputText }
-    return next(url, context)
-  },
-})
 const { weeklyWorkloads, sortWeeklyWorkloads } = await import('../frontend/src/formatters/weeklyWorkload.ts')
 const students = [{ id: 'a', name: 'Anna' }, { id: 'b', name: 'Ben' }, { id: 'c', name: 'Cara' }, { id: 'd', name: 'Dylan' }]
 const week = new Date(2026, 9, 12)
