@@ -8,9 +8,9 @@
   width: 440px;
   height: 46px;
   box-sizing: border-box;
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: #161b27;
+  background: var(--surface-panel);
 }
 
 .schedule-date-heading h2 {
@@ -26,8 +26,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   border: 0;
-  border-left: 1px solid #3a4a63;
-  border-right: 1px solid #3a4a63;
+  border-left: 1px solid var(--border-strong);
+  border-right: 1px solid var(--border-strong);
   border-radius: 0;
   background: transparent;
   color: inherit;
@@ -38,7 +38,7 @@
 
 .schedule-date-trigger:hover,
 .schedule-date-trigger[aria-expanded='true'] {
-  background: #1a2035;
+  background: var(--surface-raised);
 }
 
 .schedule-date-arrow {
@@ -47,13 +47,13 @@
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
   background: transparent;
-  color: #e2e8f0;
+  color: var(--text-h);
   font: inherit;
   cursor: pointer;
 }
 
 .schedule-date-arrow:hover {
-  background: #1a2035;
+  background: var(--surface-raised);
 }
 
 .schedule-date-picker-footer {
@@ -61,21 +61,21 @@
   justify-content: center;
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px solid #3a4a63;
+  border-top: 1px solid var(--border-strong);
 }
 
 .schedule-date-picker-footer button {
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
   padding: 0.4rem 1rem;
-  background: #1a2035;
-  color: #e2e8f0;
+  background: var(--surface-raised);
+  color: var(--text-h);
   font: inherit;
   cursor: pointer;
 }
 
 .schedule-date-picker-footer button:hover {
-  border-color: #63b3ed;
+  border-color: var(--focus);
 }
 
 .schedule-date-picker {
@@ -85,11 +85,11 @@
   transform: translateX(-50%);
   z-index: 20;
   width: min(340px, calc(100vw - 48px));
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 0.5rem;
   box-sizing: border-box;
-  background: #161b27;
+  background: var(--surface-panel);
   box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
 }
 
@@ -97,17 +97,17 @@
   width: 100%;
   border: 0;
   background: transparent;
-  color: #e2e8f0;
+  color: var(--text-h);
   font: inherit;
 }
 
 .schedule-date-picker .react-calendar button {
-  color: #e2e8f0;
+  color: var(--text-h);
 }
 
 .schedule-date-picker .react-calendar button:enabled:hover,
 .schedule-date-picker .react-calendar button:enabled:focus {
-  background: #1a365d;
+  background: var(--blue-surface);
 }
 
 .schedule-date-picker .react-calendar__tile--active,
@@ -116,8 +116,8 @@
 }
 
 .schedule-date-picker .react-calendar__tile--now {
-  box-shadow: inset 0 0 0 1px #63b3ed;
-  background: #1a2035;
+  box-shadow: inset 0 0 0 1px var(--focus);
+  background: var(--surface-raised);
 }
 
 .schedule-date-picker .react-calendar__tile--now.react-calendar__tile--active {
@@ -125,10 +125,10 @@
 }
 
 .schedule-date-picker .react-calendar__month-view__days__day--neighboringMonth {
-  color: #718096;
+  color: var(--text-muted);
 }
 
 .schedule-date-picker .react-calendar button:disabled {
   background: transparent;
-  color: #718096;
+  color: var(--text-muted);
 }

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { loadSharedAdminEvents, subscribeToSharedAdminEvents } from '../../api/adminEventApi'
 import { isCloudConfigured, loadSharedSchedule, subscribeToSharedSchedule } from '../../api/scheduleApi'
 import { readScheduleFile } from '../../api/scheduleParser'
 import { parseInputTime } from '../../formatters/timeFormatter'
-import { createExamPeriodEvents, examBelongsToSchedule, examPeriodPrefix, isExamBooking, isExamPeriod } from '../../formatters/examPeriod'
+import { createExamPeriodEvents, examPeriodPrefix, isExamPeriod } from '../../formatters/examPeriod'
+import { eventsForSchedule } from '../../formatters/eventSchedule'
 import { ADMIN_STORAGE_KEY, loadAdminEvents, saveAdminEventsLocally } from '../../storage/adminEventStorage'
 import {
   flushPendingAdminSync,
@@ -16,12 +17,19 @@ import {
 } from '../../storage/localFirstSync'
 import { ACTIVE_TAB_STORAGE_KEY, loadActiveTab } from '../../storage/preferenceStorage'
 import { CSV_STORAGE_KEY, loadCsvSchedule, saveCsvScheduleLocally } from '../../storage/scheduleStorage'
-import { activateLocalAssistantSchedule } from '../../storage/studentAssistantStorage'
+import { activateLocalAssistantSchedule, loadLocalAssistantData } from '../../storage/studentAssistantStorage'
+import { createScheduleArchive, type ArchiveView, type ScheduleArchive } from '../../storage/archiveTypes'
+import { syncArchives } from '../../storage/archiveStorage'
+import { loadScheduleDate } from '../../storage/preferenceStorage'
+import { startOfWeek, toDateInputValue } from '../../formatters/dateFormatter'
+import { ArchiveManager } from '../archives/ArchiveManager'
+import { ArchivePreview } from '../archives/ArchivePreview'
 import type { AdminEventForm, BookingDateSchedule, BookingEditScope, CalendarEvent, RoomBookingForm, Tab } from '../../types'
 import { AdminEventsPanel } from '../admin-events/AdminEventsPanel'
 import { ScheduleCalendar } from '../schedule/ScheduleCalendar'
 import { StudentAssistantPanel } from '../student-assistants/StudentAssistantPanel'
 import './App.css'
+import { ThemeToggle } from './ThemeToggle'
 import '../schedule/ScheduleCalendar.css'
 import '../admin-events/AdminEventsPanel.css'
 import '../student-assistants/StudentAssistant.css'
@@ -34,6 +42,16 @@ function filenameScheduleKey(fileName: string) {
 export default function App() {
   const savedCsvSchedule = useMemo(() => loadCsvSchedule(), [])
   const [activeTab, setActiveTab] = useState<Tab>(loadActiveTab)
+  const [archivesOpen, setArchivesOpen] = useState(false)
+  const [viewingArchive, setViewingArchive] = useState<ScheduleArchive | null>(null)
+  const archiveViewRef = useRef<ArchiveView>({
+    scheduleDate: toDateInputValue(loadScheduleDate()), assistantWeekStart: toDateInputValue(startOfWeek(new Date())),
+    selectedAssistantId: '', tab: activeTab,
+  })
+  const rememberScheduleDate = useCallback((date: string) => { archiveViewRef.current.scheduleDate = date }, [])
+  const rememberAssistantView = useCallback((view: { assistantWeekStart: string, selectedAssistantId: string }) => {
+    Object.assign(archiveViewRef.current, view)
+  }, [])
   const [csvEvents, setCsvEvents] = useState<CalendarEvent[]>(savedCsvSchedule.events)
   const [csvName, setCsvName] = useState(savedCsvSchedule.name)
   const [csvRooms, setCsvRooms] = useState(savedCsvSchedule.rooms)
@@ -52,6 +70,14 @@ export default function App() {
   const [, setStorageStatusClass] = useState('api-connecting')
   const scheduleRevisionRef = useRef(0)
   const adminRevisionRef = useRef(0)
+
+  useEffect(() => {
+    const synchronize = () => { void syncArchives().catch(() => {}) }
+    synchronize()
+    const timer = window.setInterval(synchronize, 30000)
+    window.addEventListener('online', synchronize)
+    return () => { window.clearInterval(timer); window.removeEventListener('online', synchronize) }
+  }, [])
 
   useEffect(() => {
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminEvents))
@@ -90,7 +116,7 @@ export default function App() {
           setCsvTimes(schedule.times ?? [])
           const scheduleKey = schedule.fingerprint || filenameScheduleKey(schedule.csvName)
           setCsvFingerprint(scheduleKey)
-          activateLocalAssistantSchedule(scheduleKey, false, filenameScheduleKey(schedule.csvName))
+          activateLocalAssistantSchedule(scheduleKey, false)
           const local = loadCsvSchedule()
           const sameSchedule = local.fingerprint === scheduleKey
           const importedTba = schedule.tbaSubjects ?? (sameSchedule ? local.tbaSubjects : [])
@@ -161,15 +187,10 @@ export default function App() {
     return [...uniqueRooms.values()]
   }, [csvEvents, csvRooms])
 
-  const availableAdminEvents = useMemo(() => {
-    const roomNames = new Map(rooms.map(room => [room.toLocaleLowerCase(), room]))
-    return adminEvents.flatMap(event => {
-      if (isExamPeriod(event)) return examBelongsToSchedule(event, csvFingerprint) ? [event] : []
-      if (isExamBooking(event) && !examBelongsToSchedule(event, csvFingerprint)) return []
-      const room = roomNames.get(event.room.trim().toLocaleLowerCase())
-      return room ? [{ ...event, room }] : []
-    })
-  }, [adminEvents, rooms, csvFingerprint])
+  const availableAdminEvents = useMemo(
+    () => eventsForSchedule(adminEvents, csvFingerprint, rooms),
+    [adminEvents, rooms, csvFingerprint],
+  )
 
   const calendarAdminEvents = useMemo(() => eventsPanelOpen && examDatePreview.length > 0
     ? [...availableAdminEvents, ...createExamPeriodEvents(csvFingerprint, 'Exam date', examDatePreview)]
@@ -190,7 +211,7 @@ export default function App() {
     setTbaSubjects(parsed.tbaSubjects)
     setScheduleMetadata(parsed.metadata)
     saveCsvScheduleLocally({ events: parsed.events, name: file.name, rooms: parsed.rooms, times: parsed.times, fingerprint, tbaSubjects: parsed.tbaSubjects, metadata: parsed.metadata })
-    activateLocalAssistantSchedule(fingerprint, true, filenameScheduleKey(file.name))
+    activateLocalAssistantSchedule(fingerprint, true)
     scheduleRevisionRef.current += 1
     queueScheduleSync({ csvEvents: parsed.events, csvName: file.name, rooms: parsed.rooms, times: parsed.times, fingerprint, tbaSubjects: parsed.tbaSubjects, metadata: parsed.metadata })
   }
@@ -210,7 +231,10 @@ export default function App() {
   }
 
   const saveAdminEvent = (form: AdminEventForm, editingId: string | null) => {
+    if (!csvFingerprint) throw new Error('Upload a schedule before adding events.')
     const calendarEvent: CalendarEvent = {
+      ...adminEvents.find(event => event.id === editingId),
+      scheduleKey: csvFingerprint,
       id: editingId ?? `admin-${crypto.randomUUID()}`,
       source: 'admin',
       courseCode: form.title.trim(),
@@ -238,10 +262,12 @@ export default function App() {
   }
 
   const saveRoomBooking = (form: RoomBookingForm, schedules: BookingDateSchedule[]) => {
+    if (!csvFingerprint) throw new Error('Upload a schedule before adding events.')
     const seriesId = `${form.examPeriod ? examPeriodPrefix(csvFingerprint) : ''}${crypto.randomUUID()}`
     const bookingEvents: CalendarEvent[] = schedules.flatMap(({ date, rooms, timeRanges }) => rooms.flatMap((room, roomIndex) => timeRanges.map((range, timeIndex) => ({
       id: `booking_${seriesId}_${roomIndex}_${timeIndex}_${date}`,
       source: 'admin',
+      scheduleKey: csvFingerprint,
       courseCode: form.title.trim(),
       description: form.description?.trim() ?? '',
       subject: '',
@@ -304,7 +330,8 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <>
+    <div className={`app-shell${viewingArchive ? ' is-archive-hidden' : ''}`}>
       <nav className="tab-nav">
         {([
           ['schedule', 'Schedule'],
@@ -319,6 +346,7 @@ export default function App() {
             {label}
           </button>
         ))}
+        <ThemeToggle />
       </nav>
 
       <main className="app-main">
@@ -331,6 +359,8 @@ export default function App() {
             tbaSubjects={tbaSubjects}
             rooms={rooms}
             times={csvTimes}
+            onViewDateChange={rememberScheduleDate}
+            onArchives={() => setArchivesOpen(true)}
             onCsvUpload={uploadCsv}
             onCsvRemove={removeCsv}
             onOpenEvents={() => { setEventEditRequest(null); setEventsPanelOpen(true) }}
@@ -344,6 +374,7 @@ export default function App() {
         <div hidden={activeTab !== 'student-assistant'}>
           <StudentAssistantPanel
             isActive={activeTab === 'student-assistant'}
+            onViewStateChange={rememberAssistantView}
             mainSchedule={csvEvents}
             mainScheduleName={csvName}
             mainScheduleKey={csvFingerprint}
@@ -355,6 +386,29 @@ export default function App() {
           />
         </div>
       </main>
+
+      {archivesOpen && <ArchiveManager
+        canSave={Boolean(csvName)} defaultName={csvName} schoolYear={scheduleMetadata?.schoolYear} semester={scheduleMetadata?.semester}
+        getSummary={() => {
+          const data = loadLocalAssistantData()
+          const result = data.assistants.length ? data.resultsBySchedule[csvFingerprint] ?? (data.activeScheduleKey === csvFingerprint ? data.result : null) : null
+          return { rooms: rooms.length, assistants: data.assistants.length,
+            events: availableAdminEvents.filter(event => !isExamPeriod(event)).length, duties: result?.assignments?.length ?? 0 }
+        }}
+        capture={details => createScheduleArchive(details, {
+          events: csvEvents, name: csvName, rooms, times: csvTimes, fingerprint: csvFingerprint, tbaSubjects, metadata: scheduleMetadata,
+        }, availableAdminEvents, loadLocalAssistantData(), { ...archiveViewRef.current, tab: activeTab })}
+        onView={archive => { setArchivesOpen(false); setViewingArchive(archive) }} onClose={() => setArchivesOpen(false)}
+        onSaveAndClose={() => {
+          removeCsv()
+          setActiveTab('schedule')
+          setEventsPanelOpen(false)
+          setExamDatePreview([])
+          setEventEditRequest(null)
+          setScheduleFocusRequest(null)
+          setArchivesOpen(false)
+        }}
+      />}
 
       {eventsPanelOpen && (
         <div
@@ -393,5 +447,7 @@ export default function App() {
         </div>
       )}
     </div>
+    {viewingArchive && <ArchivePreview key={viewingArchive.id} archive={viewingArchive} onExit={() => setViewingArchive(null)} />}
+    </>
   )
 }

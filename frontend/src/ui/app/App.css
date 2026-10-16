@@ -4,8 +4,8 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #0f1117;
-  color: #e2e8f0;
+  background: var(--surface-page);
+  color: var(--text-h);
   font-family: system-ui, sans-serif;
   font-size: 14px;
 }
@@ -16,8 +16,8 @@
   justify-content: space-between;
   padding: 0 1.5rem;
   height: 52px;
-  background: #161b27;
-  border-bottom: 1px solid #2d3748;
+  background: var(--surface-panel);
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -25,7 +25,7 @@
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: #90cdf4;
+  color: var(--text-accent);
 }
 
 /* ── API Status Badge ───────────────────────────────────────────────────── */
@@ -36,9 +36,9 @@
   padding: 3px 10px;
   border-radius: 999px;
 }
-.api-connecting { background: #2d3748; color: #a0aec0; }
-.api-online     { background: #1a4731; color: #68d391; }
-.api-offline    { background: #4a1a1a; color: #fc8181; }
+.api-connecting { background: var(--border); color: var(--text); }
+.api-online     { background: var(--green-surface); color: var(--green-text); }
+.api-offline    { background: var(--red-surface); color: var(--red-text); }
 
 /* ── Tab Nav ────────────────────────────────────────────────────────────── */
 
@@ -46,8 +46,8 @@
   display: flex;
   gap: 2px;
   padding: 0.5rem 1.5rem 0;
-  background: #161b27;
-  border-bottom: 1px solid #2d3748;
+  background: var(--surface-panel);
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -56,15 +56,15 @@
   border: none;
   border-bottom: 3px solid transparent;
   padding: 0.5rem 1rem;
-  color: #718096;
+  color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
   margin-bottom: -1px;
 }
-.tab-btn:hover  { color: #e2e8f0; }
-.tab-btn.active { color: #90cdf4; border-bottom-color: #90cdf4; }
+.tab-btn:hover  { color: var(--text-h); }
+.tab-btn.active { color: var(--text-accent); border-bottom-color: var(--text-accent); }
 
 /* ── Main Content ───────────────────────────────────────────────────────── */
 
@@ -77,7 +77,7 @@
 .tab-pane h2 {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--text-h);
   margin: 0 0 1rem;
 }
 
@@ -89,17 +89,17 @@
   gap: 0.5rem;
   margin-bottom: 1.25rem;
   padding: 1rem;
-  background: #1a2035;
-  border: 1px solid #2d3748;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
 .add-form input,
 .add-form select {
-  background: #0f1117;
-  border: 1px solid #3a4a63;
+  background: var(--surface-page);
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
-  color: #e2e8f0;
+  color: var(--text-h);
   padding: 0.4rem 0.7rem;
   font-size: 0.85rem;
   outline: none;
@@ -107,7 +107,7 @@
   min-width: 120px;
 }
 .add-form input:focus,
-.add-form select:focus { border-color: #90cdf4; }
+.add-form select:focus { border-color: var(--text-accent); }
 .add-form input[type="number"] { width: 80px; min-width: unset; }
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
@@ -128,7 +128,7 @@
 .btn-del {
   background: none;
   border: none;
-  color: #fc8181;
+  color: var(--red-text);
   font-size: 1.1rem;
   cursor: pointer;
   line-height: 1;
@@ -136,7 +136,7 @@
   border-radius: 4px;
   transition: background 0.15s;
 }
-.btn-del:hover { background: #4a1a1a; }
+.btn-del:hover { background: var(--red-surface); }
 
 .btn-primary {
   background: #276749;
@@ -153,16 +153,16 @@
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-secondary {
-  background: #2d3748;
+  background: var(--border);
   border: none;
   border-radius: 5px;
-  color: #e2e8f0;
+  color: var(--text-h);
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
   cursor: pointer;
   transition: background 0.15s;
 }
-.btn-secondary:hover:not(:disabled) { background: #4a5568; }
+.btn-secondary:hover:not(:disabled) { background: var(--border-soft); }
 .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Tables ─────────────────────────────────────────────────────────────── */
@@ -176,26 +176,26 @@ table {
 th {
   text-align: left;
   padding: 0.5rem 0.75rem;
-  background: #1a2035;
-  color: #718096;
+  background: var(--surface-raised);
+  color: var(--text-muted);
   font-weight: 600;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid #2d3748;
+  border-bottom: 1px solid var(--border);
 }
 
 td {
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #1a2035;
-  color: #cbd5e0;
+  border-bottom: 1px solid var(--surface-raised);
+  color: var(--text-secondary);
 }
 
-tr:hover td { background: #161b27; }
+tr:hover td { background: var(--surface-panel); }
 
 .empty-row {
   text-align: center;
-  color: #4a5568;
+  color: var(--border-soft);
   padding: 2rem !important;
 }
 
@@ -208,16 +208,16 @@ tr:hover td { background: #161b27; }
   border-radius: 999px;
   text-transform: uppercase;
 }
-.badge-lecture { background: #1a365d; color: #90cdf4; }
-.badge-lab     { background: #322659; color: #b794f4; }
-.badge-cisco   { background: #1a3a2a; color: #68d391; }
-.badge-drawing { background: #3a2a1a; color: #f6ad55; }
+.badge-lecture { background: var(--blue-surface); color: var(--text-accent); }
+.badge-lab     { background: var(--purple-surface); color: var(--purple-accent); }
+.badge-cisco   { background: var(--green-surface); color: var(--green-text); }
+.badge-drawing { background: var(--amber-card); color: var(--amber-text); }
 
 /* ── Messages ───────────────────────────────────────────────────────────── */
 
 .msg-success {
-  background: #1a4731;
-  color: #68d391;
+  background: var(--green-surface);
+  color: var(--green-text);
   padding: 0.6rem 1rem;
   border-radius: 6px;
   margin-bottom: 1rem;
@@ -225,8 +225,8 @@ tr:hover td { background: #161b27; }
 }
 
 .msg-error {
-  background: #4a1a1a;
-  color: #fc8181;
+  background: var(--red-surface);
+  color: var(--red-text);
   padding: 0.6rem 1rem;
   border-radius: 6px;
   margin-bottom: 1rem;
@@ -248,22 +248,22 @@ tr:hover td { background: #161b27; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #90cdf4;
+  color: var(--text-accent);
   margin: 0 0 0.5rem;
   padding-bottom: 0.25rem;
-  border-bottom: 1px solid #2d3748;
+  border-bottom: 1px solid var(--border);
 }
 
 .time-cell {
   font-variant-numeric: tabular-nums;
-  color: #a0aec0;
+  color: var(--text);
   white-space: nowrap;
 }
 
 .subj-code {
   display: inline-block;
-  background: #1a365d;
-  color: #90cdf4;
+  background: var(--blue-surface);
+  color: var(--text-accent);
   font-size: 0.7rem;
   font-weight: 700;
   padding: 1px 6px;

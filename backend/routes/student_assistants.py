@@ -18,7 +18,7 @@ def put_shared_data():
     if not isinstance(payload, dict):
         return jsonify({"error": "Expected a JSON object."}), 400
     save_data(payload)
-    return "", 204
+    return jsonify({'rosterStorageVersion': 1})
 
 
 @blueprint.post("/api/student-assistant/solve")

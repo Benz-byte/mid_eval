@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import type { DutyAssignment, RelieverAssignment } from '../../api/studentAssistantApi'
 import type { CalendarEvent, UploadedAssistant } from '../../types'
 import { toDateInputValue as dateKey } from '../../formatters/dateFormatter'
@@ -8,6 +8,15 @@ import { isExamDate } from '../../formatters/examPeriod'
 
 const DEFAULT_START = 7 * 60
 const DEFAULT_END = 21 * 60
+
+interface PreviewDetails {
+  courseCode: string
+  subject?: string
+  room: string
+  startMinutes: number
+  endMinutes: number
+  description?: string
+}
 
 const WEEK_DAYS = [
   { code: 'M', label: 'Monday' },
@@ -35,6 +44,7 @@ export function AssistantWeeklyCalendar({
   zoom = 100,
   onViewDuty,
   onRemoveDuty,
+  readOnly = false,
 }: {
   assistant: UploadedAssistant
   assignments: DutyAssignment[]
@@ -45,9 +55,18 @@ export function AssistantWeeklyCalendar({
   zoom?: number
   onViewDuty: (assignment: DutyAssignment, date: Date) => void
   onRemoveDuty: (assignment: DutyAssignment) => void
+  readOnly?: boolean
 }) {
   const [selectedDuty, setSelectedDuty] = useState<{ assignment: DutyAssignment, date: Date } | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [previewDetails, setPreviewDetails] = useState<PreviewDetails | null>(null)
+  const previewProps = (item: PreviewDetails) => readOnly ? {
+    role: 'button', tabIndex: 0,
+    onClick: () => setPreviewDetails(item),
+    onKeyDown: (event: ReactKeyboardEvent) => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setPreviewDetails(item) }
+    },
+  } : {}
   const [viewportHeight, setViewportHeight] = useState(() => typeof window === 'undefined' ? 900 : window.innerHeight)
 
   useEffect(() => {
@@ -57,13 +76,13 @@ export function AssistantWeeklyCalendar({
   }, [])
 
   useEffect(() => {
-    if (!selectedDuty) return
+    if (!selectedDuty && !previewDetails) return
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSelectedDuty(null)
+      if (event.key === 'Escape') { setSelectedDuty(null); setPreviewDetails(null) }
     }
     document.addEventListener('keydown', closeOnEscape)
     return () => document.removeEventListener('keydown', closeOnEscape)
-  }, [selectedDuty])
+  }, [selectedDuty, previewDetails])
   const weekDates = WEEK_DAYS.map((_, index) => {
     const date = new Date(weekStart)
     date.setDate(date.getDate() + index)
@@ -108,6 +127,7 @@ export function AssistantWeeklyCalendar({
             {personalClasses.filter(item => item.day === day.code && !isExamDate(examPeriods, dateKey(weekDates[dayIndex]))).map(item => (
               <article
                 className="sa-calendar-block personal"
+                {...previewProps(item)}
                 key={`personal-${item.id}-${day.code}`}
                 style={{
                   top: position(item.startMinutes),
@@ -161,6 +181,7 @@ export function AssistantWeeklyCalendar({
             ).map(record => (
               <article
                 className="sa-calendar-block reliever"
+                {...previewProps(record)}
                 key={`reliever-${record.date}-${record.classId}-${record.startMinutes}`}
                 style={{
                   top: position(record.startMinutes),
@@ -177,6 +198,7 @@ export function AssistantWeeklyCalendar({
             {assignedEvents.filter(item => item.date === dateKey(weekDates[dayIndex])).map(item => (
               <article
                 className="sa-calendar-block event"
+                {...previewProps(item)}
                 key={`event-${item.id}`}
                 style={{
                   top: position(item.startMinutes),
@@ -202,15 +224,23 @@ export function AssistantWeeklyCalendar({
       </div>
       {selectedDuty && <div className="sa-duty-action-backdrop" role="presentation" onMouseDown={() => setSelectedDuty(null)}>
         <section className="sa-duty-action-dialog" role="dialog" aria-modal="true" aria-labelledby="sa-duty-action-title" onMouseDown={event => event.stopPropagation()}>
-          {confirmRemove ? <>
+          {confirmRemove && !readOnly ? <>
             <h3 id="sa-duty-action-title">Remove assignment?</h3>
             <p>This duty will remain in the schedule without an assigned student assistant.</p>
             <div className="sa-duty-action-buttons"><button className="btn-secondary" type="button" onClick={() => setConfirmRemove(false)}>Cancel</button><button className="sa-duty-remove-button" type="button" onClick={() => { onRemoveDuty(selectedDuty.assignment); setSelectedDuty(null) }}>Remove</button></div>
           </> : <>
             <h3 id="sa-duty-action-title">{selectedDuty.assignment.courseCode || selectedDuty.assignment.subject || 'Duty'}</h3>
             <p>{selectedDuty.date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })} · {formatTime(selectedDuty.assignment.startMinutes)}–{formatTime(selectedDuty.assignment.endMinutes)} · {selectedDuty.assignment.room || 'TBA'}</p>
-            <div className="sa-duty-action-buttons"><button className="sa-duty-view-button" type="button" onClick={() => { onViewDuty(selectedDuty.assignment, selectedDuty.date); setSelectedDuty(null) }}>View</button><button className="sa-duty-remove-button" type="button" onClick={() => setConfirmRemove(true)}>Remove</button></div>
+            <div className="sa-duty-action-buttons"><button className="sa-duty-view-button" type="button" onClick={() => { onViewDuty(selectedDuty.assignment, selectedDuty.date); setSelectedDuty(null) }}>View</button>{!readOnly && <button className="sa-duty-remove-button" type="button" onClick={() => setConfirmRemove(true)}>Remove</button>}</div>
           </>}
+        </section>
+      </div>}
+      {previewDetails && <div className="sa-duty-action-backdrop" role="presentation" onMouseDown={() => setPreviewDetails(null)}>
+        <section className="sa-duty-action-dialog" role="dialog" aria-modal="true" aria-label="Archived schedule details" onMouseDown={event => event.stopPropagation()}>
+          <h3>{previewDetails.courseCode || previewDetails.subject}</h3>
+          <p>{formatTime(previewDetails.startMinutes)}–{formatTime(previewDetails.endMinutes)} · {previewDetails.room || 'TBA'}</p>
+          {previewDetails.description && <p className="calendar-event-description">{previewDetails.description}</p>}
+          <div className="sa-duty-action-buttons"><button className="btn-secondary" type="button" onClick={() => setPreviewDetails(null)}>Close</button></div>
         </section>
       </div>}
     </div>

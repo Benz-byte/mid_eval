@@ -11,6 +11,7 @@ instead of adding a parallel folder hierarchy.
 | `frontend/src/ui/schedule/` | Schedule calendar, filters, date navigation, and reusable calendar zoom controls |
 | `frontend/src/ui/admin-events/` | Add/move event forms, room/date selection, and booking-form helpers |
 | `frontend/src/ui/student-assistants/` | Assistant profiles, duty calendar, scheduling settings, and weekly summary UI |
+| `frontend/src/ui/archives/` | Archive list/save/delete dialogs and isolated read-only previews |
 | `frontend/src/api/` | Flask requests, request/response contracts, and subscriptions |
 | `frontend/src/storage/` | Local persistence, active schedule selection, and pending cloud synchronization |
 | `frontend/src/formatters/` | Pure shared date/time/name presentation and workload calculations |
@@ -63,3 +64,28 @@ provides the shared Node test loader for the actual frontend modules.
 The conflict database script is separate because it may need a configured service;
 it is not part of the default local checks. Generated build folders, sample files,
 user outputs, and local caches are not unused application code to delete.
+
+## Archives
+
+`archiveTypes.ts` defines the versioned snapshot and clones the current schedule,
+scoped assistant result, profiles, events, settings, and viewing dates. Archives use
+their own IndexedDB database through `storage/archiveStorage.ts`, not the active
+schedule's localStorage keys. Quota/transaction failures are reported instead of
+claiming a successful save. Pending saves/deletions retry on startup, reconnection,
+and periodically; archive-list entries indicate local versus synced saves.
+
+`api/archiveApi.ts` talks only to `/api/archives`. Backend archive routes, service,
+validation, and repository follow the existing layers. Migration 007 creates a
+separate Supabase table and an immutability trigger. Names may repeat; IDs cannot.
+Deletion is soft and synchronized with tombstones, so a stale offline cache cannot
+restore a deleted archive.
+
+`ArchivePreview.tsx` never activates a stored CSV or assistant schedule. Its
+ScheduleCalendar receives explicit archived data and disables all mutation paths
+and preference writes. `ArchivedAssistantPanel.tsx` reads the same snapshot and
+provides browsing, zoom, summaries, and card details without generation or editing.
+The current screens remain mounted but hidden; exiting preview returns to them.
+No restore-to-current operation is provided.
+
+Local-only archives depend on this device's app data. Clearing app/browser data
+can remove them. Synced archives can be retrieved on another configured device.

@@ -24,12 +24,12 @@ def _load_event_rows(select: str) -> list[dict[str, Any]]:
 def load_events() -> list[dict[str, Any]]:
     try:
         rows = _load_event_rows(
-            "id,title,description,event_date,room,start_minutes,end_minutes,assistant_id,assistant_label,updated_at",
+            "id,title,description,schedule_key,event_date,room,start_minutes,end_minutes,assistant_id,assistant_label,updated_at",
         )
     except RuntimeError:
         try:
             rows = _load_event_rows(
-                "id,title,event_date,room,start_minutes,end_minutes,assistant_id,assistant_label,updated_at",
+                "id,title,description,event_date,room,start_minutes,end_minutes,assistant_id,assistant_label,updated_at",
             )
         except RuntimeError:
             rows = _load_event_rows(
@@ -37,6 +37,7 @@ def load_events() -> list[dict[str, Any]]:
             )
     return [{
         "id": row["id"],
+        "scheduleKey": row.get("schedule_key") or None,
         "source": "admin",
         "courseCode": row["title"],
         "description": row.get("description") or "",
@@ -66,11 +67,13 @@ def save_event(event: dict[str, Any]) -> None:
         "assistant_id": event.get("assistantId") or None,
         "assistant_label": event.get("assistantLabel") or None,
     }
+    if event.get('scheduleKey'):
+        payload['schedule_key'] = event['scheduleKey']
     try:
         request("POST", "admin_events", payload=payload, prefer="resolution=merge-duplicates,return=minimal")
     except RuntimeError:
-        # Never report a description as synced if the database discarded it.
-        if payload["description"]:
+        # Never acknowledge sync if it would discard the description or CSV scope.
+        if payload["description"] or payload.get('schedule_key'):
             raise
         payload.pop("description", None)
         payload.pop("assistant_id", None)

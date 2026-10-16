@@ -7,6 +7,7 @@ import { formatTime } from '../../formatters/timeFormatter'
 import { isExamDate, isExamPeriod } from '../../formatters/examPeriod'
 import { SCHEDULE_DATE_STORAGE_KEY, loadScheduleDate } from '../../storage/preferenceStorage'
 import { loadLocalAssistantData, saveLocalAssistantData, withManualDutyAssignments } from '../../storage/studentAssistantStorage'
+import type { LocalAssistantData } from '../../storage/studentAssistantStorage'
 import { CalendarZoomControls } from './CalendarZoomControls'
 import { ScheduleDateNavigation } from './ScheduleDateNavigation'
 import { ScheduleFilter, type ScheduleFilterOption } from './ScheduleFilter'
@@ -119,6 +120,11 @@ export function ScheduleCalendar({
   onAssignAssistant,
   focusRequest,
   onFocusHandled,
+  readOnly = false,
+  archivedAssistantData,
+  initialDate,
+  onViewDateChange,
+  onArchives,
 }: {
   csvEvents: CalendarEvent[]
   adminEvents: CalendarEvent[]
@@ -134,8 +140,13 @@ export function ScheduleCalendar({
   onAssignAssistant: (eventId: string, assistantId?: string, assistantLabel?: string) => void
   focusRequest?: { eventId: string, date: string, requestId: number, consumed: boolean } | null
   onFocusHandled?: (requestId: number) => void
+  readOnly?: boolean
+  archivedAssistantData?: LocalAssistantData
+  initialDate?: string
+  onViewDateChange?: (date: string) => void
+  onArchives?: () => void
 }) {
-  const [selectedDate, setSelectedDate] = useState(loadScheduleDate)
+  const [selectedDate, setSelectedDate] = useState(() => initialDate ? dateFromInputValue(initialDate) : loadScheduleDate())
   const [uploadError, setUploadError] = useState('')
   const [exportError, setExportError] = useState('')
   const [showConflictColors, setShowConflictColors] = useState(true)
@@ -152,7 +163,7 @@ export function ScheduleCalendar({
   const [roomPickerOpen, setRoomPickerOpen] = useState(false)
   const [warningDrawer, setWarningDrawer] = useState<'conflicts' | 'tba' | null>(null)
   const [focusedEventKey, setFocusedEventKey] = useState('')
-  const [assistantData, setAssistantData] = useState(loadLocalAssistantData)
+  const [assistantData, setAssistantData] = useState(() => archivedAssistantData ?? loadLocalAssistantData())
   const [absenceDuty, setAbsenceDuty] = useState<DutyContext | null>(null)
   const [relieverStep, setRelieverStep] = useState<'report' | 'assigned' | 'change' | null>(null)
   const [selectedRelieverId, setSelectedRelieverId] = useState('')
@@ -287,6 +298,7 @@ export function ScheduleCalendar({
     setAssistantAssignmentOpen(true)
   }
   const saveEventAssistant = () => {
+    if (readOnly) return
     if (!selectedCalendarEvent || !selectedEventAssistantId) return
     const assistant = availableEventAssistants.find(value => value.id === selectedEventAssistantId)
     if (!assistant) return
@@ -296,6 +308,7 @@ export function ScheduleCalendar({
     setAssistantAssignmentOpen(false)
   }
   const removeEventAssistant = () => {
+    if (readOnly) return
     if (!selectedCalendarEvent) return
     onAssignAssistant(selectedCalendarEvent.id)
     setSelectedCalendarEvent(null)
@@ -313,8 +326,10 @@ export function ScheduleCalendar({
   )
 
   useEffect(() => {
+    if (readOnly) return
     localStorage.setItem(SCHEDULE_DATE_STORAGE_KEY, selectedDateKey)
-  }, [selectedDateKey])
+    onViewDateChange?.(selectedDateKey)
+  }, [selectedDateKey, readOnly, onViewDateChange])
 
   useEffect(() => {
     if (!roomPickerOpen) return
@@ -777,6 +792,7 @@ export function ScheduleCalendar({
   }
 
   const assignRegularDuty = () => {
+    if (readOnly) return
     if (!unassignedDuty || assignmentForEvent(unassignedDuty.event, unassignedDuty.date)) return
     const selected = availableRegularDutyCandidates(unassignedDuty.event, unassignedDuty.date).find(candidate => candidate.assistant.id === selectedDutyAssistantId)
     if (!selected) return
@@ -819,6 +835,7 @@ export function ScheduleCalendar({
   })
 
   const persistRelieverRecords = (records: RelieverAssignment[]) => {
+    if (readOnly) return
     if (!assistantData.result) return
     const replacementKeys = new Set(records.map(record => `${record.date}|${record.day}|${record.classId}|${record.startMinutes}|${record.endMinutes}`))
     const nextResult: StudentAssistantResult = {
@@ -864,6 +881,7 @@ export function ScheduleCalendar({
   }
 
   const removeReliever = () => {
+    if (readOnly) return
     if (!absenceDuty || !activeReliever || !assistantData.result) return
     const nextResult: StudentAssistantResult = {
       ...assistantData.result,
@@ -882,20 +900,21 @@ export function ScheduleCalendar({
         <ScheduleDateNavigation date={selectedDate} viewMode={viewMode} onChange={setSelectedDate} />
 
         <div className="calendar-actions">
-          {csvName ? (
+          {!readOnly && (csvName ? (
             <button className="remove-csv-button" type="button" onClick={onCsvRemove}>Remove CSV</button>
           ) : <label className="csv-upload-button">
             Upload Schedule
             <input type="file" accept=".csv,.xls,.xlsx,text/csv" aria-label="Upload schedule file" onChange={handleUpload} />
-          </label>}
+          </label>)}
           <button className="conflict-color-button" type="button" disabled={!csvName || rooms.length === 0} onClick={() => {
             setExportError('')
             try { downloadRoomScheduleExcel(rooms, csvEvents, adminEvents, selectedDate, csvName) }
             catch (error) { setExportError(error instanceof Error ? error.message : 'Could not export the schedule.') }
           }}>Export Excel</button>
-          <button className="btn-primary" type="button" disabled={!csvName} onClick={onOpenEvents}>
+          {!readOnly && <button className="btn-primary" type="button" disabled={!csvName} onClick={onOpenEvents}>
             Add Event
-          </button>
+          </button>}
+          {onArchives && <button className="conflict-color-button" type="button" onClick={onArchives}>Archives</button>}
         </div>
       </div>
 
@@ -923,6 +942,12 @@ export function ScheduleCalendar({
               <div className="weekly-day-lanes">{weekDates.map((date, dayIndex) => <div className="room-lane" key={toDateInputValue(date)}>{guideMinutes.map(minute => <span className="time-guide" key={minute} style={{ top: positionForMinute(minute) }} />)}{weeklyEvents[dayIndex].map(event => {
                 const assistant = assistantForEvent(event, date)
                 const openCard = () => {
+                  if (readOnly) {
+                    setSelectedCalendarEvent({ ...event, date: toDateInputValue(date), assistantLabel: assistant?.fullName || event.assistantLabel })
+                    setConfirmCardDelete(false)
+                    setAssistantAssignmentOpen(false)
+                    return
+                  }
                   if (event.source === 'admin') {
                     setSelectedCalendarEvent(event)
                     setConfirmCardDelete(false)
@@ -930,7 +955,7 @@ export function ScheduleCalendar({
                   } else if (assistant) openAbsenceFlow(event, date)
                   else if (!assistant) openUnassignedDuty(event, date)
                 }
-                return <article className={`calendar-event ${event.source}${event.id.startsWith('booking_') ? ' booking' : ''}${weeklyConflictingEventIds.has(event.id) ? ' conflict' : ''}${assistant?.isReliever ? ' has-reliever' : ''}${assistant?.isPending ? ' reliever-pending' : ''}${focusedEventKey === calendarEventKey(date, event) ? ' focus-highlight' : ''}`} data-calendar-event-key={calendarEventKey(date, event)} key={calendarEventKey(date, event)} style={{ top: positionForMinute(event.startMinutes), height: Math.max(positionForMinute(event.endMinutes) - positionForMinute(event.startMinutes), 28) }} title={`${event.courseCode} ${event.subject}\n${formatTime(event.startMinutes)}–${formatTime(event.endMinutes)}`} role="button" tabIndex={0} onClick={openCard} onKeyDown={keyEvent => { if (keyEvent.key === 'Enter' || keyEvent.key === ' ') { keyEvent.preventDefault(); openCard() } }}><strong>{event.courseCode || event.subject}</strong>{scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}{instructorName(event) && <small className="calendar-instructor-name">{instructorName(event)}</small>}{assistant?.isPending ? <small className="calendar-assistant-name pending">Absent: {assistant.absentName}<br />SA: Reliever needed</small> : assistant ? <small className="calendar-assistant-name" title={assistant.fullName}>SA: {assistant.shortName}{assistant.isReliever && <b>RELIEVER</b>}</small> : assistantData.result && <small className="calendar-assistant-name pending">SA: None</small>}{event.source === 'admin' && <em className="calendar-edit-hint">click to edit</em>}</article>
+                return <article className={`calendar-event ${event.source}${event.id.startsWith('booking_') ? ' booking' : ''}${weeklyConflictingEventIds.has(event.id) ? ' conflict' : ''}${assistant?.isReliever ? ' has-reliever' : ''}${assistant?.isPending ? ' reliever-pending' : ''}${focusedEventKey === calendarEventKey(date, event) ? ' focus-highlight' : ''}`} data-calendar-event-key={calendarEventKey(date, event)} key={calendarEventKey(date, event)} style={{ top: positionForMinute(event.startMinutes), height: Math.max(positionForMinute(event.endMinutes) - positionForMinute(event.startMinutes), 28) }} title={`${event.courseCode} ${event.subject}\n${formatTime(event.startMinutes)}–${formatTime(event.endMinutes)}`} role="button" tabIndex={0} onClick={openCard} onKeyDown={keyEvent => { if (keyEvent.key === 'Enter' || keyEvent.key === ' ') { keyEvent.preventDefault(); openCard() } }}><strong>{event.courseCode || event.subject}</strong>{scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}{instructorName(event) && <small className="calendar-instructor-name">{instructorName(event)}</small>}{assistant?.isPending ? <small className="calendar-assistant-name pending">Absent: {assistant.absentName}<br />SA: Reliever needed</small> : assistant ? <small className="calendar-assistant-name" title={assistant.fullName}>SA: {assistant.shortName}{assistant.isReliever && <b>RELIEVER</b>}</small> : assistantData.result && <small className="calendar-assistant-name pending">SA: None</small>}{event.source === 'admin' && !readOnly && <em className="calendar-edit-hint">click to edit</em>}</article>
               })}</div>)}</div>
             </div>
           </div>
@@ -969,6 +994,12 @@ export function ScheduleCalendar({
                     .map(event => {
                       const assistant = assistantForEvent(event, selectedDate)
                       const openCard = () => {
+                        if (readOnly) {
+                          setSelectedCalendarEvent({ ...event, date: selectedDateKey, assistantLabel: assistant?.fullName || event.assistantLabel })
+                          setConfirmCardDelete(false)
+                          setAssistantAssignmentOpen(false)
+                          return
+                        }
                         if (event.source === 'admin') {
                           setSelectedCalendarEvent(event)
                           setConfirmCardDelete(false)
@@ -997,7 +1028,7 @@ export function ScheduleCalendar({
                         {scheduleIdentifier(event) && <span>{scheduleIdentifier(event)}</span>}
                         {instructorName(event) && <small className="calendar-instructor-name">{instructorName(event)}</small>}
                         {assistant?.isPending ? <small className="calendar-assistant-name pending">Absent: {assistant.absentName}<br />SA: Reliever needed</small> : assistant ? <small className="calendar-assistant-name" title={assistant.fullName}>SA: {assistant.shortName}{assistant.isReliever && <b>RELIEVER</b>}</small> : assistantData.result && <small className="calendar-assistant-name pending">SA: None</small>}
-                        {event.source === 'admin' && <em className="calendar-edit-hint">click to edit</em>}
+                        {event.source === 'admin' && !readOnly && <em className="calendar-edit-hint">click to edit</em>}
                       </article>
                     })}
                 </div>
@@ -1077,11 +1108,11 @@ export function ScheduleCalendar({
               </div>
               <div className="calendar-event-dialog-actions">{selectedCalendarEvent.assistantId && <button className="btn-danger" type="button" onClick={removeEventAssistant}>Remove Assistant</button>}<button className="btn-secondary" type="button" onClick={() => setAssistantAssignmentOpen(false)}>Cancel</button><button className="btn-primary" type="button" disabled={!selectedEventAssistantAvailable} onClick={saveEventAssistant}>Save</button></div>
             </> : !confirmCardDelete ? <>
-              <div className="calendar-event-dialog-heading"><h3 id="calendar-event-dialog-title">{selectedCalendarEvent.id.startsWith('booking_') ? 'Booking details' : 'Event details'}</h3><button type="button" onClick={() => { setSelectedCalendarEvent(null); setAssistantAssignmentOpen(false) }}>Close</button></div>
+              <div className="calendar-event-dialog-heading"><h3 id="calendar-event-dialog-title">{selectedCalendarEvent.source === 'csv' ? 'Schedule details' : selectedCalendarEvent.id.startsWith('booking_') ? 'Booking details' : 'Event details'}</h3><button type="button" onClick={() => { setSelectedCalendarEvent(null); setAssistantAssignmentOpen(false) }}>Close</button></div>
               <strong>{selectedCalendarEvent.courseCode}</strong>
               {selectedCalendarEvent.description?.trim() && <p className="calendar-event-description">{selectedCalendarEvent.description}</p>}
               <dl><div><dt>Date</dt><dd>{selectedCalendarEvent.date}</dd></div><div><dt>Time</dt><dd>{formatTime(selectedCalendarEvent.startMinutes)}–{formatTime(selectedCalendarEvent.endMinutes)}</dd></div><div><dt>Room</dt><dd>{selectedCalendarEvent.room}</dd></div>{selectedCalendarEvent.assistantLabel && <div><dt>Assistant</dt><dd>{abbreviatedAssistantName(selectedCalendarEvent.assistantLabel)}</dd></div>}</dl>
-              <div className="calendar-event-dialog-actions"><button className="btn-danger" type="button" onClick={() => setConfirmCardDelete(true)}>Delete</button><button className="btn-secondary" type="button" onClick={openAssistantAssignment}>Add Assistant</button><button className="btn-primary" type="button" onClick={() => openEventEditor(selectedCalendarEvent.id)}>Edit</button></div>
+              {!readOnly && <div className="calendar-event-dialog-actions"><button className="btn-danger" type="button" onClick={() => setConfirmCardDelete(true)}>Delete</button><button className="btn-secondary" type="button" onClick={openAssistantAssignment}>Add Assistant</button><button className="btn-primary" type="button" onClick={() => openEventEditor(selectedCalendarEvent.id)}>Edit</button></div>}
             </> : <>
               <div className="calendar-event-dialog-heading"><h3 id="calendar-event-dialog-title">Delete this card</h3></div>
               <p>Do you want to delete only this event card?</p>

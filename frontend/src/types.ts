@@ -2,6 +2,7 @@ export type Tab = 'schedule' | 'student-assistant'
 export type EventSource = 'csv' | 'admin'
 
 export interface CalendarEvent {
+  scheduleKey?: string
   description?: string
   id: string
   source: EventSource

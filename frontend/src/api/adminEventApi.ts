@@ -2,6 +2,7 @@ import { pollForChanges, requestJson } from './apiClient'
 import { isCloudConfigured } from './scheduleApi'
 
 export interface SharedAdminEvent {
+  scheduleKey?: string
   id: string
   source: 'admin'
   courseCode: string
@@ -24,6 +25,7 @@ export async function loadSharedAdminEvents(): Promise<SharedAdminEvent[]> {
 }
 
 export async function saveSharedAdminEvent(event: {
+  scheduleKey?: string
   id: string
   courseCode: string
   date?: string

@@ -18,6 +18,9 @@ type AdminQueue = {
 }
 
 type AssistantSnapshot = {
+  rosterRevisions?: Record<string, string>
+  rostersBySchedule?: Record<string, UploadedAssistant[]>
+  unlinkedAssistants?: UploadedAssistant[]
   assistants: UploadedAssistant[]
   result: StudentAssistantResult | null
   settings: SchedulingSettings
@@ -142,6 +145,9 @@ export function flushPendingAssistantSync(): Promise<void> {
     const pending = readJson<AssistantSnapshot | null>(PENDING_ASSISTANT_KEY, null)
     if (!pending) return
     await saveSharedStudentAssistantData({
+      rosterRevisions: pending.rosterRevisions,
+      rostersBySchedule: pending.rostersBySchedule,
+      unlinkedAssistants: pending.unlinkedAssistants,
       assistants: pending.assistants,
       solverResult: pending.result,
       activeScheduleKey: pending.activeScheduleKey,

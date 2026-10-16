@@ -13,8 +13,8 @@
   padding: 0.65rem 0.8rem;
   border: 1px solid #b7791f;
   border-radius: 6px;
-  background: #3d2c12;
-  color: #fbd38d;
+  background: var(--amber-card);
+  color: var(--amber-text);
   font-size: 0.85rem;
 }
 
@@ -33,9 +33,9 @@
   width: min(720px, 96vw);
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
-  border: 1px solid #2d3748;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #0f1117;
+  background: var(--surface-page);
   box-shadow: 0 18px 48px rgb(0 0 0 / 45%);
 }
 
@@ -47,8 +47,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.8rem 1.25rem;
-  border-bottom: 1px solid #2d3748;
-  background: #161b27;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-panel);
 }
 
 .event-drawer-close {
@@ -56,15 +56,15 @@
   height: 34px;
   border: 0;
   border-radius: 5px;
-  background: #2d3748;
-  color: #e2e8f0;
+  background: var(--border);
+  color: var(--text-h);
   cursor: pointer;
   font-size: 1.4rem;
   line-height: 1;
 }
 
 .event-drawer-close:hover {
-  background: #4a5568;
+  background: var(--border-soft);
 }
 
 .event-drawer .event-panel {
@@ -77,7 +77,7 @@
 
 .admin-event-list h3 {
   margin: 0;
-  color: #e2e8f0;
+  color: var(--text-h);
 }
 
 .event-form {
@@ -85,16 +85,16 @@
   grid-template-columns: repeat(4, minmax(150px, 1fr));
   gap: 0.75rem;
   padding: 1rem;
-  border: 1px solid #2d3748;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #1a2035;
+  background: var(--surface-raised);
 }
 
 .event-form label {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  color: #a0aec0;
+  color: var(--text);
   font-size: 0.76rem;
   font-weight: 600;
 }
@@ -104,14 +104,14 @@
 .event-form select {
   min-height: 36px;
   box-sizing: border-box;
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
   outline: none;
-  background: #0f1117;
-  color: #e2e8f0;
+  background: var(--surface-page);
+  color: var(--text-h);
   padding: 0.4rem 0.6rem;
   font: inherit;
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 
 .event-form select {
@@ -120,7 +120,7 @@
 
 .event-form input:focus,
 .event-form textarea:focus {
-  border-color: #90cdf4;
+  border-color: var(--text-accent);
 }
 
 .event-form .auto-expanding-textarea {
@@ -139,13 +139,13 @@
   min-width: 0;
   margin: 0;
   padding: 0.8rem;
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
 }
 
 .vacant-room-picker legend {
   padding: 0 0.35rem;
-  color: #a0aec0;
+  color: var(--text);
   font-size: 0.76rem;
   font-weight: 700;
 }
@@ -153,28 +153,28 @@
 .vacant-room-picker p {
   width: 100%;
   margin: 0;
-  color: #718096;
+  color: var(--text-muted);
   font-size: 0.8rem;
 }
 
 .vacant-room-picker button {
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
-  background: #0f1117;
-  color: #a0aec0;
+  background: var(--surface-page);
+  color: var(--text);
   padding: 0.45rem 0.7rem;
   cursor: pointer;
 }
 
 .vacant-room-picker button:hover {
-  border-color: #90cdf4;
-  color: #e2e8f0;
+  border-color: var(--text-accent);
+  color: var(--text-h);
 }
 
 .vacant-room-picker button.selected {
-  border-color: #68d391;
-  background: #1a4731;
-  color: #9ae6b4;
+  border-color: var(--green-text);
+  background: var(--green-surface);
+  color: var(--green-heading);
 }
 
 .full-field {
@@ -188,7 +188,7 @@
   gap: 0.5rem;
   margin: 0;
   padding: 0.8rem;
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
 }
 
@@ -198,13 +198,13 @@
   gap: 0.75rem;
   margin: 0;
   padding: 0.8rem;
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
 }
 
 .booking-time-slots legend {
   padding: 0 0.35rem;
-  color: #a0aec0;
+  color: var(--text);
   font-size: 0.76rem;
   font-weight: 700;
 }
@@ -234,9 +234,9 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: #0f1117;
+  background: var(--surface-page);
   padding: 0.45rem;
   box-shadow: 0 12px 28px rgb(0 0 0 / 42%);
 }
@@ -247,13 +247,13 @@
   align-items: center;
   gap: 0.35rem;
   padding-bottom: 0.35rem;
-  border-bottom: 1px solid #2d3748;
+  border-bottom: 1px solid var(--border);
 }
 
 .apply-dates-list {
   max-height: 180px;
   overflow-y: auto;
-  scrollbar-color: #718096 #1a202c;
+  scrollbar-color: var(--text-muted) var(--surface-raised);
   scrollbar-width: thin;
 }
 
@@ -262,12 +262,12 @@
 }
 
 .apply-dates-list::-webkit-scrollbar-track {
-  background: #1a202c;
+  background: var(--surface-raised);
 }
 
 .apply-dates-list::-webkit-scrollbar-thumb {
   border-radius: 4px;
-  background: #718096;
+  background: var(--text-muted);
 }
 
 .apply-dates-dropdown label {
@@ -277,14 +277,14 @@
   align-items: center;
   gap: 0.45rem;
   border-radius: 4px;
-  color: #cbd5e0;
+  color: var(--text-secondary);
   padding: 0.25rem 0.35rem;
   cursor: pointer;
   font-size: 0.78rem;
 }
 
 .apply-dates-dropdown label:hover {
-  background: #1a2035;
+  background: var(--surface-raised);
 }
 
 .apply-dates-dropdown input {
@@ -301,7 +301,7 @@
   height: 25px;
   border: 0;
   background: transparent;
-  color: #a0aec0;
+  color: var(--text);
   padding: 0;
   cursor: pointer;
   font-size: 1.15rem;
@@ -336,7 +336,7 @@
 
 .repeat-summary {
   margin: 0;
-  color: #a0aec0;
+  color: var(--text);
   font-size: 0.8rem;
 }
 
@@ -345,7 +345,7 @@
   height: 38px;
   border: 0;
   background: transparent;
-  color: #e2e8f0;
+  color: var(--text-h);
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -385,7 +385,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
-  color: #a0aec0;
+  color: var(--text);
   font-size: 0.76rem;
   font-weight: 600;
 }
@@ -396,7 +396,7 @@
 
 .date-select-button:hover,
 .date-select-button:focus-visible {
-  color: #63b3ed;
+  color: var(--focus);
 }
 
 .event-date-picker-backdrop {
@@ -413,10 +413,10 @@
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
   box-sizing: border-box;
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 9px;
-  background: #161b27;
-  color: #e2e8f0;
+  background: var(--surface-panel);
+  color: var(--text-h);
   padding: 1.25rem;
   box-shadow: 0 18px 45px rgb(0 0 0 / 45%);
 }
@@ -439,45 +439,45 @@
   margin: 1rem 0;
   border: 0;
   border-radius: 7px;
-  background: #0f1117;
-  color: #e2e8f0;
+  background: var(--surface-page);
+  color: var(--text-h);
   padding: 0.75rem;
   font: inherit;
 }
 
 .event-date-picker .react-calendar button {
-  color: #cbd5e0;
+  color: var(--text-secondary);
 }
 
 .event-date-picker .react-calendar__navigation button:enabled:hover,
 .event-date-picker .react-calendar__navigation button:enabled:focus,
 .event-date-picker .react-calendar__tile:enabled:hover,
 .event-date-picker .react-calendar__tile:enabled:focus {
-  background: #1a365d;
+  background: var(--blue-surface);
 }
 
 .event-date-picker .react-calendar__navigation button:disabled {
   background: transparent;
-  color: #4a5568;
+  color: var(--border-soft);
 }
 
 .event-date-picker .react-calendar__month-view__days__day:disabled {
   background: transparent;
-  color: #4a5568;
+  color: var(--border-soft);
   cursor: not-allowed;
   opacity: 0.55;
 }
 
 .event-date-picker .react-calendar__month-view__weekdays {
-  color: #a0aec0;
+  color: var(--text);
 }
 
 .event-date-picker .react-calendar__month-view__days__day--neighboringMonth {
-  color: #4a5568;
+  color: var(--border-soft);
 }
 
 .event-date-picker .react-calendar__month-view__days__day--weekend {
-  color: #fc8181;
+  color: var(--red-text);
 }
 
 .event-date-picker .react-calendar__tile--now {
@@ -501,10 +501,10 @@
 
 .event-date-picker-heading button,
 .event-calendar-nav button {
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
-  background: #1a2035;
-  color: #e2e8f0;
+  background: var(--surface-raised);
+  color: var(--text-h);
   padding: 0.45rem 0.7rem;
   cursor: pointer;
 }
@@ -521,22 +521,22 @@
 
 .event-calendar-grid button {
   min-height: 42px;
-  border: 1px solid #2d3748;
+  border: 1px solid var(--border);
   border-radius: 5px;
-  background: #0f1117;
-  color: #cbd5e0;
+  background: var(--surface-page);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .event-calendar-grid button.selected {
-  border-color: #63b3ed;
-  background: #1a365d;
-  color: #bee3f8;
+  border-color: var(--focus);
+  background: var(--blue-surface);
+  color: var(--blue-text);
 }
 
 .event-calendar-weekday {
   padding: 0.35rem 0;
-  color: #718096;
+  color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 700;
   text-align: center;
@@ -551,13 +551,13 @@
   margin: 1rem 0;
   padding: 0.75rem;
   border-radius: 5px;
-  background: #0f1117;
-  color: #a0aec0;
+  background: var(--surface-page);
+  color: var(--text);
   font-size: 0.78rem;
 }
 
 .selected-date-list strong {
-  color: #e2e8f0;
+  color: var(--text-h);
 }
 
 .event-date-picker-actions {
@@ -583,24 +583,24 @@
 
 .booking-days legend {
   padding: 0 0.35rem;
-  color: #a0aec0;
+  color: var(--text);
   font-size: 0.76rem;
   font-weight: 700;
 }
 
 .booking-days button {
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
-  background: #0f1117;
-  color: #a0aec0;
+  background: var(--surface-page);
+  color: var(--text);
   padding: 0.45rem 0.7rem;
   cursor: pointer;
 }
 
 .booking-days button.selected {
-  border-color: #63b3ed;
-  background: #1a365d;
-  color: #bee3f8;
+  border-color: var(--focus);
+  background: var(--blue-surface);
+  color: var(--blue-text);
 }
 
 .booking-room-picker button {
@@ -628,25 +628,25 @@
 
 .booking-room-picker button.has-classes {
   border-color: #d69e2e;
-  color: #f6e05e;
+  color: var(--amber-heading);
 }
 
 .booking-room-picker button.has-event {
-  border-color: #9f7aea;
-  color: #d6bcfa;
+  border-color: var(--purple-accent);
+  color: var(--purple-text);
 }
 
 .booking-room-picker button.already-booked {
   border-color: #667eea;
   color: #c3dafe;
-  background: #1a2035;
+  background: var(--surface-raised);
 }
 
 .booking-room-picker button.selected {
-  border-color: #63b3ed;
-  background: #1a365d;
-  color: #bee3f8;
-  outline: 2px solid #63b3ed;
+  border-color: var(--focus);
+  background: var(--blue-surface);
+  color: var(--blue-text);
+  outline: 2px solid var(--focus);
   outline-offset: 1px;
 }
 
@@ -665,16 +665,16 @@
   gap: 0;
   border: none;
   border-radius: 5px;
-  background: #2d3748;
-  color: #e2e8f0;
+  background: var(--border);
+  color: var(--text-h);
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
 }
 
 .booking-room-picker .room-apply-actions .btn-secondary:hover:not(:disabled) {
   border-color: transparent;
-  background: #4a5568;
-  color: #e2e8f0;
+  background: var(--border-soft);
+  color: var(--text-h);
 }
 
 .booking-room-picker .room-apply-actions .apply-dates-close {
@@ -685,7 +685,7 @@
   align-items: initial;
   border: 0;
   background: transparent;
-  color: #a0aec0;
+  color: var(--text);
   padding: 0;
 }
 
@@ -728,8 +728,8 @@
   box-sizing: border-box;
   border: 1px solid #d69e2e;
   border-radius: 8px;
-  background: #161b27;
-  color: #e2e8f0;
+  background: var(--surface-panel);
+  color: var(--text-h);
   padding: 1.25rem;
   box-shadow: 0 18px 45px rgb(0 0 0 / 45%);
 }
@@ -739,7 +739,7 @@
 }
 
 .booking-warning p {
-  color: #cbd5e0;
+  color: var(--text-secondary);
 }
 
 .booking-warning > div {
@@ -753,19 +753,19 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  color: #a0aec0;
+  color: var(--text);
   font-size: 0.78rem;
   font-weight: 700;
 }
 
 .booking-date-picker input {
   min-height: 38px;
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
-  background: #0f1117;
-  color: #e2e8f0;
+  background: var(--surface-page);
+  color: var(--text-h);
   padding: 0.4rem 0.6rem;
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 
 .event-form-actions {
@@ -781,10 +781,10 @@
 .manage-events-button {
   width: 100%;
   margin-top: 1.25rem;
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: #161b27;
-  color: #e2e8f0;
+  background: var(--surface-panel);
+  color: var(--text-h);
   padding: 0.7rem 1rem;
   font: inherit;
   font-weight: 700;
@@ -799,13 +799,13 @@
 
 .manager-edit-title {
   margin: 0 0 1rem;
-  color: #e2e8f0;
+  color: var(--text-h);
   font-size: 1.1rem;
 }
 
 .manage-events-button:hover {
-  border-color: #63b3ed;
-  background: #1a2035;
+  border-color: var(--focus);
+  background: var(--surface-raised);
 }
 
 .manage-events-backdrop {
@@ -822,9 +822,9 @@
   max-height: min(720px, calc(100vh - 2rem));
   overflow-y: auto;
   box-sizing: border-box;
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 9px;
-  background: #0f1117;
+  background: var(--surface-page);
   padding: 1.25rem;
   box-shadow: 0 18px 45px rgb(0 0 0 / 45%);
 }
@@ -839,14 +839,14 @@
 
 .manage-events-heading h2 {
   margin: 0;
-  color: #e2e8f0;
+  color: var(--text-h);
 }
 
 .manage-events-heading button {
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
-  background: #1a2035;
-  color: #e2e8f0;
+  background: var(--surface-raised);
+  color: var(--text-h);
   padding: 0.45rem 0.75rem;
   cursor: pointer;
 }
@@ -858,9 +858,9 @@
   gap: 1rem;
   margin-top: 0.65rem;
   padding: 0.8rem 1rem;
-  border: 1px solid #2d3748;
+  border: 1px solid var(--border);
   border-radius: 7px;
-  background: #161b27;
+  background: var(--surface-panel);
 }
 
 .admin-event-card > div {
@@ -877,20 +877,20 @@
 .admin-event-card span,
 .admin-event-card small,
 .empty-state {
-  color: #718096;
+  color: var(--text-muted);
 }
 
 .btn-danger {
   border: none;
   border-radius: 5px;
-  background: #4a1a1a;
-  color: #fc8181;
+  background: var(--red-surface);
+  color: var(--red-text);
   padding: 0.5rem 0.8rem;
   cursor: pointer;
 }
 
 .btn-danger:hover {
-  background: #642222;
+  background: var(--red-surface-strong);
 }
 
 .event-form .exam-period-toggle {

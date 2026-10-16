@@ -14,9 +14,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
-  background: #161b27;
+  background: var(--surface-panel);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
 }
 
@@ -29,7 +29,7 @@
 
 .schedule-filter-heading h2 {
   margin: 0;
-  color: #f7fafc;
+  color: var(--text-main);
   font-size: 1.15rem;
 }
 
@@ -39,14 +39,14 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #a0aec0;
+  color: var(--text);
   font: inherit;
   font-size: 1.35rem;
   cursor: pointer;
 }
 
 .schedule-filter-heading button:hover {
-  background: #252d3d;
+  background: var(--surface-hover);
   color: #fff;
 }
 
@@ -59,10 +59,10 @@
 
 .schedule-filter-tabs button,
 .schedule-filter-pill {
-  border: 1px solid #3a4a63;
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
-  background: #303848;
-  color: #d7deea;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
   font: inherit;
   cursor: pointer;
 }
@@ -87,7 +87,7 @@
   gap: 0.65rem;
   overflow-y: auto;
   padding: 1rem 1.25rem 1.25rem;
-  border-top: 1px solid #2d3748;
+  border-top: 1px solid var(--border);
 }
 
 .schedule-filter-pill {
@@ -96,8 +96,8 @@
 }
 
 .schedule-filter-pill:hover {
-  border-color: #718096;
-  background: #3b4558;
+  border-color: var(--text-muted);
+  background: var(--surface-hover-strong);
 }
 
 .schedule-filter-pill.selected {
@@ -111,7 +111,7 @@
   justify-content: flex-end;
   gap: 0.65rem;
   padding: 1rem 1.25rem;
-  border-top: 1px solid #2d3748;
+  border-top: 1px solid var(--border);
 }
 
 .schedule-filter-footer button {
@@ -125,9 +125,9 @@
 }
 
 .filter-clear-button {
-  border: 1px solid #4a5568;
-  background: #252d3d;
-  color: #e2e8f0;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-hover);
+  color: var(--text-h);
 }
 
 .filter-apply-button {

@@ -1,6 +1,6 @@
 import type { CalendarEvent, ScheduleMetadata } from '../types'
 
-interface SavedSchedule {
+export interface SavedSchedule {
   events: CalendarEvent[]
   name: string
   rooms: string[]

@@ -6,16 +6,16 @@
 
 .calendar-zoom-controls button {
   padding: 0.5rem 0.7rem;
-  border: 1px solid #4a5568;
+  border: 1px solid var(--border-soft);
   border-radius: 5px;
-  background: #151b29;
-  color: #edf2f7;
+  background: var(--surface-panel);
+  color: var(--text-main);
   font: inherit;
   cursor: pointer;
 }
 
 .calendar-zoom-controls button:hover:not(:disabled) {
-  border-color: #63b3ed;
+  border-color: var(--focus);
 }
 
 .calendar-zoom-controls button:disabled {

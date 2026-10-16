@@ -4,6 +4,8 @@ from typing import Any
 def validate_admin_event(value: Any, event_id: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("Expected an event object.")
+    if 'scheduleKey' in value and (not isinstance(value['scheduleKey'], str) or not value['scheduleKey'].strip()):
+        raise ValueError("A valid schedule identifier is required.")
     required = ("courseCode", "date", "room", "startMinutes", "endMinutes")
     if any(field not in value for field in required):
         raise ValueError("Event data is incomplete.")

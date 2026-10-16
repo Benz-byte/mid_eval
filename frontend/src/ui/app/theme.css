@@ -1,0 +1,141 @@
+/* Shared semantic palette: all views and overlays inherit the selected theme. */
+:root {
+  color-scheme: dark;
+  --surface-page: #0f1117;
+  --surface-panel: #161b27;
+  --surface-raised: #1a2035;
+  --surface-sidebar: #111722;
+  --surface-input: #0f1420;
+  --surface-hover: #303848;
+  --surface-hover-strong: #3b4558;
+  --border: #2d3748;
+  --border-strong: #3a4a63;
+  --border-soft: #4a5568;
+  --border-grid: #242d3d;
+  --border-accent: #4a6b8a;
+  --text: #a0aec0;
+  --text-h: #e2e8f0;
+  --text-main: #edf2f7;
+  --text-secondary: #cbd5e0;
+  --text-muted: #718096;
+  --text-accent: #90cdf4;
+  --focus: #63b3ed;
+  --blue-surface: #1a365d;
+  --blue-hover: #234e75;
+  --blue-text: #bee3f8;
+  --red-surface: #4a1a1a;
+  --red-surface-strong: #742a2a;
+  --red-hover: #9b2c2c;
+  --red-card: #2f1b21;
+  --red-card-hover: #3b2028;
+  --red-text: #fc8181;
+  --red-heading: #feb2b2;
+  --red-on-surface: #fff5f5;
+  --green-surface: #1a4731;
+  --green-card: #142d25;
+  --green-text: #68d391;
+  --green-heading: #9ae6b4;
+  --purple-surface: #322659;
+  --purple-card: #35265a;
+  --purple-text: #e9d8fd;
+  --purple-accent: #b794f4;
+  --teal-surface: #234e52;
+  --teal-card: #164e4b;
+  --teal-text: #b2f5ea;
+  --teal-accent: #4fd1c5;
+  --amber-surface: #744210;
+  --amber-card: #2c210b;
+  --amber-duty: #4a3520;
+  --amber-text: #fbd38d;
+  --amber-heading: #f6e05e;
+  --amber-on-surface: #fffff0;
+  --reliever-surface: #1c4532;
+  --reliever-text: #c6f6d5;
+  --duty-surface: #173c63;
+  --block-label: rgb(0 0 0 / 28%);
+  --bg: var(--surface-page);
+  --code-bg: var(--surface-raised);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --surface-page: #f4f6fa;
+  --surface-panel: #ffffff;
+  --surface-raised: #edf2f9;
+  --surface-sidebar: #f8fafc;
+  --surface-input: #f8fafc;
+  --surface-hover: #e2e8f0;
+  --surface-hover-strong: #d4dfec;
+  --border: #d5deea;
+  --border-strong: #a9b9cc;
+  --border-soft: #94a3b8;
+  --border-grid: #dce3ed;
+  --border-accent: #8ab5df;
+  --text: #526277;
+  --text-h: #1e293b;
+  --text-main: #172033;
+  --text-secondary: #334155;
+  --text-muted: #526277;
+  --text-accent: #075985;
+  --focus: #1d4ed8;
+  --blue-surface: #dbeafe;
+  --blue-hover: #bfdbfe;
+  --blue-text: #123f70;
+  --red-surface: #fff1f2;
+  --red-surface-strong: #fee2e2;
+  --red-hover: #fecaca;
+  --red-card: #fff1f2;
+  --red-card-hover: #ffe4e6;
+  --red-text: #b42318;
+  --red-heading: #991b1b;
+  --red-on-surface: #7f1d1d;
+  --green-surface: #dcfce7;
+  --green-card: #ecfdf5;
+  --green-text: #166534;
+  --green-heading: #14532d;
+  --purple-surface: #ede9fe;
+  --purple-card: #ede9fe;
+  --purple-text: #4c1d95;
+  --purple-accent: #6d28d9;
+  --teal-surface: #d1faf1;
+  --teal-card: #ccfbf1;
+  --teal-text: #115e59;
+  --teal-accent: #0f766e;
+  --amber-surface: #fef3c7;
+  --amber-card: #fffbeb;
+  --amber-duty: #fef3c7;
+  --amber-text: #78350f;
+  --amber-heading: #854d0e;
+  --amber-on-surface: #713f12;
+  --reliever-surface: #dcfce7;
+  --reliever-text: #14532d;
+  --duty-surface: #dbeafe;
+  --block-label: rgb(255 255 255 / 65%);
+}
+
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 0 0 0.35rem auto;
+  padding: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-panel);
+  color: var(--text-accent);
+  cursor: pointer;
+}
+.theme-toggle:hover { background: var(--surface-raised); border-color: var(--focus); }
+.theme-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.theme-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Selected days keep white text on solid blue in either theme. */
+.schedule-date-picker .react-calendar button.react-calendar__tile--active,
+.schedule-date-picker .react-calendar button.react-calendar__tile--hasActive { color: #fff; }
+.sa-calendar-block .sa-block-label { background: var(--block-label); }
+:root[data-theme='light'] .schedule-filter-heading button:hover,
+:root[data-theme='light'] .apply-dates-close:hover,
+:root[data-theme='light'] .booking-room-picker .room-apply-actions .apply-dates-close:hover { color: var(--text-main); }

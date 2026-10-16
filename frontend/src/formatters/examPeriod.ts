@@ -27,7 +27,7 @@ export function createExamPeriodEvents(scheduleKey: string, title: string, dates
   if (!scheduleKey || !title.trim()) return []
   const series = `${examPeriodPrefix(scheduleKey)}${crypto.randomUUID()}`
   return [...new Set(dates)].map(date => ({
-    id: `${series}_${date}`, source: 'admin', courseCode: title.trim(), subject: '',
+    id: `${series}_${date}`, source: 'admin', scheduleKey, courseCode: title.trim(), subject: '',
     date, startMinutes: 0, endMinutes: 1440, room: 'Exam period',
     classType: 'EXAM_PERIOD', section: '', studentCount: '',
   }))

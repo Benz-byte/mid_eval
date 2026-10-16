@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
-  DEFAULT_SCHEDULING_SETTINGS,
   DAILY_DUTY_LIMIT_OPTIONS,
   DUTY_GAP_OPTIONS,
   loadSharedStudentAssistantData,
@@ -19,7 +18,7 @@ import { CalendarZoomControls } from '../schedule/CalendarZoomControls'
 import { isExamDate, isExamPeriod } from '../../formatters/examPeriod'
 import { sortWeeklyWorkloads, weeklyWorkloads } from '../../formatters/weeklyWorkload'
 import { flushPendingAssistantSync, hasPendingAssistantSync } from '../../storage/localFirstSync'
-import { loadLocalAssistantData, saveLocalAssistantData, withManualDutyAssignments } from '../../storage/studentAssistantStorage'
+import { loadLocalAssistantData, mergeSharedAssistantData, saveLocalAssistantData, withManualDutyAssignments } from '../../storage/studentAssistantStorage'
 import type { CalendarEvent, UploadedAssistant } from '../../types'
 import { AssistantWeeklyCalendar } from './AssistantWeeklyCalendar'
 import { WeeklyWorkloadSummary } from './WeeklyWorkloadSummary'
@@ -49,6 +48,7 @@ export function StudentAssistantPanel({
   adminEvents,
   onViewDuty,
   isActive = true,
+  onViewStateChange,
 }: {
   mainSchedule: CalendarEvent[]
   mainScheduleName: string
@@ -56,14 +56,13 @@ export function StudentAssistantPanel({
   adminEvents: CalendarEvent[]
   onViewDuty: (eventId: string, date: string) => void
   isActive?: boolean
+  onViewStateChange?: (view: { assistantWeekStart: string, selectedAssistantId: string }) => void
 }) {
   const localAssistantData = useMemo(() => loadLocalAssistantData(), [])
   const [assistants, setAssistants] = useState<UploadedAssistant[]>(localAssistantData.assistants)
-  const [result, setResult] = useState<StudentAssistantResult | null>(() => mainScheduleKey
-    ? localAssistantData.resultsBySchedule[mainScheduleKey]
-      ?? (localAssistantData.activeScheduleKey === mainScheduleKey ? localAssistantData.result : null)
-      ?? localAssistantData.result
-    : null)
+  const [unlinkedAssistants, setUnlinkedAssistants] = useState(localAssistantData.unlinkedAssistants ?? [])
+  const [result, setResult] = useState<StudentAssistantResult | null>(() => mainScheduleKey && localAssistantData.activeScheduleKey === mainScheduleKey
+    ? localAssistantData.result : null)
   const [settings, setSettings] = useState<SchedulingSettings>(localAssistantData.settings)
   const [error, setError] = useState('')
   const [solving, setSolving] = useState(false)
@@ -102,9 +101,9 @@ export function StudentAssistantPanel({
     if (!isActive) return
     const saved = loadLocalAssistantData()
     setAssistants(saved.assistants)
+    setUnlinkedAssistants(saved.unlinkedAssistants ?? [])
     setSettings(saved.settings)
-    setResult(mainScheduleKey ? saved.resultsBySchedule[mainScheduleKey]
-      ?? (saved.activeScheduleKey === mainScheduleKey ? saved.result : null) : null)
+    setResult(mainScheduleKey && saved.activeScheduleKey === mainScheduleKey ? saved.result : null)
   }, [mainScheduleKey, isActive])
   useEffect(() => {
     let cancelled = false
@@ -120,35 +119,17 @@ export function StudentAssistantPanel({
         >()
         if (cancelled || hasPendingAssistantSync() || revision !== assistantRevisionRef.current) return
         if (saved) {
-          const nextSettings = normalizeSchedulingSettings(
-            saved.schedulingSettings ?? DEFAULT_SCHEDULING_SETTINGS,
-          )
-          const currentLocal = loadLocalAssistantData()
-          const remoteResults = saved.solverResultsBySchedule ?? {}
-          const savedResults = { ...currentLocal.resultsBySchedule, ...remoteResults }
-          const legacyRemoteResult = Object.keys(remoteResults).length === 0
-            && !saved.activeScheduleKey
-            ? saved.solverResult
-            : null
-          const nextResult = mainScheduleKey
-            ? savedResults[mainScheduleKey]
-              ?? (saved.activeScheduleKey === mainScheduleKey ? saved.solverResult : null)
-              ?? (currentLocal.activeScheduleKey === mainScheduleKey ? currentLocal.result : null)
-              ?? legacyRemoteResult
-            : null
-          setAssistants(saved.assistants)
+          const merged = mergeSharedAssistantData(saved, mainScheduleKey)
+          const nextSettings = merged.settings
+          const nextResult = merged.result
+          setAssistants(merged.assistants)
+          setUnlinkedAssistants(merged.unlinkedAssistants ?? [])
           setResult(nextResult)
           setSettings(nextSettings)
           setDraftDutyGapMinutes(nextSettings.minimumGapAfterThreeHourDutyMinutes)
           setDraftDailyDutyMinutes(nextSettings.maximumDailyDutyMinutes)
           setDraftWeeklyDutyMinutes(nextSettings.maximumWeeklyDutyMinutes)
-          saveLocalAssistantData({
-            assistants: saved.assistants,
-            result: nextResult,
-            settings: nextSettings,
-            activeScheduleKey: mainScheduleKey,
-            resultsBySchedule: savedResults,
-          }, false)
+          saveLocalAssistantData(merged, false, false)
         }
       } catch (syncError) {
         console.warn('Could not load student assistant data.', syncError)
@@ -171,6 +152,9 @@ export function StudentAssistantPanel({
     nextSettings: SchedulingSettings = settings,
     clearSavedResults = false,
   ) => {
+    if (!mainScheduleKey || loadLocalAssistantData().activeScheduleKey !== mainScheduleKey) {
+      throw new Error('The active CSV changed. Reopen this schedule before saving assistants.')
+    }
     assistantRevisionRef.current += 1
     const saved = loadLocalAssistantData()
     saveLocalAssistantData({
@@ -178,7 +162,9 @@ export function StudentAssistantPanel({
       result: nextResult,
       settings: nextSettings,
       activeScheduleKey: mainScheduleKey,
-      resultsBySchedule: clearSavedResults ? {} : saved.resultsBySchedule,
+      resultsBySchedule: clearSavedResults
+        ? Object.fromEntries(Object.entries(saved.resultsBySchedule).filter(([key]) => key !== mainScheduleKey))
+        : saved.resultsBySchedule,
     })
   }
 
@@ -265,6 +251,7 @@ export function StudentAssistantPanel({
     }
     try {
       const parsed = await readScheduleFile(profileFile, 'assistant')
+      if (loadLocalAssistantData().activeScheduleKey !== mainScheduleKey) throw new Error('The active CSV changed. Add this assistant again in the intended CSV.')
       const studentId = parsed.studentId?.trim() ?? ''
       if (!studentId) {
         setProfileError('Student ID could not be found in the uploaded schedule.')
@@ -320,6 +307,7 @@ export function StudentAssistantPanel({
       let studentId = editingAssistant.studentId
       if (editFile) {
         const parsed = await readScheduleFile(editFile, 'assistant')
+        if (loadLocalAssistantData().activeScheduleKey !== mainScheduleKey) throw new Error('The active CSV changed. Reopen the assistant before editing.')
         const uploadedStudentId = parsed.studentId?.trim() ?? ''
         if (!uploadedStudentId) {
           setEditError('Student ID could not be found in the uploaded schedule.')
@@ -474,6 +462,9 @@ export function StudentAssistantPanel({
   const selectedAssistant = assistants.find(
     assistant => assistant.id === effectiveSelectedAssistantId,
   )
+  useEffect(() => {
+    onViewStateChange?.({ assistantWeekStart: dateKey(viewedWeekStart), selectedAssistantId: effectiveSelectedAssistantId })
+  }, [viewedWeekStart, effectiveSelectedAssistantId, onViewStateChange])
   const selectedAssignments = assignments.filter(
     assignment => {
       const index = ['M', 'T', 'W', 'Th', 'F', 'S', 'Su'].indexOf(assignment.day)
@@ -549,6 +540,19 @@ export function StudentAssistantPanel({
       </header>
 
       {error && !settingsOpen && <p className="form-error">{error}</p>}
+      {mainScheduleKey && unlinkedAssistants.length > 0 && <div className="sa-profile-actions">
+        <button className="btn-secondary" type="button" onClick={() => {
+          if (!window.confirm(`Link the ${unlinkedAssistants.length} previously shared student assistants to ${mainScheduleName}?`)) return
+          const saved = loadLocalAssistantData()
+          const nextAssistants = [...new Map([...saved.assistants, ...(saved.unlinkedAssistants ?? [])].map(a => [a.id, a])).values()]
+          const nextResult = saved.resultsBySchedule[mainScheduleKey] ?? saved.result
+          saveLocalAssistantData({ ...saved, assistants: nextAssistants, result: nextResult, unlinkedAssistants: [] })
+          assistantRevisionRef.current += 1
+          setAssistants(nextAssistants)
+          setResult(nextResult)
+          setUnlinkedAssistants([])
+        }}>Link previous assistants to this CSV</button>
+      </div>}
       {result && result.status !== 'OPTIMAL' && result.status !== 'FEASIBLE' && <div className={`sa-result-status ${result.status.toLowerCase()}`}><strong>No valid schedule found</strong></div>}
       {visibleDiagnostics.length > 0 && <ul className="sa-diagnostics">{visibleDiagnostics.map(message => <li key={message}>{message}</li>)}</ul>}
 
@@ -569,7 +573,7 @@ export function StudentAssistantPanel({
         <button className="sa-sidebar-selected" type="button">
           <span><strong>{selectedAssistant ? assistantDisplayName(selectedAssistant) : 'Student Assistants'}</strong><small>{selectedAssistant ? selectedAssistant.studentId || 'ID number unavailable' : 'No student selected'}</small></span>
         </button>
-        <button className="sa-add-assistant" type="button" onClick={() => { setSidebarOpen(false); setAddProfileOpen(true) }}><span>＋</span>Add Student Assistant</button>
+        <button className="sa-add-assistant" type="button" disabled={!mainScheduleKey} onClick={() => { setSidebarOpen(false); setAddProfileOpen(true) }}><span>＋</span>Add Student Assistant</button>
         <h3>Student Assistants</h3>
         <div className="sa-assistant-search"><span aria-hidden="true">⌕</span><input type="search" aria-label="Search student assistants" placeholder="Search student assistants…" value={assistantSearch} onChange={event => setAssistantSearch(event.target.value)} />{assistantSearch && <button type="button" aria-label="Clear student assistant search" onClick={() => setAssistantSearch('')}>×</button>}</div>
         <div className="sa-sidebar-list">
