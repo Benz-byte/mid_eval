@@ -5,7 +5,7 @@ import type { DutyAssignment, RelieverAssignment, StudentAssistantResult } from 
 import { dateFromInputValue, matchesSelectedDay, startOfWeek, toDateInputValue } from '../../formatters/dateFormatter'
 import { formatTime } from '../../formatters/timeFormatter'
 import { isExamDate, isExamPeriod } from '../../formatters/examPeriod'
-import { SCHEDULE_DATE_STORAGE_KEY, loadScheduleDate } from '../../storage/preferenceStorage'
+import { loadScheduleDate, saveScheduleDate } from '../../storage/preferenceStorage'
 import { loadLocalAssistantData, saveLocalAssistantData, withManualDutyAssignments } from '../../storage/studentAssistantStorage'
 import type { LocalAssistantData } from '../../storage/studentAssistantStorage'
 import { CalendarZoomControls } from './CalendarZoomControls'
@@ -327,7 +327,7 @@ export function ScheduleCalendar({
 
   useEffect(() => {
     if (readOnly) return
-    localStorage.setItem(SCHEDULE_DATE_STORAGE_KEY, selectedDateKey)
+    saveScheduleDate(selectedDateKey)
     onViewDateChange?.(selectedDateKey)
   }, [selectedDateKey, readOnly, onViewDateChange])
 

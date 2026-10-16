@@ -8,6 +8,14 @@ export function loadActiveTab(): Tab {
   return saved === 'schedule' || saved === 'student-assistant' ? saved : 'schedule'
 }
 
+export function saveActiveTab(tab: Tab) {
+  localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tab)
+}
+
+export function saveScheduleDate(date: string) {
+  localStorage.setItem(SCHEDULE_DATE_STORAGE_KEY, date)
+}
+
 export function loadScheduleDate(): Date {
   const saved = localStorage.getItem(SCHEDULE_DATE_STORAGE_KEY)
   if (!saved) return new Date()

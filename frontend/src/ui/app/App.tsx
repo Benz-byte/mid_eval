@@ -5,7 +5,7 @@ import { readScheduleFile } from '../../api/scheduleParser'
 import { parseInputTime } from '../../formatters/timeFormatter'
 import { createExamPeriodEvents, examPeriodPrefix, isExamPeriod } from '../../formatters/examPeriod'
 import { eventsForSchedule } from '../../formatters/eventSchedule'
-import { ADMIN_STORAGE_KEY, loadAdminEvents, saveAdminEventsLocally } from '../../storage/adminEventStorage'
+import { loadAdminEvents, saveAdminEventsLocally } from '../../storage/adminEventStorage'
 import {
   flushPendingAdminSync,
   flushPendingScheduleSync,
@@ -15,12 +15,11 @@ import {
   queueAdminUpsert,
   queueScheduleSync,
 } from '../../storage/localFirstSync'
-import { ACTIVE_TAB_STORAGE_KEY, loadActiveTab } from '../../storage/preferenceStorage'
-import { CSV_STORAGE_KEY, loadCsvSchedule, saveCsvScheduleLocally } from '../../storage/scheduleStorage'
+import { loadActiveTab, loadScheduleDate, saveActiveTab } from '../../storage/preferenceStorage'
+import { loadCsvSchedule, saveCsvScheduleLocally } from '../../storage/scheduleStorage'
 import { activateLocalAssistantSchedule, loadLocalAssistantData } from '../../storage/studentAssistantStorage'
 import { createScheduleArchive, type ArchiveView, type ScheduleArchive } from '../../storage/archiveTypes'
 import { syncArchives } from '../../storage/archiveStorage'
-import { loadScheduleDate } from '../../storage/preferenceStorage'
 import { startOfWeek, toDateInputValue } from '../../formatters/dateFormatter'
 import { ArchiveManager } from '../archives/ArchiveManager'
 import { ArchivePreview } from '../archives/ArchivePreview'
@@ -80,15 +79,15 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminEvents))
+    saveAdminEventsLocally(adminEvents)
   }, [adminEvents])
 
   useEffect(() => {
-    localStorage.setItem(CSV_STORAGE_KEY, JSON.stringify({ events: csvEvents, name: csvName, rooms: csvRooms, times: csvTimes, fingerprint: csvFingerprint, tbaSubjects, metadata: scheduleMetadata }))
+    saveCsvScheduleLocally({ events: csvEvents, name: csvName, rooms: csvRooms, times: csvTimes, fingerprint: csvFingerprint, tbaSubjects, metadata: scheduleMetadata })
   }, [csvEvents, csvFingerprint, csvName, csvRooms, csvTimes, tbaSubjects, scheduleMetadata])
 
   useEffect(() => {
-    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab)
+    saveActiveTab(activeTab)
   }, [activeTab])
 
   useEffect(() => {

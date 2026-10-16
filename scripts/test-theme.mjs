@@ -7,7 +7,8 @@ const disk = new Map([['schedule-must-not-change','saved schedule']])
 globalThis.localStorage = { getItem:key=>disk.get(key)??null,setItem:(key,value)=>disk.set(key,value) }
 globalThis.document = {documentElement:{dataset:{}}}
 globalThis.window = new EventTarget()
-const { loadTheme, currentTheme, applyTheme, subscribeTheme, THEME_STORAGE_KEY } = await import('../frontend/src/storage/themeStorage.ts')
+const { loadTheme, THEME_STORAGE_KEY } = await import('../frontend/src/storage/themeStorage.ts')
+const { currentTheme, applyTheme, subscribeTheme } = await import('../frontend/src/ui/app/theme.ts')
 const { ThemeToggle } = await import('../frontend/src/ui/app/ThemeToggle.tsx')
 assert.equal(loadTheme(),'dark')
 disk.set(THEME_STORAGE_KEY,'invalid')

@@ -1,31 +1,33 @@
 from flask import Blueprint, jsonify, request
 
-from database.supabase.student_assistant_repository import load_data, save_data
-from models.student_assistant import validate_solver_request
-from solver.student_assistant_solver import solve_student_assistant_schedule
+from services.student_assistant_service import (
+    create_student_assistant_schedule,
+    get_student_assistant_data,
+    save_student_assistant_data,
+)
 
 blueprint = Blueprint("student_assistants", __name__)
 
 
 @blueprint.get("/api/student-assistants/shared")
 def get_shared_data():
-    return jsonify(load_data())
+    return jsonify(get_student_assistant_data())
 
 
 @blueprint.put("/api/student-assistants/shared")
 def put_shared_data():
     payload = request.get_json(silent=True)
-    if not isinstance(payload, dict):
-        return jsonify({"error": "Expected a JSON object."}), 400
-    save_data(payload)
+    try:
+        save_student_assistant_data(payload)
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
     return jsonify({'rosterStorageVersion': 1})
 
 
 @blueprint.post("/api/student-assistant/solve")
 def solve_student_assistants():
     try:
-        payload = validate_solver_request(request.get_json(silent=True))
+        result = create_student_assistant_schedule(request.get_json(silent=True))
     except ValueError as error:
         return jsonify({"status": "INVALID", "diagnostics": [str(error)]}), 400
-    result = solve_student_assistant_schedule(payload)
     return jsonify(result), 200 if result["status"] != "INVALID" else 400

@@ -139,3 +139,26 @@
 :root[data-theme='light'] .schedule-filter-heading button:hover,
 :root[data-theme='light'] .apply-dates-close:hover,
 :root[data-theme='light'] .booking-room-picker .room-apply-actions .apply-dates-close:hover { color: var(--text-main); }
+
+/* Strong timetable separation without darkening unrelated forms or dialogs. */
+:root[data-theme='light'] .timetable-scroll,
+:root[data-theme='light'] .sa-weekly-calendar {
+  --border: #334155;
+  --border-strong: #1f2937;
+  --border-grid: #475569;
+}
+
+:root[data-theme='light'] .sa-week-header {
+  border-bottom: 1px solid var(--border-strong);
+}
+
+:root[data-theme='light'] .remove-csv-button:not(:disabled) {
+  background: #b91c1c;
+  border-color: #991b1b;
+  color: #fff;
+}
+
+:root[data-theme='light'] .remove-csv-button:not(:disabled):hover {
+  background: #991b1b;
+  border-color: #7f1d1d;
+}

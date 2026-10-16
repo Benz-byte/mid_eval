@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { applyTheme, currentTheme, subscribeTheme } from '../../storage/themeStorage'
+import { applyTheme, currentTheme, subscribeTheme } from './theme'
 
 export function ThemeToggle() {
   const theme = useSyncExternalStore(subscribeTheme, currentTheme, () => 'dark')

@@ -51,7 +51,7 @@ class AssistantRosterTests(unittest.TestCase):
             self.assertEqual(payload['solver_result']['rostersBySchedule']['B'], [{'id': 'other'}])
 
     def test_route_acknowledges_scoped_storage_support(self):
-        with patch('routes.student_assistants.save_data') as save:
+        with patch('routes.student_assistants.save_student_assistant_data') as save:
             response = create_app().test_client().put('/api/student-assistants/shared', json={
                 'assistants': [], 'activeScheduleKey': 'A', 'rostersBySchedule': {'A': []},
             })

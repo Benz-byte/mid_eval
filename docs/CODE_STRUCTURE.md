@@ -34,9 +34,15 @@ a new top-level folder.
 - `StudentAssistantPanel.tsx` coordinates assistant data and generation.
 - `AssistantWeeklyCalendar.tsx` draws the selected assistant's week.
 - `WeeklyWorkloadSummary.tsx` displays the already-calculated workload ranking.
+- `ThemeToggle.tsx` provides the shared theme switch in active and archived tabs.
+- `ui/app/theme.ts` applies the theme to the document and notifies mounted controls.
+- `ui/app/theme.css` owns the shared dark/light palette; feature styles consume it.
+- `storage/themeStorage.ts` only loads/saves the device's theme preference.
 
 Keep network calls in `api`, persistence in `storage`, and reusable pure
 calculations outside JSX. Shared data types must not require importing a screen.
+Use `saveActiveTab`, `saveScheduleDate`, `saveAdminEventsLocally`, and
+`saveCsvScheduleLocally` rather than writing browser storage from UI components.
 Do not remove old saved-record support merely because an older creation form is
 gone. Existing events, booking IDs, schedule fingerprints, and storage keys are
 compatibility contracts.
@@ -51,6 +57,11 @@ The backend already follows layered responsibilities:
 - `database/supabase/`: shared-data queries and persistence.
 - `solver/`: CP-SAT constraints and scheduling.
 - `tests/`: local Python tests.
+
+Student-assistant HTTP routes delegate to `services/student_assistant_service.py`.
+That service calls model validation, the repository, and the solver; HTTP status
+codes and response shapes remain in the routes. Other data features follow the
+same route/service/model/repository boundary.
 
 Keep SQL changes in `database/supabase/migrations/`. Do not rewrite applied
 migrations as part of code organization.
@@ -76,7 +87,10 @@ and periodically; archive-list entries indicate local versus synced saves.
 
 `api/archiveApi.ts` talks only to `/api/archives`. Backend archive routes, service,
 validation, and repository follow the existing layers. Migration 007 creates a
-separate Supabase table and an immutability trigger. Names may repeat; IDs cannot.
+separate Supabase table and an immutability trigger. Active archive names must be
+unique after trimming/collapsing spaces and ignoring case. Migration 009 enforces
+this in Supabase; local storage checks names within the save transaction. IDs
+remain immutable, and retries of the same saved snapshot are idempotent.
 Deletion is soft and synchronized with tombstones, so a stale offline cache cannot
 restore a deleted archive.
 
