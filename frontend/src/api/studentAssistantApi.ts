@@ -117,6 +117,7 @@ export async function solveStudentAssistantSchedule<EventType>(
 }
 
 export interface SharedStudentAssistantData<AssistantType, ResultType> {
+  resultRevisions?: Record<string, string>
   rosterRevisions?: Record<string, string>
   rostersBySchedule?: Record<string, AssistantType[]>
   unlinkedAssistants?: AssistantType[]
@@ -139,12 +140,15 @@ export async function saveSharedStudentAssistantData<AssistantType, ResultType>(
   value: SharedStudentAssistantData<AssistantType, ResultType>,
 ): Promise<void> {
   if (!isCloudConfigured) return
-  const acknowledgement = await requestJson<{ rosterStorageVersion: number }>('/api/student-assistants/shared', {
+  const acknowledgement = await requestJson<{ rosterStorageVersion: number, resultStorageVersion: number }>('/api/student-assistants/shared', {
     method: 'PUT',
     body: JSON.stringify(value),
   })
   if (acknowledgement?.rosterStorageVersion !== 1) {
     throw new Error('Restart the backend to enable CSV-specific assistant saving. Your local changes are still queued.')
+  }
+  if (acknowledgement.resultStorageVersion !== 1) {
+    throw new Error('Restart the backend to enable versioned schedule saving. Your local changes are still queued.')
   }
 }
 

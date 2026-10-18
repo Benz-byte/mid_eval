@@ -11,10 +11,11 @@ class EventScheduleTests(unittest.TestCase):
                           startMinutes=420, endMinutes=480, scheduleKey='hash-A', assistantId='student-1')
 
     def test_scope_and_assistant_round_trip(self):
-        with patch('backend.database.supabase.admin_event_repository.request') as request:
+        with patch('backend.database.supabase.admin_event_repository.request', side_effect=[[], None]) as request:
             save_event(self.event)
             payload = request.call_args.kwargs['payload']
             self.assertEqual(payload['schedule_key'], 'hash-A')
+            request.side_effect = None
             request.return_value = [payload]
             event = load_events()[0]
             self.assertEqual(event['scheduleKey'], 'hash-A')

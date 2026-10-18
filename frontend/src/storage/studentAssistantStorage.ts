@@ -12,6 +12,7 @@ import { queueAssistantSync } from './localFirstSync'
 export const ASSISTANT_STORAGE_KEY = 'auto-scheduler-student-assistants'
 
 export interface LocalAssistantData {
+  resultRevisions?: Record<string, string>
   rosterRevisions?: Record<string, string>
   rostersBySchedule?: Record<string, UploadedAssistant[]>
   unlinkedAssistants?: UploadedAssistant[]
@@ -72,6 +73,7 @@ export function loadLocalAssistantData(): LocalAssistantData {
     const saved = localStorage.getItem(ASSISTANT_STORAGE_KEY)
     if (!saved) return { assistants: [], result: null, settings: DEFAULT_SCHEDULING_SETTINGS, activeScheduleKey: '', resultsBySchedule: {} }
     const parsed = JSON.parse(saved) as {
+      resultRevisions?: Record<string, string>
       rostersBySchedule?: Record<string, UploadedAssistant[]>
       rosterRevisions?: Record<string, string>
       unlinkedAssistants?: UploadedAssistant[]
@@ -86,6 +88,7 @@ export function loadLocalAssistantData(): LocalAssistantData {
     const resultsBySchedule = { ...parsed.resultsBySchedule }
     if (activeScheduleKey && parsed.result) resultsBySchedule[activeScheduleKey] ??= parsed.result
     return {
+      resultRevisions: parsed.resultRevisions ?? {},
       rosterRevisions: parsed.rosterRevisions ?? {},
       rostersBySchedule,
       unlinkedAssistants: [...new Map([
@@ -107,7 +110,14 @@ export function saveLocalAssistantData(value: LocalAssistantData, synchronize = 
   const current = loadLocalAssistantData()
   const rostersBySchedule = { ...current.rostersBySchedule, ...value.rostersBySchedule }
   const rosterRevisions = { ...current.rosterRevisions, ...value.rosterRevisions }
+  const resultRevisions = { ...current.resultRevisions, ...value.resultRevisions }
   if (value.activeScheduleKey && updateActiveResult) {
+    const key = value.activeScheduleKey
+    if (JSON.stringify(current.resultsBySchedule[key] ?? null) !== JSON.stringify(value.result)
+      || (value.result && !resultRevisions[key])) {
+      const previous = Date.parse(resultRevisions[key]?.slice(0, 24) ?? '') || 0
+      resultRevisions[key] = `${new Date(Math.max(Date.now(), previous + 1)).toISOString()}:${crypto.randomUUID()}`
+    }
     if (JSON.stringify(current.rostersBySchedule?.[value.activeScheduleKey]) !== JSON.stringify(value.assistants)) {
       const previous = Date.parse(rosterRevisions[value.activeScheduleKey]?.slice(0, 24) ?? '') || 0
       rosterRevisions[value.activeScheduleKey] = `${new Date(Math.max(Date.now(), previous + 1)).toISOString()}:${crypto.randomUUID()}`
@@ -120,7 +130,7 @@ export function saveLocalAssistantData(value: LocalAssistantData, synchronize = 
     if (value.result) resultsBySchedule[value.activeScheduleKey] = value.result
     else delete resultsBySchedule[value.activeScheduleKey]
   }
-  const normalized = { ...value, resultsBySchedule, rostersBySchedule, rosterRevisions,
+  const normalized = { ...value, resultsBySchedule, resultRevisions, rostersBySchedule, rosterRevisions,
     unlinkedAssistants: value.unlinkedAssistants ?? current.unlinkedAssistants ?? [] }
   localStorage.setItem(ASSISTANT_STORAGE_KEY, JSON.stringify(normalized))
   if (synchronize) queueAssistantSync(normalized)
@@ -154,13 +164,17 @@ export function mergeSharedAssistantData(
     rostersBySchedule[key] = roster
     if (remoteRevision) rosterRevisions[key] = remoteRevision
   }
-  const resultsBySchedule = { ...local.resultsBySchedule, ...remote.solverResultsBySchedule }
-  if (remote.activeScheduleKey && remote.solverResult) resultsBySchedule[remote.activeScheduleKey] = remote.solverResult
-  for (const [key, revision] of Object.entries(local.rosterRevisions ?? {})) {
-    if (revision > (remote.rosterRevisions?.[key] ?? '')) {
-      if (local.resultsBySchedule[key]) resultsBySchedule[key] = local.resultsBySchedule[key]
-      else delete resultsBySchedule[key]
-    }
+  const resultsBySchedule = { ...local.resultsBySchedule }
+  const resultRevisions = { ...local.resultRevisions }
+  const remoteResults = { ...remote.solverResultsBySchedule }
+  if (remote.activeScheduleKey && remote.solverResult) remoteResults[remote.activeScheduleKey] = remote.solverResult
+  for (const key of new Set([...Object.keys(remoteResults), ...Object.keys(remote.resultRevisions ?? {})])) {
+    const revision = remote.resultRevisions?.[key] ?? ''
+    if ((resultRevisions[key] ?? '') > revision
+      || (local.rosterRevisions?.[key] ?? '') > (remote.rosterRevisions?.[key] ?? '')) continue
+    if (remoteResults[key]) resultsBySchedule[key] = remoteResults[key]
+    else delete resultsBySchedule[key]
+    if (revision) resultRevisions[key] = revision
   }
   const legacyAssistants = !Object.hasOwn(remote.rostersBySchedule ?? {}, remote.activeScheduleKey ?? '') ? remote.assistants : []
   const linkedIds = new Set(Object.values(rostersBySchedule).flat().map(assistant => assistant.id))
@@ -169,6 +183,6 @@ export function mergeSharedAssistantData(
   ].filter(assistant => !linkedIds.has(assistant.id)).map(assistant => [assistant.id, assistant])).values()]
   return { assistants: rostersBySchedule[scheduleKey] ?? [],
     result: scheduleKey && rostersBySchedule[scheduleKey]?.length ? resultsBySchedule[scheduleKey] ?? null : null,
-    activeScheduleKey: scheduleKey, resultsBySchedule, rostersBySchedule, rosterRevisions, unlinkedAssistants,
+    activeScheduleKey: scheduleKey, resultsBySchedule, resultRevisions, rostersBySchedule, rosterRevisions, unlinkedAssistants,
     settings: normalizeSchedulingSettings(remote.schedulingSettings ?? local.settings) }
 }

@@ -8,7 +8,7 @@ let remote = null
 globalThis.fetch = async (_url, init) => {
   if (!online) throw Error('Offline')
   remote = JSON.parse(init.body)
-  return { ok: true, status: 200, json:async()=>({rosterStorageVersion:1}) }
+  return { ok: true, status: 200, json:async()=>({rosterStorageVersion:1,resultStorageVersion:1}) }
 }
 const { loadLocalAssistantData: load, saveLocalAssistantData: save, activateLocalAssistantSchedule: activate, mergeSharedAssistantData, ASSISTANT_STORAGE_KEY } = await import('../frontend/src/storage/studentAssistantStorage.ts')
 const { flushPendingAssistantSync } = await import('../frontend/src/storage/localFirstSync.ts')

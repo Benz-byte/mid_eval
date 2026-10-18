@@ -7,6 +7,7 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app import create_app
+from database.supabase.archive_repository import ArchiveNameConflictError as ApiArchiveNameConflictError
 from backend.models.archive import validate_archive
 from backend.database.supabase.archive_repository import create_archive, delete_archive, load_archives
 
@@ -89,6 +90,12 @@ class ArchiveTests(unittest.TestCase):
         with patch('routes.archives.remove_archive') as remove:
             self.assertEqual(client.delete('/api/archives/' + self.archive['id']).status_code, 204)
             remove.assert_called_once_with(self.archive['id'])
+
+    def test_name_conflict_has_distinct_status_for_offline_resolution(self):
+        with patch('routes.archives.save_archive', side_effect=ApiArchiveNameConflictError('Name already used')):
+            response = create_app().test_client().put('/api/archives/' + self.archive['id'], json=self.archive)
+            self.assertEqual(response.status_code, 409)
+            self.assertEqual(response.get_json()['error'], 'Name already used')
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { ScheduleArchive, ArchiveRecord } from '../../storage/archiveTypes'
-import { deleteArchiveLocally, listLocalArchives, syncArchives } from '../../storage/archiveStorage'
+import { deleteArchiveLocally, listLocalArchives, renameConflictingArchive, syncArchives } from '../../storage/archiveStorage'
 import { saveArchiveWithAction } from '../../storage/archiveWorkflow'
 import './Archives.css'
 
@@ -32,6 +32,8 @@ export function ArchiveManager({ canSave, defaultName, schoolYear = '', semester
   const [year, setYear] = useState(schoolYear)
   const [term, setTerm] = useState(semester)
   const [deleting, setDeleting] = useState<ArchiveRecord | null>(null)
+  const [renaming, setRenaming] = useState<ArchiveRecord | null>(null)
+  const [replacementName, setReplacementName] = useState('')
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -77,11 +79,22 @@ export function ArchiveManager({ canSave, defaultName, schoolYear = '', semester
     setBusy(true)
     setError('')
     try {
-      // Refresh known cloud names when online; local saves still work offline.
-      await syncArchives().catch(() => {})
       await saveArchiveWithAction(capture({ name, schoolYear: year, semester: term }), onSaveAndClose)
       void syncArchives().catch(() => {})
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not save the archive.') }
+    finally { setBusy(false) }
+  }
+  const rename = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!renaming || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await renameConflictingArchive(renaming.id, replacementName)
+      await refreshLocal()
+      setRenaming(null)
+      void syncArchives().then(refreshLocal).catch(() => setSyncUnavailable(true))
+    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not rename the archive.') }
     finally { setBusy(false) }
   }
   const confirmDelete = async () => {
@@ -109,7 +122,8 @@ export function ArchiveManager({ canSave, defaultName, schoolYear = '', semester
           return
         }
         if (event.key !== 'Escape' || busy) return
-        if (deleting) setDeleting(null)
+        if (renaming) setRenaming(null)
+        else if (deleting) setDeleting(null)
         else if (saveFormOpen) setSaveFormOpen(false)
         else onClose()
       }}>
@@ -131,6 +145,13 @@ export function ArchiveManager({ canSave, defaultName, schoolYear = '', semester
               <button className="btn-primary" disabled={busy || !canSave} type="submit">{busy ? 'Saving…' : 'Save'}</button>
             </div>
           </form>
+        ) : renaming ? (
+          <form onSubmit={rename} className="archive-save-form">
+            <h3>Rename archive</h3>
+            <p>This name is already used on another device. Your archive is saved locally and can still be viewed. Choose a different name to sync it.</p>
+            <label>Archive name<input required maxLength={200} value={replacementName} onChange={event => setReplacementName(event.target.value)} disabled={busy} /></label>
+            <div className="archive-actions"><button className="btn-secondary" type="button" disabled={busy} onClick={() => setRenaming(null)}>Cancel</button><button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button></div>
+          </form>
         ) : deleting ? (
           <div><h3>Delete archive?</h3><p>{deleting.archive.name}</p><p>This removes the saved archive from this device and, after sync, other devices. Your current schedule is not deleted.</p><div className="archive-actions"><button className="btn-secondary" disabled={busy} type="button" onClick={() => setDeleting(null)}>Cancel</button><button className="btn-danger" disabled={busy} type="button" onClick={() => void confirmDelete()}>{busy ? 'Deleting…' : 'Delete'}</button></div></div>
         ) : (
@@ -141,11 +162,11 @@ export function ArchiveManager({ canSave, defaultName, schoolYear = '', semester
             {!loading && visible.length === 0 && <p>No archives yet.</p>}
             <div className="archive-list">{visible.map(record => (
               <article className="archive-list-item" key={record.id}>
-                <div><strong>{record.archive.name}</strong><p>{record.archive.schoolYear} · {record.archive.semester}</p><small>Saved {new Date(record.archive.createdAt).toLocaleString()} · {record.pending ? 'On this device · Sync pending' : 'Synced'}</small></div>
+                <div><strong>{record.archive.name}</strong><p>{record.archive.schoolYear} · {record.archive.semester}</p><small>Saved {new Date(record.archive.createdAt).toLocaleString()} · {record.pending ? 'On this device · Sync pending' : 'Synced'}</small>{record.nameConflict && <p className="msg-error" role="status">Name already used. Rename to sync.</p>}</div>
                 <div className="archive-actions"><button className="btn-secondary" type="button" onClick={() => {
                   if (record.archive.schemaVersion !== 1) { setError('This archive needs a newer version of the app.'); return }
                   onView(record.archive)
-                }}>View</button><button className="btn-danger" type="button" onClick={() => { setError(''); setDeleting(record) }}>Delete</button></div>
+                }}>View</button>{record.nameConflict && <button className="btn-secondary" type="button" onClick={() => { setError(''); setReplacementName(record.archive.name); setRenaming(record) }}>Rename</button>}<button className="btn-danger" type="button" onClick={() => { setError(''); setDeleting(record) }}>Delete</button></div>
               </article>
             ))}</div>
           </>

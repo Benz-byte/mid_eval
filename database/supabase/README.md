@@ -12,6 +12,15 @@ Supabase Dashboard SQL Editor:
 7. `007_schedule_archives.sql`
 8. `008_csv_scoped_events.sql`
 9. `009_unique_archive_names.sql`
+10. `010_admin_event_deletions.sql`
+
+Migration 010 records permanently deleted event IDs in `admin_event_deletions`.
+Run only this new migration if 001-009 are already applied, then restart the
+backend. It adds a guard for direct writes and an atomic delete function, including
+deletes before an event's first upload. It does not delete existing events. Missing
+migration errors leave event writes queued locally. Do not clear deletion records:
+they prevent older devices from restoring deleted cards. Deletions made before
+this migration cannot be reconstructed automatically.
 
 Migration 008 adds the originating CSV content identifier to events. Until it is
 applied, new scoped events remain locally saved and queued for sync rather than

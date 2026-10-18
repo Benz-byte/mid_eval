@@ -34,6 +34,7 @@ from backend.database.supabase.admin_event_repository import save_event, load_ev
 events=json.load(sys.stdin)
 rows=[]
 with patch('backend.database.supabase.admin_event_repository.request') as request:
+    request.return_value=[]
     for event in events:
         save_event(validate_admin_event(event,event['id']))
         rows.append(request.call_args.kwargs['payload'])

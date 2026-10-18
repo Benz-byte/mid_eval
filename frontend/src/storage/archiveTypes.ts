@@ -27,6 +27,7 @@ export interface ArchiveRecord {
   archive: ScheduleArchive
   deletedAt: string | null
   pending: boolean
+  nameConflict?: boolean
 }
 
 export interface RemoteArchiveRecord {
@@ -61,6 +62,8 @@ export function createScheduleArchive(
       rostersBySchedule: { [schedule.fingerprint]: assistants }, unlinkedAssistants: [],
       rosterRevisions: data.rosterRevisions?.[schedule.fingerprint]
         ? { [schedule.fingerprint]: data.rosterRevisions[schedule.fingerprint] } : {},
+      resultRevisions: data.resultRevisions?.[schedule.fingerprint]
+        ? { [schedule.fingerprint]: data.resultRevisions[schedule.fingerprint] } : {},
       resultsBySchedule: result ? { [schedule.fingerprint]: result } : {} },
   })) as ScheduleArchive
 }

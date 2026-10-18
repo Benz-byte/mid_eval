@@ -24,6 +24,7 @@ import { AssistantWeeklyCalendar } from './AssistantWeeklyCalendar'
 import { WeeklyWorkloadSummary } from './WeeklyWorkloadSummary'
 import { assistantDisplayName } from '../../formatters/assistantNameFormatter'
 import { workloadHoursLabel } from '../../formatters/timeFormatter'
+import { planAssistantEdit, withoutAssistantAssignments, type AssistantEditPlan } from '../../formatters/assistantSchedule'
 
 const DAY_SORT: Record<string, number> = {
   M: 0, T: 1, W: 2, Th: 3, F: 4, S: 5, Su: 6,
@@ -49,6 +50,8 @@ export function StudentAssistantPanel({
   onViewDuty,
   isActive = true,
   onViewStateChange,
+  onAssistantRemoved,
+  onAssistantUpdated,
 }: {
   mainSchedule: CalendarEvent[]
   mainScheduleName: string
@@ -57,6 +60,8 @@ export function StudentAssistantPanel({
   onViewDuty: (eventId: string, date: string) => void
   isActive?: boolean
   onViewStateChange?: (view: { assistantWeekStart: string, selectedAssistantId: string }) => void
+  onAssistantRemoved?: (assistantId: string) => void
+  onAssistantUpdated?: (assistant: UploadedAssistant, unassignedEventIds: string[]) => void
 }) {
   const localAssistantData = useMemo(() => loadLocalAssistantData(), [])
   const [assistants, setAssistants] = useState<UploadedAssistant[]>(localAssistantData.assistants)
@@ -78,6 +83,9 @@ export function StudentAssistantPanel({
   const [editFile, setEditFile] = useState<File | null>(null)
   const [keepCurrentSchedule, setKeepCurrentSchedule] = useState(true)
   const [editError, setEditError] = useState('')
+  const [editBusy, setEditBusy] = useState(false)
+  const [pendingEdit, setPendingEdit] = useState<{ updated: UploadedAssistant, plan: AssistantEditPlan, source: string } | null>(null)
+  const editSessionRef = useRef(0)
   const [deletingAssistant, setDeletingAssistant] = useState<UploadedAssistant | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [rescheduleEntire, setRescheduleEntire] = useState(false)
@@ -150,7 +158,6 @@ export function StudentAssistantPanel({
     nextAssistants: UploadedAssistant[],
     nextResult: StudentAssistantResult | null,
     nextSettings: SchedulingSettings = settings,
-    clearSavedResults = false,
   ) => {
     if (!mainScheduleKey || loadLocalAssistantData().activeScheduleKey !== mainScheduleKey) {
       throw new Error('The active CSV changed. Reopen this schedule before saving assistants.')
@@ -162,9 +169,7 @@ export function StudentAssistantPanel({
       result: nextResult,
       settings: nextSettings,
       activeScheduleKey: mainScheduleKey,
-      resultsBySchedule: clearSavedResults
-        ? Object.fromEntries(Object.entries(saved.resultsBySchedule).filter(([key]) => key !== mainScheduleKey))
-        : saved.resultsBySchedule,
+      resultsBySchedule: saved.resultsBySchedule,
     })
   }
 
@@ -205,6 +210,9 @@ export function StudentAssistantPanel({
   }
 
   const closeEditProfile = () => {
+    editSessionRef.current += 1
+    setEditBusy(false)
+    setPendingEdit(null)
     setEditingAssistant(null)
     setEditForm(EMPTY_PROFILE)
     setEditFile(null)
@@ -213,6 +221,9 @@ export function StudentAssistantPanel({
   }
 
   const openEditProfile = (assistant: UploadedAssistant) => {
+    editSessionRef.current += 1
+    setEditBusy(false)
+    setPendingEdit(null)
     setEditingAssistant(assistant)
     setEditForm({
       lastName: assistant.lastName ?? '',
@@ -287,7 +298,7 @@ export function StudentAssistantPanel({
 
   const saveEditedAssistant = async (event: FormEvent) => {
     event.preventDefault()
-    if (!editingAssistant) return
+    if (!editingAssistant || editBusy) return
     setEditError('')
     const lastName = editForm.lastName.trim()
     const firstName = editForm.firstName.trim()
@@ -301,65 +312,89 @@ export function StudentAssistantPanel({
       return
     }
 
+    const session = editSessionRef.current
+    setEditBusy(true)
+    const sourceSnapshot = (saved: ReturnType<typeof loadLocalAssistantData>) => JSON.stringify({
+      key: saved.activeScheduleKey, assistants: saved.assistants, result: saved.result, settings: saved.settings, events: adminEvents,
+    })
+    const commit = (updated: UploadedAssistant, plan: AssistantEditPlan, saved: ReturnType<typeof loadLocalAssistantData>) => {
+      const nextAssistants = saved.assistants.map(assistant => assistant.id === updated.id ? updated : assistant)
+      saveAssistantData(nextAssistants, plan.result, saved.settings)
+      onAssistantUpdated?.(updated, plan.unassignedEventIds)
+      setAssistants(nextAssistants)
+      setResult(plan.result)
+      closeEditProfile()
+    }
     try {
-      let fileName = editingAssistant.fileName
-      let events = editingAssistant.events
-      let studentId = editingAssistant.studentId
+      if (pendingEdit) {
+        const saved = loadLocalAssistantData()
+        if (sourceSnapshot(saved) !== pendingEdit.source) {
+          setPendingEdit(null)
+          setEditError('Assignments changed while you were reviewing. Save changes again to recheck them.')
+          return
+        }
+        commit(pendingEdit.updated, pendingEdit.plan, saved)
+        return
+      }
+      let scheduleUpdate: Partial<UploadedAssistant> = {}
       if (editFile) {
         const parsed = await readScheduleFile(editFile, 'assistant')
+        if (session !== editSessionRef.current) return
         if (loadLocalAssistantData().activeScheduleKey !== mainScheduleKey) throw new Error('The active CSV changed. Reopen the assistant before editing.')
         const uploadedStudentId = parsed.studentId?.trim() ?? ''
-        if (!uploadedStudentId) {
-          setEditError('Student ID could not be found in the uploaded schedule.')
-          return
-        }
+        if (!uploadedStudentId) throw new Error('Student ID could not be found in the uploaded schedule.')
         if (editingAssistant.studentId && uploadedStudentId.toLocaleLowerCase() !== editingAssistant.studentId.trim().toLocaleLowerCase()) {
-          setEditError(`The uploaded schedule belongs to student ID ${uploadedStudentId}, not ${editingAssistant.studentId}.`)
-          return
+          throw new Error(`The uploaded schedule belongs to student ID ${uploadedStudentId}, not ${editingAssistant.studentId}.`)
         }
         if (assistants.some(assistant => assistant.id !== editingAssistant.id && assistant.studentId?.trim().toLocaleLowerCase() === uploadedStudentId.toLocaleLowerCase())) {
-          setEditError(`Student ID ${uploadedStudentId} has already been added.`)
-          return
+          throw new Error(`Student ID ${uploadedStudentId} has already been added.`)
         }
-        if (parsed.events.length === 0) {
-          setEditError('The uploaded file has no valid schedule rows.')
-          return
-        }
-        fileName = editFile.name
-        events = parsed.events
-        studentId = uploadedStudentId
+        if (parsed.events.length === 0) throw new Error('The uploaded file has no valid schedule rows.')
+        scheduleUpdate = { fileName: editFile.name, events: parsed.events, studentId: uploadedStudentId }
       }
 
+      const saved = loadLocalAssistantData()
+      const latest = saved.assistants.find(assistant => assistant.id === editingAssistant.id)
+      if (saved.activeScheduleKey !== mainScheduleKey || !latest) {
+        throw new Error('The CSV or assistant changed. Reopen the assistant before editing.')
+      }
       const updated: UploadedAssistant = {
-        ...editingAssistant,
+        ...latest,
+        ...scheduleUpdate,
         label: storedAssistantName(lastName, firstName, middleName),
-        fileName,
-        events,
-        studentId,
         lastName,
         firstName,
         middleName: middleName || undefined,
       }
-      const nextAssistants = assistants.map(assistant => assistant.id === updated.id ? updated : assistant)
-      setAssistants(nextAssistants)
-      setResult(null)
-      saveAssistantData(nextAssistants, null, settings, true)
-      closeEditProfile()
+      const plan = planAssistantEdit(saved.result, updated, saved.assistants, mainSchedule, adminEvents, saved.settings, Boolean(editFile))
+      if (plan.conflicts.length) {
+        setPendingEdit({ updated, plan, source: sourceSnapshot(saved) })
+        return
+      }
+      commit(updated, plan, saved)
     } catch (uploadFailure) {
       setEditError(uploadFailure instanceof Error ? uploadFailure.message : 'Could not read the class schedule file.')
-    }
+    } finally { if (session === editSessionRef.current) setEditBusy(false) }
   }
 
   const deleteStudentAssistant = () => {
     if (!deletingAssistant) return
-    const removedIndex = assistants.findIndex(assistant => assistant.id === deletingAssistant.id)
-    const nextAssistants = assistants.filter(assistant => assistant.id !== deletingAssistant.id)
-    const nextSelection = nextAssistants[Math.min(Math.max(removedIndex, 0), nextAssistants.length - 1)]?.id ?? ''
-    setAssistants(nextAssistants)
-    setSelectedAssistantId(nextSelection)
-    setResult(null)
-    saveAssistantData(nextAssistants, null, settings, true)
-    setDeletingAssistant(null)
+    try {
+      const saved = loadLocalAssistantData()
+      const removedIndex = saved.assistants.findIndex(assistant => assistant.id === deletingAssistant.id)
+      const nextAssistants = saved.assistants.filter(assistant => assistant.id !== deletingAssistant.id)
+      const nextResult = withoutAssistantAssignments(saved.result, deletingAssistant.id, nextAssistants, mainSchedule, saved.settings)
+      const nextSelection = nextAssistants[Math.min(Math.max(removedIndex, 0), nextAssistants.length - 1)]?.id ?? ''
+      // Persist the remaining result, not null: other assistants keep their duties.
+      saveAssistantData(nextAssistants, nextResult, saved.settings)
+      onAssistantRemoved?.(deletingAssistant.id)
+      setAssistants(nextAssistants)
+      setSelectedAssistantId(nextSelection)
+      setResult(nextResult)
+      setDeletingAssistant(null)
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Could not remove the student assistant.')
+    }
   }
 
   const removeDutyAssignment = (assignment: DutyAssignment) => {
@@ -614,11 +649,16 @@ export function StudentAssistantPanel({
       {editingAssistant && <div className="sa-profile-backdrop" role="presentation" onMouseDown={closeEditProfile}><form className="sa-profile-form" onSubmit={saveEditedAssistant} onMouseDown={event => event.stopPropagation()}>
         <div className="sa-profile-heading"><h3>Edit Student Assistant</h3><button type="button" aria-label="Close" onClick={closeEditProfile}>×</button></div>
         {editError && <p className="form-error">{editError}</p>}
-        <label>Last name *<input value={editForm.lastName} onChange={event => setEditForm(current => ({ ...current, lastName: event.target.value }))} /></label>
-        <label>First name *<input value={editForm.firstName} onChange={event => setEditForm(current => ({ ...current, firstName: event.target.value }))} /></label>
-        <label>Middle name<input value={editForm.middleName} onChange={event => setEditForm(current => ({ ...current, middleName: event.target.value }))} /></label>
-        <div className="sa-edit-schedule"><span>Class schedule</span>{keepCurrentSchedule || editFile ? <div className="sa-file-chip"><span>{editFile?.name ?? editingAssistant.fileName}</span><button type="button" aria-label="Remove schedule file" onClick={() => { setEditFile(null); setKeepCurrentSchedule(false) }}>×</button></div> : <label className="sa-upload-schedule">Upload schedule<input type="file" accept=".csv,.xls,.xlsx,text/csv" onChange={event => { setEditFile(event.target.files?.[0] ?? null); setKeepCurrentSchedule(false) }} /></label>}</div>
-        <div className="sa-profile-actions"><button className="btn-secondary" type="button" onClick={closeEditProfile}>Cancel</button><button className="btn-primary" type="submit">Save changes</button></div>
+        <label>Last name *<input disabled={editBusy || Boolean(pendingEdit)} value={editForm.lastName} onChange={event => setEditForm(current => ({ ...current, lastName: event.target.value }))} /></label>
+        <label>First name *<input disabled={editBusy || Boolean(pendingEdit)} value={editForm.firstName} onChange={event => setEditForm(current => ({ ...current, firstName: event.target.value }))} /></label>
+        <label>Middle name<input disabled={editBusy || Boolean(pendingEdit)} value={editForm.middleName} onChange={event => setEditForm(current => ({ ...current, middleName: event.target.value }))} /></label>
+        <div className="sa-edit-schedule"><span>Class schedule</span>{keepCurrentSchedule || editFile ? <div className="sa-file-chip"><span>{editFile?.name ?? editingAssistant.fileName}</span><button disabled={editBusy || Boolean(pendingEdit)} type="button" aria-label="Remove schedule file" onClick={() => { setEditFile(null); setKeepCurrentSchedule(false) }}>×</button></div> : <label className="sa-upload-schedule">Upload schedule<input disabled={editBusy || Boolean(pendingEdit)} type="file" accept=".csv,.xls,.xlsx,text/csv" onChange={event => { setEditFile(event.target.files?.[0] ?? null); setKeepCurrentSchedule(false) }} /></label>}</div>
+        {pendingEdit && <section className="sa-edit-conflicts" role="alert" aria-label="Assignments affected by the new class schedule">
+          <strong>These assignments conflict with the new class schedule:</strong>
+          <ul>{pendingEdit.plan.conflicts.map(conflict => <li key={conflict.key}>{conflict.kind}: {conflict.label}</li>)}</ul>
+          <p>Save and Unassign removes only the listed assignments. All other assignments stay unchanged.</p>
+        </section>}
+        <div className="sa-profile-actions"><button className="btn-secondary" type="button" onClick={closeEditProfile}>Cancel</button>{pendingEdit && <button className="btn-secondary" disabled={editBusy} type="button" onClick={() => setPendingEdit(null)}>Back</button>}<button className="btn-primary" disabled={editBusy} type="submit">{editBusy ? 'Saving…' : pendingEdit ? 'Save and Unassign' : 'Save changes'}</button></div>
       </form></div>}
 
       {deletingAssistant && <div className="sa-profile-backdrop" role="presentation" onMouseDown={() => setDeletingAssistant(null)}><section className="sa-delete-dialog" role="dialog" aria-modal="true" aria-labelledby="sa-delete-title" onMouseDown={event => event.stopPropagation()}><h3 id="sa-delete-title">Delete Student Assistant?</h3><p>Remove {assistantDisplayName(deletingAssistant)}{deletingAssistant.studentId ? ` (${deletingAssistant.studentId})` : ''}?</p><p>Their profile, class schedule, and duty assignments will be removed.</p><div className="sa-profile-actions"><button className="btn-secondary" type="button" onClick={() => setDeletingAssistant(null)}>Cancel</button><button className="sa-confirm-delete" type="button" onClick={deleteStudentAssistant}>Delete</button></div></section></div>}

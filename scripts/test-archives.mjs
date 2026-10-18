@@ -53,12 +53,19 @@ const remote = new Map()
 globalThis.fetch = async (url, init) => {
   if (offline) throw new TypeError('Offline')
   const id = url.split('/').at(-1)
-  if (init?.method === 'PUT' && !remote.has(id)) remote.set(id,{id,archive:JSON.parse(init.body),deletedAt:null})
+  if (init?.method === 'PUT' && !remote.has(id)) {
+    const archive = JSON.parse(init.body)
+    const normalize = name => name.trim().replace(/\s+/g, ' ').toLowerCase()
+    if ([...remote.values()].some(record=>!record.deletedAt && normalize(record.archive.name)===normalize(archive.name))) {
+      return {ok:false,status:409,json:async()=>({error:'An archive with this name already exists. Choose a different name.'})}
+    }
+    remote.set(id,{id,archive,deletedAt:null})
+  }
   if (init?.method === 'DELETE' && remote.has(id)) remote.get(id).deletedAt = new Date().toISOString()
   return {ok:true,status:init?.method ? 204 : 200,json:async()=>structuredClone([...remote.values()])}
 }
 const {createScheduleArchive} = await import('../frontend/src/storage/archiveTypes.ts')
-const {saveArchiveLocally,listLocalArchives,deleteArchiveLocally,syncArchives,mergeArchiveRecord} = await import('../frontend/src/storage/archiveStorage.ts')
+const {saveArchiveLocally,listLocalArchives,deleteArchiveLocally,syncArchives,mergeArchiveRecord,renameConflictingArchive} = await import('../frontend/src/storage/archiveStorage.ts')
 const {saveArchiveWithAction} = await import('../frontend/src/storage/archiveWorkflow.ts')
 const {DEFAULT_SCHEDULING_SETTINGS} = await import('../frontend/src/api/studentAssistantApi.ts')
 const {ArchivePreview} = await import('../frontend/src/ui/archives/ArchivePreview.tsx')
@@ -142,4 +149,61 @@ assert.equal(closeCount,1,'A failed save must keep the current schedule open')
 await saveArchiveWithAction(createScheduleArchive({...details,name:'Keep test'},schedule,[],data,view))
 assert.equal(closeCount,1,'Save Archive without a close action keeps current work open')
 assert.equal(JSON.stringify([...currentStorage]),storageBefore,'Saving and closing only invokes the supplied clear action')
-console.log('Archive checks passed: snapshots, duplicate names, immutable IDs, offline save/delete, retry, remote merge, tombstones, read-only rendering and active-state isolation.')
+
+// A slow or hung cloud sync must not delay a local commit or the close callback.
+const normalFetch = globalThis.fetch
+let releaseNetwork, signalRequest
+const networkHeld = new Promise(resolve=>{releaseNetwork=resolve})
+const requestStarted = new Promise(resolve=>{signalRequest=resolve})
+globalThis.fetch = async (...args) => { signalRequest(); await networkHeld; return normalFetch(...args) }
+const blockedSync = syncArchives()
+await requestStarted
+const fastArchive = {...snapshot,id:crypto.randomUUID(),name:'No network wait'}
+try {
+  await Promise.race([
+    saveArchiveWithAction(fastArchive,()=>{closeCount++}),
+    new Promise((_,reject)=>setTimeout(()=>reject(Error('Local save waited for the cloud')),500)),
+  ])
+  assert.ok((await listLocalArchives()).some(record=>record.id===fastArchive.id && record.pending))
+  assert.equal(closeCount,2,'Local commit closes the current schedule while cloud requests are still blocked')
+} finally { releaseNetwork(); await blockedSync; globalThis.fetch = normalFetch }
+
+// Another device claimed this name while our device was offline.
+const cloudCopy = {...snapshot,id:crypto.randomUUID(),name:'Shared name'}
+remote.set(cloudCopy.id,{id:cloudCopy.id,archive:cloudCopy,deletedAt:null})
+const conflict = {...snapshot,id:crypto.randomUUID(),name:' SHARED   NAME '}
+const unaffected = {...snapshot,id:crypto.randomUUID(),name:'Uploads after conflict'}
+await saveArchiveWithAction(conflict,()=>{closeCount++})
+await saveArchiveLocally(unaffected)
+await syncArchives()
+let conflicted = (await listLocalArchives()).find(record=>record.id===conflict.id)
+assert.ok(conflicted.pending && conflicted.nameConflict, 'A duplicate remains saved locally and explicitly marked')
+assert.deepEqual(conflicted.archive,conflict,'Cloud rejection must not alter the snapshot')
+assert.ok(remote.has(unaffected.id),'One name conflict must not block other archive uploads')
+assert.ok((await listLocalArchives()).some(record=>record.id===cloudCopy.id),'Cloud downloads must continue after a conflict')
+assert.ok(!remote.has(conflict.id),'The existing cloud archive must not be overwritten')
+assert.equal(closeCount,3)
+await assert.rejects(renameConflictingArchive(conflict.id,'shared name'),/already exists/)
+await assert.rejects(renameConflictingArchive(conflict.id,'  '),/Enter/)
+await renameConflictingArchive(conflict.id,'Renamed local archive')
+conflicted = (await listLocalArchives()).find(record=>record.id===conflict.id)
+assert.deepEqual(conflicted.archive,{...conflict,name:'Renamed local archive'},'Only the unsynced name changes')
+assert.ok(conflicted.pending && !conflicted.nameConflict)
+await syncArchives()
+assert.equal(remote.get(conflict.id).archive.name,'Renamed local archive')
+assert.equal(remote.get(cloudCopy.id).archive.name,'Shared name')
+assert.ok(!(await listLocalArchives()).find(record=>record.id===conflict.id).pending)
+await assert.rejects(renameConflictingArchive(conflict.id,'Not allowed'),/Only an unsynced/)
+
+const discarded = {...snapshot,id:crypto.randomUUID(),name:' SHARED name '}
+// Simulate a device that has not yet downloaded the cloud copy's name.
+disk.delete(cloudCopy.id)
+await saveArchiveLocally(discarded)
+await syncArchives()
+assert.ok((await listLocalArchives()).find(record=>record.id===discarded.id).nameConflict)
+await deleteArchiveLocally(discarded.id)
+await syncArchives()
+const discardedRecord = (await listLocalArchives()).find(record=>record.id===discarded.id)
+assert.ok(discardedRecord.deletedAt && !discardedRecord.pending, 'Deleting a conflicting local archive must not be stuck behind its name conflict')
+assert.equal(remote.get(cloudCopy.id).deletedAt,null,'Deleting a conflicting local snapshot must not delete the other device’s archive')
+console.log('Archive checks passed: local-first save during blocked sync, duplicate-name resolution, continued uploads/downloads, immutable synced snapshots, offline retries, deletion, read-only rendering and active-state isolation.')

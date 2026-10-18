@@ -977,6 +977,18 @@
   box-shadow: 0 18px 45px rgb(0 0 0 / 45%);
 }
 
+.sa-edit-conflicts {
+  border: 1px solid var(--red-text);
+  border-radius: 6px;
+  padding: 0.75rem;
+  background: var(--red-surface);
+  color: var(--text-main);
+  font-size: 0.8rem;
+  text-align: left;
+}
+.sa-edit-conflicts ul { max-height: 180px; overflow-y: auto; padding-left: 1.25rem; }
+.sa-edit-conflicts li + li { margin-top: 0.4rem; }
+
 .sa-duty-action-dialog h3,
 .sa-duty-action-dialog p {
   margin: 0;

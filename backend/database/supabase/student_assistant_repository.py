@@ -37,6 +37,7 @@ def load_data() -> dict[str, Any] | None:
         "solverResultsBySchedule": results_by_schedule,
         "rostersBySchedule": stored_result.get("rostersBySchedule") if isinstance(stored_result, dict) else None,
         "rosterRevisions": stored_result.get("rosterRevisions") if isinstance(stored_result, dict) else None,
+        "resultRevisions": stored_result.get("resultRevisions") if isinstance(stored_result, dict) else None,
         "unlinkedAssistants": stored_result.get("unlinkedAssistants") if isinstance(stored_result, dict) else None,
         "schedulingSettings": row.get("scheduling_settings") or {
             "minimumGapAfterThreeHourDutyMinutes": 30,
@@ -70,20 +71,30 @@ def save_data(value: dict[str, Any]) -> None:
     for roster in rosters.values():
         for assistant in roster:
             unlinked.pop(assistant['id'], None)
-    results = {**(existing.get('solverResultsBySchedule') or {}), **(value.get('solverResultsBySchedule') or {})}
-    for key, revision in (existing.get('rosterRevisions') or {}).items():
-        if revision > incoming_revisions.get(key, ''):
-            previous = (existing.get('solverResultsBySchedule') or {}).get(key)
-            if previous is not None:
-                results[key] = previous
-            else:
-                results.pop(key, None)
+    results = dict(existing.get('solverResultsBySchedule') or {})
+    result_revisions = dict(existing.get('resultRevisions') or {})
+    incoming_result_revisions = value.get('resultRevisions') or {}
+    incoming_results = dict(value.get('solverResultsBySchedule') or {})
     active_key = value.get('activeScheduleKey') or ''
-    if active_key and active_key in (value.get('rostersBySchedule') or {}) and revisions.get(active_key, '') <= incoming_revisions.get(active_key, ''):
-        if value.get('solverResult') is None:
-            results.pop(active_key, None)
+    if active_key:
+        incoming_results[active_key] = value.get('solverResult')
+    for key in incoming_results.keys() | incoming_result_revisions.keys():
+        if key not in (value.get('rostersBySchedule') or {}) or revisions.get(key, '') > incoming_revisions.get(key, ''):
+            continue
+        revision = incoming_result_revisions.get(key, '')
+        # Cached results are not edits. Only a newer per-CSV revision may replace
+        # versioned data; legacy clients may save only their unversioned active CSV.
+        if revision:
+            if revision <= result_revisions.get(key, ''):
+                continue
+        elif result_revisions.get(key) or key != active_key:
+            continue
+        if incoming_results.get(key) is None:
+            results.pop(key, None)
         else:
-            results[active_key] = value['solverResult']
+            results[key] = incoming_results[key]
+        if revision:
+            result_revisions[key] = revision
     request("POST", "student_assistant_schedules", payload={
         "id": ASSISTANT_SCHEDULE_ID,
         "assistants": rosters.get(active_key, []),
@@ -94,6 +105,7 @@ def save_data(value: dict[str, Any]) -> None:
             "resultsBySchedule": results,
             "rostersBySchedule": rosters,
             "rosterRevisions": revisions,
+            "resultRevisions": result_revisions,
             "unlinkedAssistants": list(unlinked.values()),
         },
         "scheduling_settings": value.get("schedulingSettings") or {

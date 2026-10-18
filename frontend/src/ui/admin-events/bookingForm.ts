@@ -31,9 +31,7 @@ export function inferBookingRepeat(dateKeys: string[]): Pick<RoomBookingForm, 'r
   return { repeat: skipsWeeks ? 'biweekly' : 'weekly', weekdays }
 }
 
-export function bookingSeriesKey(id: string) {
-  return id.replace(/(?:_\d+)*_\d{4}-\d{2}-\d{2}$/, '')
-}
+export { bookingSeriesKey } from '../../formatters/bookingSeries'
 
 export function formatSelectedDate(date: string) {
   return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(`${date}T12:00:00`))

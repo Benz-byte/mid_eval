@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 
 from services.archive_service import get_archives, remove_archive, save_archive
+from database.supabase.archive_repository import ArchiveNameConflictError
 
 blueprint = Blueprint('archives', __name__)
 
@@ -14,6 +15,8 @@ def list_archives():
 def put_archive(archive_id: str):
     try:
         save_archive(request.get_json(silent=True), archive_id)
+    except ArchiveNameConflictError as error:
+        return jsonify({'error': str(error)}), 409
     except ValueError as error:
         return jsonify({'error': str(error)}), 400
     return '', 204

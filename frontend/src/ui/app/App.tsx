@@ -5,13 +5,15 @@ import { readScheduleFile } from '../../api/scheduleParser'
 import { parseInputTime } from '../../formatters/timeFormatter'
 import { createExamPeriodEvents, examPeriodPrefix, isExamPeriod } from '../../formatters/examPeriod'
 import { eventsForSchedule } from '../../formatters/eventSchedule'
-import { loadAdminEvents, saveAdminEventsLocally } from '../../storage/adminEventStorage'
+import { editedBookingEvents, validateEditedEventAssistants } from '../../formatters/bookingEdit'
+import { EVENT_DELETION_CHANGE, loadAdminEvents, loadDeletedEventIds, saveAdminEventsLocally } from '../../storage/adminEventStorage'
 import {
   flushPendingAdminSync,
   flushPendingScheduleSync,
   hasPendingScheduleSync,
   mergePendingAdminEvents,
   queueAdminDelete,
+  queueAdminChanges,
   queueAdminUpsert,
   queueScheduleSync,
 } from '../../storage/localFirstSync'
@@ -81,6 +83,15 @@ export default function App() {
   useEffect(() => {
     saveAdminEventsLocally(adminEvents)
   }, [adminEvents])
+
+  useEffect(() => {
+    const removeDeleted = () => {
+      const deleted = loadDeletedEventIds()
+      setAdminEvents(current => current.filter(event => !deleted.has(event.id)))
+    }
+    window.addEventListener(EVENT_DELETION_CHANGE, removeDeleted)
+    return () => window.removeEventListener(EVENT_DELETION_CHANGE, removeDeleted)
+  }, [])
 
   useEffect(() => {
     saveCsvScheduleLocally({ events: csvEvents, name: csvName, rooms: csvRooms, times: csvTimes, fingerprint: csvFingerprint, tbaSubjects, metadata: scheduleMetadata })
@@ -155,9 +166,9 @@ export default function App() {
       const revision = adminRevisionRef.current
       try {
         await flushPendingAdminSync()
-        const events = await loadSharedAdminEvents()
+        const snapshot = await loadSharedAdminEvents()
         if (!cancelled && revision === adminRevisionRef.current) {
-          const merged = mergePendingAdminEvents(events)
+          const merged = mergePendingAdminEvents(snapshot.events, snapshot.deletedIds)
           saveAdminEventsLocally(merged)
           setAdminEvents(merged)
         }
@@ -229,7 +240,35 @@ export default function App() {
     queueScheduleSync({ csvEvents: [], csvName: '', rooms: [], times: [], fingerprint: '', tbaSubjects: [], metadata: {} })
   }
 
-  const saveAdminEvent = (form: AdminEventForm, editingId: string | null) => {
+  const commitEventEdit = (ids: string[], updated: CalendarEvent[], replacedIds: string[] = []) => {
+    const removedIds = new Set([...ids, ...replacedIds])
+    const others = adminEvents.filter(event => !removedIds.has(event.id))
+    const data = loadLocalAssistantData()
+    const previous = adminEvents.filter(event => ids.includes(event.id))
+    const checked = validateEditedEventAssistants(previous, updated,
+      eventsForSchedule(others, csvFingerprint, rooms), data.assistants, data.result)
+    const removedAssignments = previous.filter(event => event.assistantId && !updated.some(item => item.id === event.id
+      || (item.assistantId === event.assistantId && item.date === event.date && item.room === event.room
+        && item.startMinutes === event.startMinutes && item.endMinutes === event.endMinutes)))
+    const warnings = [...checked.conflicts, ...removedAssignments.map(event => `${event.assistantLabel ?? event.assistantId} · ${event.courseCode} · ${event.date} · ${event.room} (card removed)`)]
+    if (warnings.length && !window.confirm(`These assignments cannot be kept:\n\n${warnings.join('\n')}\n\nSave these changes and leave the affected events unassigned?`)) return false
+    const next = [...others, ...checked.events]
+    try {
+      saveAdminEventsLocally(next)
+      queueAdminChanges(checked.events, [...removedIds].filter(id => !checked.events.some(event => event.id === id)))
+    } catch {
+      // The queue write can fail after the snapshot write (for example, quota).
+      // Restore the prior local calendar rather than leave a half-saved edit.
+      try { saveAdminEventsLocally(adminEvents) } catch { /* Storage itself is unavailable. */ }
+      window.alert('The event changes could not be saved locally. Please try again.')
+      return false
+    }
+    adminRevisionRef.current += 1
+    setAdminEvents(next)
+    return true
+  }
+
+  const saveAdminEvent = (form: AdminEventForm, editingId: string | null, replacedIds: string[] = []) => {
     if (!csvFingerprint) throw new Error('Upload a schedule before adding events.')
     const calendarEvent: CalendarEvent = {
       ...adminEvents.find(event => event.id === editingId),
@@ -249,12 +288,11 @@ export default function App() {
       instructorLastName: '',
     }
 
+    if (editingId) return commitEventEdit([editingId], [calendarEvent], replacedIds)
     adminRevisionRef.current += 1
     queueAdminUpsert(calendarEvent)
     setAdminEvents(current => {
-      const next = editingId
-        ? current.map(event => event.id === editingId ? calendarEvent : event)
-        : [...current, calendarEvent]
+      const next = [...current, calendarEvent]
       saveAdminEventsLocally(next)
       return next
     })
@@ -323,9 +361,9 @@ export default function App() {
     })
   }
 
-  const updateRoomBooking = (ids: string[], form: RoomBookingForm, schedules: BookingDateSchedule[]) => {
-    deleteAdminEvents(ids)
-    saveRoomBooking(form, schedules)
+  const updateRoomBooking = (ids: string[], form: RoomBookingForm, schedules: BookingDateSchedule[], replacedIds: string[] = []) => {
+    const previous = adminEvents.filter(event => ids.includes(event.id))
+    return commitEventEdit(ids, editedBookingEvents(previous, form, schedules, csvFingerprint), replacedIds)
   }
 
   return (
@@ -374,6 +412,17 @@ export default function App() {
           <StudentAssistantPanel
             isActive={activeTab === 'student-assistant'}
             onViewStateChange={rememberAssistantView}
+            onAssistantRemoved={assistantId => {
+              availableAdminEvents.filter(event => event.assistantId === assistantId)
+                .forEach(event => assignEventAssistant(event.id))
+            }}
+            onAssistantUpdated={(assistant, unassignedEventIds) => {
+              const unassign = new Set(unassignedEventIds)
+              availableAdminEvents.filter(event => event.assistantId === assistant.id).forEach(event => {
+                if (unassign.has(event.id)) assignEventAssistant(event.id)
+                else if (event.assistantLabel !== assistant.label) assignEventAssistant(event.id, assistant.id, assistant.label)
+              })
+            }}
             mainSchedule={csvEvents}
             mainScheduleName={csvName}
             mainScheduleKey={csvFingerprint}

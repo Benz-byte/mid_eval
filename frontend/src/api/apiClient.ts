@@ -1,5 +1,10 @@
 export const backendUrl = () => window.electron.flaskUrl
 
+export class BackendError extends Error {
+  status: number
+  constructor(message: string, status: number) { super(message); this.status = status }
+}
+
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${backendUrl()}${path}`, {
     ...init,
@@ -10,7 +15,7 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
   })
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { error?: string } | null
-    throw new Error(body?.error || `Backend request failed (${response.status}).`)
+    throw new BackendError(body?.error || `Backend request failed (${response.status}).`, response.status)
   }
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>

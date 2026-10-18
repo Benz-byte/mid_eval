@@ -11,10 +11,11 @@ class EventDescriptionTests(unittest.TestCase):
                           description='Bring your ID.\nArrive early.')
 
     def test_description_round_trip(self):
-        with patch('backend.database.supabase.admin_event_repository.request') as request:
+        with patch('backend.database.supabase.admin_event_repository.request', side_effect=[[], None]) as request:
             save_event(self.event)
             payload = request.call_args.kwargs['payload']
             self.assertEqual(payload['description'], self.event['description'])
+            request.side_effect = None
             request.return_value = [payload]
             self.assertEqual(load_events()[0]['description'], self.event['description'])
 
@@ -27,16 +28,17 @@ class EventDescriptionTests(unittest.TestCase):
 
     def test_missing_column_does_not_silently_drop_description(self):
         with patch('backend.database.supabase.admin_event_repository.request',
-                   side_effect=RuntimeError('missing column')) as request:
+                   side_effect=[[], RuntimeError('missing column')]) as request:
             with self.assertRaises(RuntimeError):
                 save_event(self.event)
-            self.assertEqual(request.call_count, 1)
+            self.assertEqual(request.call_count, 2)
 
-    def test_blank_description_supports_legacy_schema(self):
+    def test_event_saving_requires_current_migrations_even_without_description(self):
         with patch('backend.database.supabase.admin_event_repository.request',
-                   side_effect=[RuntimeError('missing column'), None]) as request:
-            save_event({**self.event, 'description': ''})
-            self.assertNotIn('description', request.call_args.kwargs['payload'])
+                   side_effect=RuntimeError('missing admin_event_deletions')) as request:
+            with self.assertRaises(RuntimeError):
+                save_event({**self.event, 'description': ''})
+            self.assertEqual(request.call_count, 1)
 
 
 if __name__ == '__main__':

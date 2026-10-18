@@ -1,9 +1,10 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, dialog } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { spawn } from 'child_process'
 import type { ChildProcess } from 'child_process'
 import { isDev } from './environment.js'
+import { stopBackendProcess } from './backendProcess.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -45,15 +46,16 @@ function startFlask(): void {
   })
 }
 
-function stopFlask(): void {
-  if (flaskProcess?.pid) {
-    // On Windows, kill() only kills the parent — use taskkill to kill the full process tree
-    if (process.platform === 'win32') {
-      spawn('taskkill', ['/pid', String(flaskProcess.pid), '/f', '/t'])
-    } else {
-      flaskProcess.kill('SIGTERM')
-    }
+function stopFlask(): boolean {
+  if (!flaskProcess) return true
+  try {
+    stopBackendProcess(flaskProcess)
     flaskProcess = null
+    return true
+  } catch (error) {
+    console.error('[Flask] shutdown failed:', error)
+    dialog.showErrorBox('Could not close the backend', 'The app could not stop its backend process. Try closing the app again.')
+    return false
   }
 }
 
@@ -70,6 +72,9 @@ app.on('ready', () => {
       nodeIntegration: false,
     },
   })
+  mainWindow.on('close', event => {
+    if (!stopFlask()) event.preventDefault()
+  })
 
   if (isDev()) {
     mainWindow.loadURL('http://localhost:5173')
@@ -80,9 +85,11 @@ app.on('ready', () => {
 
 })
 
-app.on('before-quit', stopFlask)
+app.on('before-quit', event => {
+  if (!stopFlask()) event.preventDefault()
+})
 
 app.on('window-all-closed', () => {
-  stopFlask()
   if (process.platform !== 'darwin') app.quit()
+  else stopFlask()
 })

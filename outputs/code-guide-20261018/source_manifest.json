@@ -1,0 +1,692 @@
+[
+  {
+    "file": "backend/app.py",
+    "sha256": "afec3febd619a1fe31ebdb3978d988905c31285529d21552775e7683c5403080",
+    "lines": 34
+  },
+  {
+    "file": "backend/database/__init__.py",
+    "sha256": "d1a4fe009706c6459f2e61392f0b24e55c6896f087eefa483c1629363b90f493",
+    "lines": 1
+  },
+  {
+    "file": "backend/database/supabase/__init__.py",
+    "sha256": "ba15d45d6cad296527fa28db5e6fa7ab18d6491a70ad641445039ff541216a2c",
+    "lines": 1
+  },
+  {
+    "file": "backend/database/supabase/admin_event_repository.py",
+    "sha256": "662964fdc2593396207fbe31675e7bf15a772708e501542441698605326a6843",
+    "lines": 102
+  },
+  {
+    "file": "backend/database/supabase/archive_repository.py",
+    "sha256": "f9e3fc7df966a67743fa4c69f6afb889a422ab343e7bcac10aad338665950cdc",
+    "lines": 45
+  },
+  {
+    "file": "backend/database/supabase/client.py",
+    "sha256": "a38c8790c9a0a3fcfca6afc0aede78085d1c6ca147fbd257fb12db54ce43f3d4",
+    "lines": 82
+  },
+  {
+    "file": "backend/database/supabase/schedule_repository.py",
+    "sha256": "e65d333f341b567a12c588c7ff06912e99334e70f6a1f43597ccd551888f0a21",
+    "lines": 53
+  },
+  {
+    "file": "backend/database/supabase/student_assistant_repository.py",
+    "sha256": "15b5df489577299a2932778a578ff72321f33fb77ff3591c7ba181ef3621bea8",
+    "lines": 116
+  },
+  {
+    "file": "backend/models/__init__.py",
+    "sha256": "60e17b034a79ebe366469d226fcfd006596cabcd4181ef3c275598d31743ddb7",
+    "lines": 1
+  },
+  {
+    "file": "backend/models/admin_event.py",
+    "sha256": "523dd5a41672465038c7ba2a41bd8247076b1250000d85d9806a9508e9683ba2",
+    "lines": 16
+  },
+  {
+    "file": "backend/models/archive.py",
+    "sha256": "5d8f1b85502e7dd802c85c3545b2c073d1bde5be8f2e62c9b420623f0f49e894",
+    "lines": 37
+  },
+  {
+    "file": "backend/models/schedule.py",
+    "sha256": "67cff25dcd43b2d96fa74e575645e6bc4ec1833497039a059fff993027390bf6",
+    "lines": 48
+  },
+  {
+    "file": "backend/models/student_assistant.py",
+    "sha256": "8598175fcec968bdc971556ad71e320a12172ee75adaa1f6a7d5108b27b64a38",
+    "lines": 13
+  },
+  {
+    "file": "backend/requirements.txt",
+    "sha256": "85100cb3e6b9d11247b2a099d2f514429c88987e98f92c5b79cc44d7e8a3fcef",
+    "lines": 4
+  },
+  {
+    "file": "backend/routes/__init__.py",
+    "sha256": "e41cbc9bba02bd621a92617ae163a705d898e7097c653b6afb270333a282e066",
+    "lines": 1
+  },
+  {
+    "file": "backend/routes/admin_events.py",
+    "sha256": "87b50fcdc3f970f0a0e9b9bc24a2c3f606c57276486e73c98a998f1c254871b3",
+    "lines": 38
+  },
+  {
+    "file": "backend/routes/archives.py",
+    "sha256": "7d1e4bd2fff4277b8b6c838ea66c620be785236b44ade9affb68abf001986e27",
+    "lines": 31
+  },
+  {
+    "file": "backend/routes/health.py",
+    "sha256": "12bb46241428caad8f425c0503fc286b4a77d7ba2fcf6abaecf8c29edac630ec",
+    "lines": 10
+  },
+  {
+    "file": "backend/routes/schedules.py",
+    "sha256": "b2401cda9f703101ec0b0c810cd188853c32cc83cadf836a6d689a767ec4aff8",
+    "lines": 37
+  },
+  {
+    "file": "backend/routes/student_assistants.py",
+    "sha256": "8ac652be0c7ca73a783f1a041fce450607e187806a4c286d544d9c9dc3907d9c",
+    "lines": 33
+  },
+  {
+    "file": "backend/services/__init__.py",
+    "sha256": "0597ad7d6cd305b9a81f6014b201ac96d41a3f42fdae986c273ecfb3c04698d4",
+    "lines": 1
+  },
+  {
+    "file": "backend/services/admin_event_service.py",
+    "sha256": "9f6a34bd65f1ffad2a84740b730d282d362928f03cbc02431afb1f8450ccd1eb",
+    "lines": 24
+  },
+  {
+    "file": "backend/services/archive_service.py",
+    "sha256": "5db1a34f4a90793edbea6e49940ceb99534484b4f9f228b63f4d920cd49f4913",
+    "lines": 21
+  },
+  {
+    "file": "backend/services/conflict_detector.py",
+    "sha256": "3065001c3643c6e869d01f23df8c07d561270c8577595d56fc8610161cb8f233",
+    "lines": 9
+  },
+  {
+    "file": "backend/services/schedule_parser.py",
+    "sha256": "9c7367ff4bee020bd8829f4db1bfff437353028c7b60a2c14bed00a25fd05aa5",
+    "lines": 600
+  },
+  {
+    "file": "backend/services/schedule_service.py",
+    "sha256": "6b4eed551a10658847cd11b95cb874d4fba98ea5fc9bb917be1b6c909a9d82f0",
+    "lines": 12
+  },
+  {
+    "file": "backend/services/student_assistant_service.py",
+    "sha256": "d0700462c501766c48542cec460b8df2af48fc1bcfe1a28069c392d2cf4648d9",
+    "lines": 17
+  },
+  {
+    "file": "backend/services/vacant_room_finder.py",
+    "sha256": "d27363cccbae65e5c217d76aefd4836206b95eb17e860473bed7963e034e7f93",
+    "lines": 12
+  },
+  {
+    "file": "backend/solver/__init__.py",
+    "sha256": "7a600e2fbbb809b441439c16b696f3d5024c5cae83e346da24cf35b5c49110f5",
+    "lines": 1
+  },
+  {
+    "file": "backend/solver/student_assistant_solver.py",
+    "sha256": "21af0d72cb56ca727191e7452e0a1e5bc128bc894abc992ae10fde31b23ad25e",
+    "lines": 758
+  },
+  {
+    "file": "backend/tests/test_admin_event_deletions.py",
+    "sha256": "25d438d576aa51b76f9a14d6666b805d5a92e4dea526a1a847ef16d3c778249e",
+    "lines": 67
+  },
+  {
+    "file": "backend/tests/test_admin_event_descriptions.py",
+    "sha256": "c59b3f448a02253609abfa36d19e47ba145c0906d5ccf8d3986c8125994abc36",
+    "lines": 45
+  },
+  {
+    "file": "backend/tests/test_archives.py",
+    "sha256": "9c7e538e6ee911f5f108d46dae56ebb204ec9a16d9e6b915ae878028e5544d15",
+    "lines": 102
+  },
+  {
+    "file": "backend/tests/test_assistant_rosters.py",
+    "sha256": "f15a104399c5d334868e81999a48901f6b987bc48b063fb2328d5726c9ee5bf9",
+    "lines": 124
+  },
+  {
+    "file": "backend/tests/test_event_schedule.py",
+    "sha256": "5bf27ac341b06d5754f728381c088a4365ebc48d8caf850b071257eaad30e6ce",
+    "lines": 36
+  },
+  {
+    "file": "backend/tests/test_incremental_solver.py",
+    "sha256": "363afa7b2f08a1f4002a74118678fb931acb30d0dd3017f69f280c06d967d294",
+    "lines": 179
+  },
+  {
+    "file": "backend/tests/test_schedule_parser.py",
+    "sha256": "c6d33310f63bcddfc22661fea53b979cf7e392495e311cf80bba8098f3428a05",
+    "lines": 102
+  },
+  {
+    "file": "backend/tests/test_student_assistant_service.py",
+    "sha256": "691d006f1ff5b9fb8110199ef828d5e10eb3938c5161650386cadb3fdd656045",
+    "lines": 45
+  },
+  {
+    "file": "database/supabase/migrations/001_shared_schedule.sql",
+    "sha256": "888bf790d197df0fb8f02ce808883f745c7619fad673c96b1d2c7f8e03b35777",
+    "lines": 52
+  },
+  {
+    "file": "database/supabase/migrations/002_admin_events.sql",
+    "sha256": "916e3e4b646687443d30d36a39352ecdeace8fbbec7ec6cb23836abe40820e93",
+    "lines": 84
+  },
+  {
+    "file": "database/supabase/migrations/003_student_assistant_schedules.sql",
+    "sha256": "b1424b37fcde314cca0d50d65e72aee685620affb6617034a513bdad759ad13d",
+    "lines": 51
+  },
+  {
+    "file": "database/supabase/migrations/004_admin_event_assistants.sql",
+    "sha256": "233c4deda53865088057a925c6cc03b9c1c926321e144e5e988bd9040319ab20",
+    "lines": 4
+  },
+  {
+    "file": "database/supabase/migrations/005_duty_break_setting.sql",
+    "sha256": "105494f4933f8682cd4488b7fc32be219e91342a1940a9baced9e24e95592580",
+    "lines": 14
+  },
+  {
+    "file": "database/supabase/migrations/006_admin_event_descriptions.sql",
+    "sha256": "3413b0dea4adab6b3366bdd08adbd91593abc9d2eadcb9931aa55dfad8fdfdd2",
+    "lines": 3
+  },
+  {
+    "file": "database/supabase/migrations/007_schedule_archives.sql",
+    "sha256": "eb570fe9e810188b25e6ab5e280f418bbc5d47d15f8a61afa0d411c248151440",
+    "lines": 42
+  },
+  {
+    "file": "database/supabase/migrations/008_csv_scoped_events.sql",
+    "sha256": "b0583aa9fdef05138631123df006da183df1afdec043a9d313eb822101481ac5",
+    "lines": 7
+  },
+  {
+    "file": "database/supabase/migrations/009_unique_archive_names.sql",
+    "sha256": "089f46a12103e195203359eb0cee10a1a95d235f797800280f59dbc600118704",
+    "lines": 6
+  },
+  {
+    "file": "database/supabase/migrations/010_admin_event_deletions.sql",
+    "sha256": "b27f5a582476984dfc571d989200be8ff1200978a8715a6809660dc38ee44558",
+    "lines": 60
+  },
+  {
+    "file": "eslint.config.js",
+    "sha256": "8ae68038c599b869bf7f70f1e3d6a63ee27f4e5d04a92d0e40a07ee84f16cb33",
+    "lines": 25
+  },
+  {
+    "file": "frontend/electron-builder.json",
+    "sha256": "45161226092ec49965554d2959c83c31afb4085c6ee1430f5c787c5f0944345a",
+    "lines": 21
+  },
+  {
+    "file": "frontend/index.html",
+    "sha256": "4c5230fee0dd9acdb9d88f3b1267f71304253c8c658253e06a35a25bdb5d9e5b",
+    "lines": 13
+  },
+  {
+    "file": "frontend/src/api/adminEventApi.ts",
+    "sha256": "f0d7d9913bcf8856cdb0c1bb3b03efdb18e21b7cb8591c4af2b290dc98e9bd5f",
+    "lines": 61
+  },
+  {
+    "file": "frontend/src/api/apiClient.ts",
+    "sha256": "fc72dc98459b9bb067db27bce8e6420b7178c1f48ae820250fa8f0281aaade1c",
+    "lines": 27
+  },
+  {
+    "file": "frontend/src/api/archiveApi.ts",
+    "sha256": "eb919662975941c3c960dfb565d75e49cdcbc9279fa7324babc6671941ba4271",
+    "lines": 26
+  },
+  {
+    "file": "frontend/src/api/scheduleApi.ts",
+    "sha256": "c7ff6fccbb710c642119428c8199d1789aeb108333836363c7ccd5938a4d3333",
+    "lines": 33
+  },
+  {
+    "file": "frontend/src/api/scheduleParser.ts",
+    "sha256": "23feed20cd46dd013f9d7948673f408eb7cd9587e74c22cb5580fa4304c2b459",
+    "lines": 66
+  },
+  {
+    "file": "frontend/src/api/studentAssistantApi.ts",
+    "sha256": "8b47a4992547fe0bb2469a856cb59300bb9932fec2264703dde09c385eb7785d",
+    "lines": 157
+  },
+  {
+    "file": "frontend/src/desktop/backendProcess.ts",
+    "sha256": "b211b29a56ab2b42813503d076e1aecb7d36e161563d502819e0bbba6b16d666",
+    "lines": 19
+  },
+  {
+    "file": "frontend/src/desktop/environment.ts",
+    "sha256": "e0959b2b7d1851555fce580f7da2a4844452329bf04d481b0022923e69c6b523",
+    "lines": 3
+  },
+  {
+    "file": "frontend/src/desktop/main.ts",
+    "sha256": "32617812a59c821428c95f9864b93b3a32382af673dfea7b55249ca967d61224",
+    "lines": 95
+  },
+  {
+    "file": "frontend/src/desktop/preload.ts",
+    "sha256": "2f9c1e2608d8a162224bb0b9e1edea933c3c28db0ec3bf8114f10a0f5e944ea0",
+    "lines": 5
+  },
+  {
+    "file": "frontend/src/desktop/tsconfig.json",
+    "sha256": "506a6241f500988ded452a0247cfb6f9993078d271c443cd8c4b8f81d3578fa1",
+    "lines": 19
+  },
+  {
+    "file": "frontend/src/desktop/tsconfig.preload.json",
+    "sha256": "5ad8d13fbc21a1862b94920d51d3e5660a2fcb80f791daa39c682eb4aaf18a9f",
+    "lines": 18
+  },
+  {
+    "file": "frontend/src/export/roomScheduleExcel.ts",
+    "sha256": "8add5108f7d89b26d79036081d53392953a6c094be1be9e2a79db5013d30a863",
+    "lines": 153
+  },
+  {
+    "file": "frontend/src/formatters/archiveName.ts",
+    "sha256": "a8c8a054d0ec2e6a62d9c0206f3aae237564d24e9c904ba5c1894fb390722f1f",
+    "lines": 3
+  },
+  {
+    "file": "frontend/src/formatters/assistantNameFormatter.ts",
+    "sha256": "9c734502b3ffeace9b4b304b61181316fb0e36551152192bfc3728f31a581979",
+    "lines": 11
+  },
+  {
+    "file": "frontend/src/formatters/assistantSchedule.ts",
+    "sha256": "ea9c80338db4e0acff81b5b8ad2d573b1bb4a22f36f5428ed66f00cf41f78297",
+    "lines": 120
+  },
+  {
+    "file": "frontend/src/formatters/bookingEdit.ts",
+    "sha256": "00888f18fc04d1d3e95df886da833f4f37fbf8b44fd3997f58948716784ccb1a",
+    "lines": 70
+  },
+  {
+    "file": "frontend/src/formatters/bookingSeries.ts",
+    "sha256": "31d5d51418c116aabafe3f685cefc9a51392b07c85fd18901bdfee6b51781b64",
+    "lines": 3
+  },
+  {
+    "file": "frontend/src/formatters/dateFormatter.ts",
+    "sha256": "db0543dc6353b4b603aeef9e5c85272ca36b404826c79cfaa2266cfcb915aaf2",
+    "lines": 36
+  },
+  {
+    "file": "frontend/src/formatters/eventSchedule.ts",
+    "sha256": "54d671b9f58b9b485ee3a5a1e13473f6c7c51686f984a5c988fabd29763fe716",
+    "lines": 18
+  },
+  {
+    "file": "frontend/src/formatters/examPeriod.ts",
+    "sha256": "923286c49bab9c95c44e2d283fd7f0e3243898e4061620e90283617eba8ae72d",
+    "lines": 34
+  },
+  {
+    "file": "frontend/src/formatters/timeFormatter.ts",
+    "sha256": "2d7aa07783695f7a5791eb9a6798f61620add6f958c2e3afe99f549633f06a47",
+    "lines": 16
+  },
+  {
+    "file": "frontend/src/formatters/weeklyWorkload.ts",
+    "sha256": "28f78bf24e017a95fdbc2676e64f866b36fa145a0a6b80cd54d4c3e301ae2e2f",
+    "lines": 67
+  },
+  {
+    "file": "frontend/src/storage/adminEventStorage.ts",
+    "sha256": "2cdb101ee1aa774d7a70da3a4969684690017b31176f075e2315031dca4d8719",
+    "lines": 33
+  },
+  {
+    "file": "frontend/src/storage/archiveStorage.ts",
+    "sha256": "29c9cba72dc938ef5c33b01a6e18a12b71c24f16313df65d8aa213050d8abaa2",
+    "lines": 131
+  },
+  {
+    "file": "frontend/src/storage/archiveTypes.ts",
+    "sha256": "b531f9583daf19dbb6e297d5f4ca887e9c43c9f8aff79c37518eec144b6a2ff7",
+    "lines": 69
+  },
+  {
+    "file": "frontend/src/storage/archiveWorkflow.ts",
+    "sha256": "693a22410c10cc3616350a2c44f39f675900f7357e1c85e24d8e7b80aaebc1cc",
+    "lines": 8
+  },
+  {
+    "file": "frontend/src/storage/localFirstSync.ts",
+    "sha256": "b65c8c8ee295cd0b32622a790dca13dfa4f56f5a3b06a7d90c5aa67de753ca46",
+    "lines": 179
+  },
+  {
+    "file": "frontend/src/storage/preferenceStorage.ts",
+    "sha256": "0d322fc3b756c7e8058325547e34dab240dd24a52a1b233d1284ccafc2d0d81d",
+    "lines": 24
+  },
+  {
+    "file": "frontend/src/storage/scheduleStorage.ts",
+    "sha256": "2762dfaa43e93de24b0f974f98ebfe7593512ac7517a1d24179e85f274659eb1",
+    "lines": 62
+  },
+  {
+    "file": "frontend/src/storage/studentAssistantStorage.ts",
+    "sha256": "64c993392579b7dfb814d97f20d558ca51c5212d373f8e519794ed40338cae02",
+    "lines": 188
+  },
+  {
+    "file": "frontend/src/storage/themeStorage.ts",
+    "sha256": "a9e6089362e1561ae1a2e9130429fca6d0075b211308810fd1de627ad0c77833",
+    "lines": 11
+  },
+  {
+    "file": "frontend/src/types.ts",
+    "sha256": "028dfe076c776c7ad186ad266e5bb884b4597a2755f7ee3eb0d052287a593b2b",
+    "lines": 99
+  },
+  {
+    "file": "frontend/src/ui/admin-events/AdminEventsPanel.css",
+    "sha256": "dc869ebd3a592681039dcb5627865762eb5ab8305aeebb66e090c9850965512c",
+    "lines": 907
+  },
+  {
+    "file": "frontend/src/ui/admin-events/AdminEventsPanel.tsx",
+    "sha256": "f252cb2319264ea0a5754dd66b491163a8c52d99505a669a85e1cc93b9973df1",
+    "lines": 551
+  },
+  {
+    "file": "frontend/src/ui/admin-events/AutoExpandingTextarea.tsx",
+    "sha256": "636164daf62a39db0e9b5135e3514f40bab1ad00bb726458a33ec7eb42d55634",
+    "lines": 20
+  },
+  {
+    "file": "frontend/src/ui/admin-events/bookingForm.ts",
+    "sha256": "9b811dc8e386bed4f48b97d66519fb687e050d8fd0a7c6324a849fae7ad4cb1e",
+    "lines": 54
+  },
+  {
+    "file": "frontend/src/ui/app/App.css",
+    "sha256": "cab17d389f95f02a9194056a640c80250684d21d86687a891a6fb3a2ce23e695",
+    "lines": 273
+  },
+  {
+    "file": "frontend/src/ui/app/App.tsx",
+    "sha256": "2981ccc93d805a4a62c11b4d46fdc48f03e32564066cc0c784f6ba701c8b6db5",
+    "lines": 501
+  },
+  {
+    "file": "frontend/src/ui/app/ThemeToggle.tsx",
+    "sha256": "c4d4b836a60beddd152b7595d05bf5de4a23bef65b583249bd9c8fdef66e5ca9",
+    "lines": 16
+  },
+  {
+    "file": "frontend/src/ui/app/index.css",
+    "sha256": "a3dae6b2472a5fb6b9960cf9f90274cda920a7e36751238383506519db64f21b",
+    "lines": 79
+  },
+  {
+    "file": "frontend/src/ui/app/main.tsx",
+    "sha256": "7e9e581f7a93399ffcd455abd853d73759c1c3a9f01ddc8fadfdc229ff487432",
+    "lines": 15
+  },
+  {
+    "file": "frontend/src/ui/app/theme.css",
+    "sha256": "5b6071ec772c8443336ee5cd5ddabca057f94af9f71dbd8cb6a9db01e7063135",
+    "lines": 164
+  },
+  {
+    "file": "frontend/src/ui/app/theme.ts",
+    "sha256": "33f73aababdf2a3f520f321ce87440097901f162bc4ba0ea068eed7210714822",
+    "lines": 25
+  },
+  {
+    "file": "frontend/src/ui/archives/ArchiveManager.tsx",
+    "sha256": "3294d9b31a6481afa77406d3a21bf85f3823731a94910d98083bcb2188949461",
+    "lines": 177
+  },
+  {
+    "file": "frontend/src/ui/archives/ArchivePreview.tsx",
+    "sha256": "ee77cdcbed1f1703a0e4f4ceb314c0ddab350569eafffbedf6f8e813a93fbd6e",
+    "lines": 34
+  },
+  {
+    "file": "frontend/src/ui/archives/ArchivedAssistantPanel.tsx",
+    "sha256": "2441045bfbb8e9d659b86e46c9adfcdb9bcc55a598958e136838b4d64542a1d7",
+    "lines": 55
+  },
+  {
+    "file": "frontend/src/ui/archives/Archives.css",
+    "sha256": "846c7870cc345bc12912e2661a796100d9a87f96cd4f6b32f4ac8440c68d6630",
+    "lines": 60
+  },
+  {
+    "file": "frontend/src/ui/schedule/CalendarZoomControls.css",
+    "sha256": "24ddf835baeacf6d012ebdbe02e036343ba0de966bc78b4e8370f01b5982924a",
+    "lines": 24
+  },
+  {
+    "file": "frontend/src/ui/schedule/CalendarZoomControls.tsx",
+    "sha256": "b314df67df003ec9931ca943d7442e7c6ce2963a4e75e3b40d17491672e8122b",
+    "lines": 17
+  },
+  {
+    "file": "frontend/src/ui/schedule/ScheduleCalendar.css",
+    "sha256": "893d440fbcb619f77984e8a7b626783af3e40923a67da99be1a4985a7d5bce04",
+    "lines": 1081
+  },
+  {
+    "file": "frontend/src/ui/schedule/ScheduleCalendar.tsx",
+    "sha256": "8956fdc421c4e71ae44bc84d017372ff5b10970ad3540941aa9b33febdd53ea8",
+    "lines": 1170
+  },
+  {
+    "file": "frontend/src/ui/schedule/ScheduleDateNavigation.css",
+    "sha256": "4550d4b47eedcd423cc709402e9e7797423cf90b26b03b3fb18cf07296834804",
+    "lines": 134
+  },
+  {
+    "file": "frontend/src/ui/schedule/ScheduleDateNavigation.tsx",
+    "sha256": "fecd62977437dbb8ec3e3b12c401fb5bdc18bc8217348519aff8e092d19f6103",
+    "lines": 75
+  },
+  {
+    "file": "frontend/src/ui/schedule/ScheduleFilter.css",
+    "sha256": "8ce1047157cbbee266f737fa7f20e89062501a2f0c06ad04820e4963f7385b2a",
+    "lines": 137
+  },
+  {
+    "file": "frontend/src/ui/schedule/ScheduleFilter.tsx",
+    "sha256": "3f29c82c913fad4ec70cec14be5d552aca2f340cf051402091fda161e39a0790",
+    "lines": 105
+  },
+  {
+    "file": "frontend/src/ui/student-assistants/AssistantWeeklyCalendar.tsx",
+    "sha256": "1cf7670d51ded5a9912d34979775d6cdf90a811016de751f28cd48b7779def1c",
+    "lines": 249
+  },
+  {
+    "file": "frontend/src/ui/student-assistants/StudentAssistant.css",
+    "sha256": "3d8d4a5d7f745905fdca321fd4d8fbc0856123fb7b41f1e5d9c61f0c636b88cb",
+    "lines": 1091
+  },
+  {
+    "file": "frontend/src/ui/student-assistants/StudentAssistantPanel.tsx",
+    "sha256": "ad4f5479246d4ed74e10768f8b66c3ff136a6b101d6fc5c624d921dc15aec557",
+    "lines": 668
+  },
+  {
+    "file": "frontend/src/ui/student-assistants/WeeklyWorkloadSummary.tsx",
+    "sha256": "d28818b0cccfcd5b5f601d6377b62aa39d3f19deea6fa6a47121225e27c06a07",
+    "lines": 49
+  },
+  {
+    "file": "frontend/tsconfig.app.json",
+    "sha256": "3cafbd2d36d0b19c6c0f4371f87803930c8983d061e4be59d5a1bf8553b7e74c",
+    "lines": 25
+  },
+  {
+    "file": "frontend/tsconfig.json",
+    "sha256": "ad28d132ee48d6e23917cf5827cace785d0fc01a44ca68b0dda51cc8c3fd3f52",
+    "lines": 7
+  },
+  {
+    "file": "frontend/tsconfig.node.json",
+    "sha256": "f8bdd75a1010a2889529e1607b563739297e61372ad62b96352cd4353182cfb4",
+    "lines": 25
+  },
+  {
+    "file": "frontend/vite.config.ts",
+    "sha256": "4b4f450c1963afd8aca03685ea0334dafee837b4102a4909d3b0f7272a53f8cd",
+    "lines": 18
+  },
+  {
+    "file": "package.json",
+    "sha256": "e02ee3e0f1ad5a86c6208525c264877b09d1868ba5d90af450f4e8cc67014558",
+    "lines": 53
+  },
+  {
+    "file": "scripts/build-backend.mjs",
+    "sha256": "28ce0ada7c10277cdec44b1e12c04e8cbecbd985d0f24db94a0ea807abc9bdf5",
+    "lines": 52
+  },
+  {
+    "file": "scripts/register-typescript.mjs",
+    "sha256": "469355fa91f3983915425cb660391e11e1760e2e9291619d650bbd352de16310",
+    "lines": 28
+  },
+  {
+    "file": "scripts/setup-python.mjs",
+    "sha256": "a5940b95b86fe0a2a965fff258cbab1db6df1bc3aa40b85986abaef24d01931a",
+    "lines": 36
+  },
+  {
+    "file": "scripts/test-archives.mjs",
+    "sha256": "28445f5edff20a6af93f41cdb86748e2545be583b7855fdc724701450cc106e0",
+    "lines": 209
+  },
+  {
+    "file": "scripts/test-assignment-sync.mjs",
+    "sha256": "e33afa7bfb9ea934d8791b77cd52e24539f0c04975b04258a9c59b961b3cf522",
+    "lines": 69
+  },
+  {
+    "file": "scripts/test-assistant-edit.mjs",
+    "sha256": "73204c1dc20b4979765821cacfec5025181b0a00f8f40f43da96d9967686a14e",
+    "lines": 42
+  },
+  {
+    "file": "scripts/test-assistant-removal.mjs",
+    "sha256": "57ae449ef2b7d9a91eb8255abf8321f5b6e8d08f4705ee0e9156582f37b54ab8",
+    "lines": 55
+  },
+  {
+    "file": "scripts/test-assistant-rosters.mjs",
+    "sha256": "8d3d89dd30e27af226db7ff8033ceab8deec52ee005d2e87e7cb8144d6f04dd5",
+    "lines": 99
+  },
+  {
+    "file": "scripts/test-backend-process.mjs",
+    "sha256": "1bb998adcd03af5e799e47f7095b62ea93d2d441d3a05c0b884568a390636b44",
+    "lines": 51
+  },
+  {
+    "file": "scripts/test-booking-edit.mjs",
+    "sha256": "bec7a5861da4959bf5bca5fb57a837c843621fd28993136f33a87dada656ef7c",
+    "lines": 42
+  },
+  {
+    "file": "scripts/test-conflicts-database.mjs",
+    "sha256": "238c6eb74e8d77e9bd96395d88a03de348facf12d4c657174e349f5be5271837",
+    "lines": 122
+  },
+  {
+    "file": "scripts/test-conflicts.mjs",
+    "sha256": "0265bd7a3c8ad76a80c250bcb33d673f339909d5508d9e0c1509ad2681b8fa14",
+    "lines": 86
+  },
+  {
+    "file": "scripts/test-event-deletions.mjs",
+    "sha256": "e2a7f5785210bda74c1b07228d5cdf0ca85b7cc5962cfaddd6e3aae52640bc8d",
+    "lines": 88
+  },
+  {
+    "file": "scripts/test-event-schedule.mjs",
+    "sha256": "3b99387520f7ef50844ab9a595b4e67365be4d3105fa391700a814d817dede37",
+    "lines": 56
+  },
+  {
+    "file": "scripts/test-exam-period.mjs",
+    "sha256": "4fdeecedfdb9ad52f49f54ea2e87acc6df5fa3e7add4efc63ed49c3b5678547b",
+    "lines": 109
+  },
+  {
+    "file": "scripts/test-preferences.mjs",
+    "sha256": "37b671b3e2a49456b193c19905b19e0e5585ab874cfeb0fdbc9142b3dd09e158",
+    "lines": 25
+  },
+  {
+    "file": "scripts/test-room-schedule-export.mjs",
+    "sha256": "b9d345717c22f362d82137aa6baf3cb8cf40d708a262398f28a77642a9e42ca3",
+    "lines": 49
+  },
+  {
+    "file": "scripts/test-schedule-import.mjs",
+    "sha256": "a1df123c31fdcc18d067f1db335947595f5e66e94c53af87747f500ef16348dc",
+    "lines": 87
+  },
+  {
+    "file": "scripts/test-theme.mjs",
+    "sha256": "b8e3b579707e3514c56f994076ac80f9ac9420a69932f3c273bb55f175f7efce",
+    "lines": 64
+  },
+  {
+    "file": "scripts/test-ui-components.mjs",
+    "sha256": "a4ac1b4984876e1f8090a10767ad6f473c40e516656b5bd1c61ba3d4f5da5d7d",
+    "lines": 64
+  },
+  {
+    "file": "scripts/test-weekly-workload.mjs",
+    "sha256": "f0aba5d02e071e0f33bc3900fee5233fb8ea002307f0e24b015d3786cc97ec7a",
+    "lines": 24
+  },
+  {
+    "file": "scripts/theme-ui-smoke.cjs",
+    "sha256": "5826df7fd314babdb31ebe0880f69f96b985262e8855d85cf372e2d65c86c0fb",
+    "lines": 305
+  }
+]

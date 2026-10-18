@@ -1,4 +1,4 @@
-import { createSharedArchive, deleteSharedArchive, loadSharedArchives } from '../api/archiveApi'
+import { ArchiveNameConflictError, createSharedArchive, deleteSharedArchive, loadSharedArchives } from '../api/archiveApi'
 import type { ArchiveRecord, RemoteArchiveRecord, ScheduleArchive } from './archiveTypes'
 import { normalizedArchiveName } from '../formatters/archiveName'
 
@@ -61,6 +61,27 @@ export function deleteArchiveLocally(id: string) {
   })
 }
 
+/** Only a rejected, never-uploaded snapshot may be renamed. Synced archives stay immutable. */
+export async function renameConflictingArchive(id: string, name: string) {
+  if (!name.trim() || name.trim().length > 200) throw new Error('Enter an archive name with 1–200 characters.')
+  await transaction<void>('readwrite', (store, done, fail) => {
+    const request = store.getAll()
+    request.onsuccess = () => {
+      const records = request.result as ArchiveRecord[]
+      const record = records.find(value => value.id === id)
+      if (!record?.pending || !record.nameConflict || record.deletedAt) {
+        fail(new Error('Only an unsynced archive with a name conflict can be renamed.')); return
+      }
+      if (records.some(value => value.id !== id && !value.deletedAt
+        && normalizedArchiveName(value.archive.name) === normalizedArchiveName(name))) {
+        fail(new Error('An archive with this name already exists. Choose a different name.')); return
+      }
+      store.put({ ...record, archive: { ...record.archive, name: name.trim() }, nameConflict: false })
+      done(undefined)
+    }
+  })
+}
+
 export function mergeArchiveRecord(local: ArchiveRecord | undefined, remote: RemoteArchiveRecord): ArchiveRecord {
   if (local?.pending) return local
   // A stale remote list must never resurrect a locally deleted snapshot.
@@ -68,12 +89,14 @@ export function mergeArchiveRecord(local: ArchiveRecord | undefined, remote: Rem
   return { ...remote, pending: false }
 }
 
-async function acknowledge(record: ArchiveRecord) {
+async function acknowledge(record: ArchiveRecord, nameConflict = false) {
   await transaction<void>('readwrite', (store, done) => {
     const request = store.get(record.id)
     request.onsuccess = () => {
       const latest = request.result as ArchiveRecord | undefined
-      if (latest && latest.deletedAt === record.deletedAt) store.put({ ...latest, pending: false })
+      if (latest && latest.deletedAt === record.deletedAt && latest.archive.name === record.archive.name) {
+        store.put({ ...latest, pending: nameConflict, nameConflict })
+      }
       done(undefined)
     }
   })
@@ -84,8 +107,14 @@ export function syncArchives(): Promise<void> {
   synchronization = (async () => {
     const local = await listLocalArchives()
     for (const record of local.filter(value => value.pending)) {
+      if (record.nameConflict && !record.deletedAt) continue
       // Insert-if-absent cannot overwrite a saved archive or revive a tombstone.
-      await createSharedArchive(record.archive)
+      try {
+        if (!record.nameConflict) await createSharedArchive(record.archive)
+      } catch (error) {
+        if (!(error instanceof ArchiveNameConflictError)) throw error
+        if (!record.deletedAt) { await acknowledge(record, true); continue }
+      }
       if (record.deletedAt) await deleteSharedArchive(record.id)
       await acknowledge(record)
     }

@@ -4,6 +4,10 @@ from typing import Any
 from .client import request
 
 
+class ArchiveNameConflictError(ValueError):
+    pass
+
+
 def load_archives() -> list[dict[str, Any]]:
     rows = []
     while True:
@@ -23,7 +27,7 @@ def create_archive(archive: dict[str, Any]) -> None:
         return  # Retrying the same immutable snapshot is idempotent.
     for record in records:
         if not record['deletedAt'] and ' '.join(record['archive']['name'].split()).lower() == normalized:
-            raise ValueError('An archive with this name already exists. Choose a different name.')
+            raise ArchiveNameConflictError('An archive with this name already exists. Choose a different name.')
     try:
         request('POST', 'schedule_archives', query={'on_conflict': 'id'}, payload={
             'id': archive['id'], 'name': archive['name'], 'school_year': archive['schoolYear'],
@@ -31,7 +35,7 @@ def create_archive(archive: dict[str, Any]) -> None:
         }, prefer='resolution=ignore-duplicates,return=minimal')
     except RuntimeError as error:
         if 'schedule_archives_unique_name' in str(error):
-            raise ValueError('An archive with this name already exists. Choose a different name.') from error
+            raise ArchiveNameConflictError('An archive with this name already exists. Choose a different name.') from error
         raise
 
 

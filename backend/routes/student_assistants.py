@@ -21,7 +21,7 @@ def put_shared_data():
         save_student_assistant_data(payload)
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
-    return jsonify({'rosterStorageVersion': 1})
+    return jsonify({'rosterStorageVersion': 1, 'resultStorageVersion': 1})
 
 
 @blueprint.post("/api/student-assistant/solve")

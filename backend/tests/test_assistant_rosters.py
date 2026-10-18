@@ -56,5 +56,69 @@ class AssistantRosterTests(unittest.TestCase):
                 'assistants': [], 'activeScheduleKey': 'A', 'rostersBySchedule': {'A': []},
             })
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.get_json(), {'rosterStorageVersion': 1})
+            self.assertEqual(response.get_json(), {'rosterStorageVersion': 1, 'resultStorageVersion': 1})
             save.assert_called_once()
+
+    def save_results(self, existing, incoming):
+        with patch('backend.database.supabase.student_assistant_repository.load_data', return_value=existing), \
+             patch('backend.database.supabase.student_assistant_repository.request') as request:
+            save_data(incoming)
+            return request.call_args.kwargs['payload']['solver_result']
+
+    def test_editing_b_cannot_overwrite_newer_duties_in_a_with_same_roster(self):
+        existing = {'rostersBySchedule': {'A': [], 'B': []}, 'rosterRevisions': {'A': 'same', 'B': 'same'},
+                    'solverResultsBySchedule': {'A': {'assignments': ['new-duty']}, 'B': {'assignments': []}},
+                    'resultRevisions': {'A': '002', 'B': '001'}}
+        incoming = {**existing, 'activeScheduleKey': 'B', 'solverResult': {'assignments': ['b-edit']},
+                    'solverResultsBySchedule': {'A': {'assignments': ['old-duty']}},
+                    'resultRevisions': {'A': '001', 'B': '003'}}
+        envelope = self.save_results(existing, incoming)
+        self.assertEqual(envelope['resultsBySchedule']['A'], {'assignments': ['new-duty']})
+        self.assertEqual(envelope['resultsBySchedule']['B'], {'assignments': ['b-edit']})
+        self.assertEqual(envelope['resultRevisions'], {'A': '002', 'B': '003'})
+
+    def test_two_offline_csv_edits_are_both_saved_from_one_pending_snapshot(self):
+        incoming = {'activeScheduleKey': 'B', 'rostersBySchedule': {'A': [], 'B': []},
+                    'solverResultsBySchedule': {'A': {'assignments': ['a-edit']}},
+                    'solverResult': {'assignments': ['b-edit']}, 'resultRevisions': {'A': '002', 'B': '003'}}
+        envelope = self.save_results({}, incoming)
+        self.assertEqual(envelope['resultsBySchedule'], {'A': {'assignments': ['a-edit']}, 'B': {'assignments': ['b-edit']}})
+
+    def test_cleared_result_revision_prevents_old_cache_restoring_it(self):
+        existing = {'rostersBySchedule': {'A': []}, 'solverResultsBySchedule': {'A': {'assignments': ['old']}},
+                    'resultRevisions': {'A': '001'}}
+        cleared = self.save_results(existing, {'activeScheduleKey': 'A', 'rostersBySchedule': {'A': []},
+                                              'solverResult': None, 'resultRevisions': {'A': '003'}})
+        existing.update(solverResultsBySchedule=cleared['resultsBySchedule'], resultRevisions=cleared['resultRevisions'])
+        retried = self.save_results(existing, {'activeScheduleKey': 'A', 'rostersBySchedule': {'A': []},
+                                              'solverResult': {'assignments': ['old']}, 'resultRevisions': {'A': '002'}})
+        self.assertNotIn('A', retried['resultsBySchedule'])
+        self.assertEqual(retried['resultRevisions']['A'], '003')
+
+    def test_unversioned_inactive_cache_is_not_a_write(self):
+        existing = {'solverResultsBySchedule': {'A': {'assignments': ['new']}}}
+        envelope = self.save_results(existing, {'activeScheduleKey': 'B', 'rostersBySchedule': {'A': [], 'B': []},
+                                               'solverResultsBySchedule': {'A': {'assignments': ['old']}}, 'solverResult': None})
+        self.assertEqual(envelope['resultsBySchedule']['A'], {'assignments': ['new']})
+
+    def test_old_client_cannot_overwrite_versioned_active_result(self):
+        existing = {'solverResultsBySchedule': {'A': {'assignments': ['new']}}, 'resultRevisions': {'A': '002'}}
+        incoming = {'activeScheduleKey': 'A', 'rostersBySchedule': {'A': []}, 'solverResult': None}
+        self.assertEqual(self.save_results(existing, incoming)['resultsBySchedule']['A'], {'assignments': ['new']})
+
+    def test_rejected_older_roster_cannot_replace_its_result(self):
+        existing = {'rostersBySchedule': {'A': []}, 'rosterRevisions': {'A': '003'},
+                    'solverResultsBySchedule': {}, 'resultRevisions': {'A': '003'}}
+        incoming = {'activeScheduleKey': 'A', 'rostersBySchedule': {'A': [{'id': 'deleted-student'}]},
+                    'rosterRevisions': {'A': '001'}, 'solverResult': {'assignments': ['stale']}, 'resultRevisions': {'A': '004'}}
+        envelope = self.save_results(existing, incoming)
+        self.assertNotIn('A', envelope['resultsBySchedule'])
+        self.assertEqual(envelope['resultRevisions']['A'], '003')
+
+    def test_result_revisions_round_trip_and_equal_revision_is_idempotent(self):
+        existing = {'rostersBySchedule': {'A': []}, 'solverResultsBySchedule': {'A': {'assignments': ['new']}},
+                    'resultRevisions': {'A': '002'}}
+        envelope = self.save_results(existing, {**existing, 'activeScheduleKey': 'A', 'solverResult': None})
+        self.assertEqual(envelope['resultsBySchedule']['A'], {'assignments': ['new']})
+        with patch('backend.database.supabase.student_assistant_repository.request', return_value=[{'solver_result': envelope}]):
+            self.assertEqual(load_data()['resultRevisions'], {'A': '002'})

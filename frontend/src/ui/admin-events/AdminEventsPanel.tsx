@@ -17,9 +17,9 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onBook, onU
   events: CalendarEvent[]
   csvEvents: CalendarEvent[]
   rooms: string[]
-  onSave: (form: AdminEventForm, editingId: string | null) => void
+  onSave: (form: AdminEventForm, editingId: string | null, replacedIds?: string[]) => boolean | void
   onBook: (form: RoomBookingForm, schedules: BookingDateSchedule[]) => void
-  onUpdateBooking: (ids: string[], form: RoomBookingForm, schedules: BookingDateSchedule[]) => void
+  onUpdateBooking: (ids: string[], form: RoomBookingForm, schedules: BookingDateSchedule[], replacedIds?: string[]) => boolean | void
   onDeleteMany: (ids: string[]) => void
   editRequest: { eventId: string, scope?: BookingEditScope } | null
   onClose: () => void
@@ -345,11 +345,14 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onBook, onU
   }
 
   const completeBooking = () => {
-    if (selectedEventConflictIds.length > 0) onDeleteMany(selectedEventConflictIds)
     const schedules = dates.map(date => ({ date, rooms: effectiveRoomsForDate(date), timeRanges: effectiveTimesForDate(date).map(({ startTime, endTime }) => ({ startTime, endTime })) }))
     const datedBooking = { ...booking, examPeriod, startDate: dates[0], endDate: dates[dates.length - 1], repeat: 'none' as const }
-    if (editingBookingIds.length > 0) onUpdateBooking(editingBookingIds, datedBooking, schedules)
-    else onBook(datedBooking, schedules)
+    if (editingBookingIds.length > 0) {
+      if (onUpdateBooking(editingBookingIds, datedBooking, schedules, selectedEventConflictIds) === false) return
+    } else {
+      if (selectedEventConflictIds.length > 0) onDeleteMany(selectedEventConflictIds)
+      onBook(datedBooking, schedules)
+    }
     setBooking(createEmptyBookingForm(toDateInputValue(new Date())))
     setExamPeriod(false)
     const today = toDateInputValue(new Date())
@@ -391,7 +394,7 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onBook, onU
 
   const completeMove = () => {
     if (!requestedEvent) return
-    if (moveConflictingEvents.length > 0) onDeleteMany(moveConflictingEvents.map(event => event.id))
+    const replacedIds = moveConflictingEvents.map(event => event.id)
     if (requestedEvent.id.startsWith('booking_')) {
       const movedBooking: RoomBookingForm = {
         title: requestedEvent.courseCode,
@@ -405,9 +408,9 @@ export function AdminEventsPanel({ events, csvEvents, rooms, onSave, onBook, onU
         repeat: 'none',
         weekdays: [new Date(`${moveDate}T12:00:00`).getDay()],
       }
-      onUpdateBooking([requestedEvent.id], movedBooking, [{ date: moveDate, rooms: [moveRoom], timeRanges: [{ startTime: moveStartTime, endTime: moveEndTime }] }])
+      if (onUpdateBooking([requestedEvent.id], movedBooking, [{ date: moveDate, rooms: [moveRoom], timeRanges: [{ startTime: moveStartTime, endTime: moveEndTime }] }], replacedIds) === false) return
     } else {
-      onSave({ title: requestedEvent.courseCode, description: moveDescription, date: moveDate, room: moveRoom, startTime: moveStartTime, endTime: moveEndTime }, requestedEvent.id)
+      if (onSave({ title: requestedEvent.courseCode, description: moveDescription, date: moveDate, room: moveRoom, startTime: moveStartTime, endTime: moveEndTime }, requestedEvent.id, replacedIds) === false) return
     }
     setShowMoveWarning(false)
     onClose()
