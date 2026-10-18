@@ -546,8 +546,8 @@
   },
   {
     "file": "frontend/src/ui/student-assistants/StudentAssistantPanel.tsx",
-    "sha256": "ad4f5479246d4ed74e10768f8b66c3ff136a6b101d6fc5c624d921dc15aec557",
-    "lines": 668
+    "sha256": "2c0fcc8975d43fa41b80e142a3eb8274b0a7e837a5fe80e382f769e23eec14a8",
+    "lines": 652
   },
   {
     "file": "frontend/src/ui/student-assistants/WeeklyWorkloadSummary.tsx",
@@ -676,8 +676,8 @@
   },
   {
     "file": "scripts/test-ui-components.mjs",
-    "sha256": "a4ac1b4984876e1f8090a10767ad6f473c40e516656b5bd1c61ba3d4f5da5d7d",
-    "lines": 64
+    "sha256": "7a14ce3414f1e23e74581f6e631d1dfb2e938a6a6fae44f4f6a6bcdaf3a9e6f6",
+    "lines": 81
   },
   {
     "file": "scripts/test-weekly-workload.mjs",

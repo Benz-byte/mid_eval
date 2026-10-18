@@ -1,12 +1,12 @@
 # Auto Scheduler Code Guide
 
-A plain language explanation of the application and its main algorithms
+A beginner friendly system manual and code reference
 
 19 October 2026
 
 The application turns uploaded class schedules and student assistants' personal schedules into regular duty assignments. It also supports manual assignments, date-specific events, relievers, weekly workload reports, room-based Excel exports, and read-only archives. Most working changes are stored on this device first and sent to Supabase afterward.
 
-This guide follows the current source code, including the five recent fixes and the normal-close backend cleanup. Read Chapters 1 through 5 first to understand the foundations. Chapters 6 through 15 explain the important user actions and their code. The remaining chapters cover storage, the backend, packaging, testing, and a complete source-file reference. The examples use made-up students and classes.
+Start with Chapter 0 if you have never used the application or read program code. Chapters 1 through 5 explain its foundations. Sections 6A through 6I explain CP SAT and recommendation ranking. Chapters 7 through 15 follow user actions. Chapters 16 through 18E explain persistence and the complete database layout. Chapters 19 through 25 cover desktop operation, testing, worked scenarios, troubleshooting, and system boundaries. The final reference connects these explanations to individual source files and functions. Examples use made-up students and classes.
 
 The important distinction is between the original class schedule, the duty assignments linked to that schedule, and an archive of both. These are separate pieces of data. Removing a duty does not delete a class, and viewing an archive does not replace the active working schedule.
 
@@ -15,6 +15,7 @@ The important distinction is between the original class schedule, the duty assig
 | What you want to understand | Read first |
 | --- | --- |
 | What each part of the application does | Chapters 1 and 2 |
+| A first walkthrough with no technical background | Chapter 0 |
 | What data is saved and how CSVs stay separate | Chapters 3 and 16 |
 | Uploading and validating schedules | Chapter 4 |
 | How CP SAT works and how our solver makes assignments | Chapter 5 then sections 6A through 6I and Chapter 7 |
@@ -23,6 +24,10 @@ The important distinction is between the original class schedule, the duty assig
 | Calendars and weekly workload rankings | Chapters 12 and 13 |
 | Archiving and exporting | Chapters 14 and 15 |
 | Supabase and deleted events | Chapters 16 through 18 |
+| Every database column and the JSON stored inside it | Sections 18A through 18E |
+| What happens in common and unusual situations | Chapters 22 and 23 |
+| Checking saved data without deleting anything | Chapter 24 |
+| Important boundaries and a demonstration checklist | Chapter 25 |
 | Building and closing the desktop app | Chapter 19 |
 | Testing and explaining the system in a defense | Chapters 20 and 21 |
 | Where a specific file belongs | Source file reference and symbol index |
@@ -410,7 +415,7 @@ The pending variable is the request's snapshot, not a live object. The compariso
 
 ### Isolation does not mean one database table per CSV
 
-Events carry scheduleKey. Student assistant data has rostersBySchedule and resultsBySchedule maps keyed by the fingerprint. Uploading B activates B's roster and result; it does not erase A's cache. Legacy unscoped assistants are preserved in an unlinked pool and require explicit linking.
+Events carry scheduleKey. Student assistant data has rostersBySchedule and resultsBySchedule maps keyed by the fingerprint. Uploading B activates B's roster and result; it does not erase A's cache. Legacy unscoped assistants are preserved in an unlinked pool, but the old linking button has been removed. They are not automatically added to every new CSV roster.
 
 The cloud shared_schedules record still represents one shared active schedule, using the fixed ID ccs-main. Per-CSV assistant and event histories are scoped, but the system is not a fully independent multi-user workspace system. Editing the shared active schedule from another device can affect which schedule is loaded.
 
@@ -506,7 +511,7 @@ Passing these checks is not the same as testing the distributed executable again
 | Symptom | First things to check |
 | --- | --- |
 | Unknown schedule format | Confirm the actual file headers and the running backend's parser version; check for an old process on port 5000 |
-| CSV parses but no assistant roster appears | Confirm the active fingerprint and the scoped roster; check the explicit legacy-linking pool |
+| CSV parses but no assistant roster appears | Confirm the active fingerprint and scoped roster; legacy unlinked records do not automatically belong to this CSV |
 | Event is local but absent from Supabase | Check pending sync, backend errors, credentials, and required migrations including 010 |
 | Old event reappears | Verify migration 010 and deleted-ID propagation; distinguish historical unrecorded deletions |
 | No valid manual duty candidate | Check personal classes, duties, events, regular limits, and the duty gap |

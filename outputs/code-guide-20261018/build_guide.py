@@ -259,6 +259,10 @@ def table(rows):
               4: [0.8, 1.6, 2.5, 2.04], 5: [1.74, 1.3, 1.3, 1.3, 1.3]}[len(rows[0])]
     if rows[0][0] == 'Objective term': widths = [2.2, 1.5, 3.24]
     if rows[0][0] == 'Concept': widths = [1.4, 2.6, 2.94]
+    if len(rows[0]) == 3 and rows[0][0] == 'Column': widths = [1.75, 1.6, 3.59]
+    if len(rows[0]) == 3 and rows[0][0] == 'Table': widths = [2.15, 2.7, 2.09]
+    if len(rows[0]) == 2 and rows[0][0] in ('Envelope field', 'JSON field', 'Fields', 'Field'):
+        widths = [2.65, 4.29]
     for col, width in zip(t.columns, widths): col.width = Inches(width)
     for ri, values in enumerate(rows):
         cells = t.add_row().cells
@@ -277,6 +281,7 @@ def table(rows):
             tcpr.append(borders)
             shading = OxmlElement('w:shd'); shading.set(qn('w:fill'), 'DCE6F1' if ri == 0 else ('F4F6F8' if ri % 2 == 0 else 'FFFFFF')); tcpr.append(shading)
             p = cell.paragraphs[0]
+            p.paragraph_format.keep_with_next = ri == 0
             p.paragraph_format.space_after = Pt(2)
             p.paragraph_format.line_spacing = 1.05
             inline(p, value)
@@ -320,6 +325,12 @@ guide = (OUT / 'guide.md').read_text(encoding='utf-8')
 start = guide.index('## 6 How the solver builds a schedule')
 end = guide.index('## 7 Create schedule', start)
 guide = guide[:start] + (OUT / 'cpsat.md').read_text(encoding='utf-8') + '\n\n' + guide[end:]
+guide = guide.replace('## 1 The application in one picture',
+    (OUT / 'beginner.md').read_text(encoding='utf-8') + '\n\n## 1 The application in one picture', 1)
+guide = guide.replace('## 19 Desktop startup shutdown and building',
+    (OUT / 'database.md').read_text(encoding='utf-8') + '\n\n## 19 Desktop startup shutdown and building', 1)
+guide = guide.replace('## Source file reference',
+    (OUT / 'scenarios.md').read_text(encoding='utf-8') + '\n\n## Source file reference', 1)
 lines = guide.splitlines()
 i = 0
 while i < len(lines):
