@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 const { CalendarZoomControls } = await import('../frontend/src/ui/schedule/CalendarZoomControls.tsx')
 const { ScheduleDateNavigation } = await import('../frontend/src/ui/schedule/ScheduleDateNavigation.tsx')
 const { WeeklyWorkloadSummary } = await import('../frontend/src/ui/student-assistants/WeeklyWorkloadSummary.tsx')
+const { StudentAssistantPanel } = await import('../frontend/src/ui/student-assistants/StudentAssistantPanel.tsx')
 const { AdminEventsPanel } = await import('../frontend/src/ui/admin-events/AdminEventsPanel.tsx')
 const { bookingFormFromEvents, bookingSeriesKey, inferBookingRepeat } = await import('../frontend/src/ui/admin-events/bookingForm.ts')
 const { startOfWeek, toDateInputValue, dateFromInputValue, weekRangeLabel } = await import('../frontend/src/formatters/dateFormatter.ts')
@@ -61,4 +62,20 @@ const legacyEditor = renderToStaticMarkup(React.createElement(AdminEventsPanel, 
   onExamDatesChange:noop,canCreateExamPeriod:true,
 }))
 assert.ok(legacyEditor.includes('Save Changes') && legacyEditor.includes('Bring ID'), 'Old saved events still open in the move editor')
+const previousStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+const legacyRoster = JSON.stringify({
+  activeScheduleKey:'current-csv', assistants:[], rostersBySchedule:{'current-csv':[]},
+  unlinkedAssistants:[{id:'previous-student',label:'Previous Student',fileName:'previous.xlsx',events:[]}],
+})
+try {
+  Object.defineProperty(globalThis, 'localStorage', { configurable:true, value:{getItem:()=>legacyRoster} })
+  const assistantPanel = renderToStaticMarkup(React.createElement(StudentAssistantPanel, {
+    mainSchedule:[],mainScheduleName:'Current.csv',mainScheduleKey:'current-csv',adminEvents:[],onViewDuty:noop,
+  }))
+  assert.ok(!assistantPanel.includes('Link previous assistants to this CSV'), 'Legacy linking button must not appear')
+  assert.ok(assistantPanel.includes('No student assistant added'), 'Previous assistants must not be added to this CSV automatically')
+} finally {
+  if (previousStorage) Object.defineProperty(globalThis, 'localStorage', previousStorage)
+  else delete globalThis.localStorage
+}
 console.log('UI component checks passed: zoom controls, daily/weekly headings, date helpers, names, hours, booking forms and workload summary.')

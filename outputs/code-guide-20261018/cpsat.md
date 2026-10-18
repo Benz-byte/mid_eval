@@ -253,3 +253,35 @@ This is a newly built smaller model, not a suspended CP-SAT search being resumed
 
 [G4] Google OR-Tools troubleshooting documentation for worker portfolios and search limits. https://github.com/google/or-tools/blob/stable/ortools/sat/docs/troubleshooting.md
 
+## 6I Lexicographic ranking and weighted optimization
+
+### Two different decision methods in our app
+
+Our assistant recommendations use lexicographic multi-criteria sorting. Our CP-SAT schedule generation uses a weighted multi-criteria objective. These methods serve different purposes and should not be described as the same algorithm.
+
+Lexicographic sorting compares candidates by the first criterion. Only a tie allows the next criterion to decide. A better later criterion cannot compensate for a worse earlier one. The reliever and manual-duty candidate lists use the following order after excluding unavailable assistants.
+
+| Priority | Comparison with lower values first |
+| --- | --- |
+| 1 | Projected weekly workload in minutes |
+| 2 | Projected daily workload in minutes |
+| 3 | Longest continuous duty block after assignment |
+| 4 | Number of duties that day after assignment |
+| 5 | Student ID in string order or assistant ID if missing |
+
+For example, Anna with 22 projected weekly hours ranks before Ben with 23, even if Ben has fewer hours that day. If both have 22 weekly hours, daily workload decides. If that is also equal, the comparison continues down the list. These are ranking examples, not a claim that a manual regular-duty assignment can exceed its workload caps; availability filtering happens first, and reliever work is overtime.
+
+### How the comparator implements this order
+
+The sort callback subtracts the right candidate's value from the left candidate's value. A negative result places the left candidate first. The `||` operators return the first nonzero comparison; zero means tied, so evaluation continues down the table. Student identifiers use localeCompare instead of numeric subtraction.
+
+This ordering recommends a candidate for one requested duty. It does not search all possible future schedules or prove that this individual choice produces the best complete schedule. Find Reliever automatically takes the first eligible candidate; the manual-duty flow lets the user choose from the ordered list.
+
+### Why our CP SAT objective is different
+
+The solver combines coverage, workload balance, and the other terms in section 6F into one score. Weighted terms can trade off against each other. The code does not run separate optimization stages that prove the best first objective, fix it, and then optimize the next. Therefore we should not claim strict lexicographic optimization for schedule generation.
+
+An accurate system description is: The system uses CP-SAT with a weighted multi-criteria objective for schedule generation, and lexicographic multi-criteria sorting for assistant recommendations.
+
+Sources: frontend/src/ui/schedule/ScheduleCalendar.tsx, rankRelievers comparator at line 714 and availableRegularDutyCandidates comparator at line 779; backend/solver/student_assistant_solver.py, model.maximize at line 677.
+

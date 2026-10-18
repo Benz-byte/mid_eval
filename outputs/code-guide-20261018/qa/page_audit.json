@@ -85,188 +85,194 @@
   },
   {
     "page": 15,
-    "characters": 2510,
-    "first": "Auto Scheduler Code Guide   |   15 \n7 Create schedule and reschedule entire schedule \nThe button and settings window \nCreate ",
-    "last": "ntPanel.runSolver, studentAssistantApi.solveStudentAssistantSchedule, and \n_solve_incremental_schedule in the Python solver. "
+    "characters": 2862,
+    "first": "Auto Scheduler Code Guide   |   15 \n6I Lexicographic ranking and weighted optimization \nTwo different decision methods in our",
+    "last": "ilableRegularDutyCandidates comparator at line 779; backend/solver/student_assistant_solver.py, model.maximize at line \n677. "
   },
   {
     "page": 16,
-    "characters": 2300,
-    "first": "Auto Scheduler Code Guide   |   16 \n8 Manual duties and assistant editing \nAssigning a duty without running the solver \nClick",
-    "last": "/src/storage/studentAssistantStorage.ts, StudentAssistantPanel.saveEditedAssistant, and \nScheduleCalendar.assignRegularDuty. "
+    "characters": 2510,
+    "first": "Auto Scheduler Code Guide   |   16 \n7 Create schedule and reschedule entire schedule \nThe button and settings window \nCreate ",
+    "last": "ntPanel.runSolver, studentAssistantApi.solveStudentAssistantSchedule, and \n_solve_incremental_schedule in the Python solver. "
   },
   {
     "page": 17,
-    "characters": 2110,
-    "first": "Auto Scheduler Code Guide   |   17 \n9 Relievers and overtime \nFinding someone to cover a duty \nThe reliever flow starts from ",
-    "last": "rankRelievers, effectiveIntervalsFor, effectiveWeeklyMinutes, \npersistRelieverRecords, findRelievers, and relieverRecordFor. "
+    "characters": 2300,
+    "first": "Auto Scheduler Code Guide   |   17 \n8 Manual duties and assistant editing \nAssigning a duty without running the solver \nClick",
+    "last": "/src/storage/studentAssistantStorage.ts, StudentAssistantPanel.saveEditedAssistant, and \nScheduleCalendar.assignRegularDuty. "
   },
   {
     "page": 18,
-    "characters": 2162,
-    "first": "Auto Scheduler Code Guide   |   18 \n10 Events rooms dates and exam dates \nOne booking can create many cards \nAdminEventsPanel",
-    "last": "nd/src/ui/admin-events/AdminEventsPanel.tsx, frontend/src/formatters/examPeriod.ts, \nand the event-save handlers in App.tsx. "
+    "characters": 2316,
+    "first": "Auto Scheduler Code Guide   |   18 \n9 Relievers and overtime \nFinding someone to cover a duty \nThe reliever flow starts from ",
+    "last": "rankRelievers, effectiveIntervalsFor, effectiveWeeklyMinutes, \npersistRelieverRecords, findRelievers, and relieverRecordFor. "
   },
   {
     "page": 19,
-    "characters": 2273,
-    "first": "Auto Scheduler Code Guide   |   19 \n11 Assigning assistants to events and editing bookings \nAvailability is checked for the s",
-    "last": "okingEdit.ts, frontend/src/formatters/bookingSeries.ts, \nApp.commitEventEdit, and ScheduleCalendar.availableEventAssistants. "
+    "characters": 2162,
+    "first": "Auto Scheduler Code Guide   |   19 \n10 Events rooms dates and exam dates \nOne booking can create many cards \nAdminEventsPanel",
+    "last": "nd/src/ui/admin-events/AdminEventsPanel.tsx, frontend/src/formatters/examPeriod.ts, \nand the event-save handlers in App.tsx. "
   },
   {
     "page": 20,
-    "characters": 2238,
-    "first": "Auto Scheduler Code Guide   |   20 \n12 How the calendars are drawn \nDates are views over stored data \nThe Schedule tab's dail",
-    "last": "lag. \nSources: ScheduleCalendar.tsx, AssistantWeeklyCalendar.tsx, ScheduleDateNavigation.tsx, and \nCalendarZoomControls.tsx. "
+    "characters": 2273,
+    "first": "Auto Scheduler Code Guide   |   20 \n11 Assigning assistants to events and editing bookings \nAvailability is checked for the s",
+    "last": "okingEdit.ts, frontend/src/formatters/bookingSeries.ts, \nApp.commitEventEdit, and ScheduleCalendar.availableEventAssistants. "
   },
   {
     "page": 21,
-    "characters": 1982,
-    "first": "Auto Scheduler Code Guide   |   21 \n13 Weekly workload reports \nThe report includes the whole roster \nWeeklyWorkloadSummary s",
-    "last": "data. \nSources: frontend/src/formatters/weeklyWorkload.ts and frontend/src/ui/student-\nassistants/WeeklyWorkloadSummary.tsx. "
+    "characters": 2238,
+    "first": "Auto Scheduler Code Guide   |   21 \n12 How the calendars are drawn \nDates are views over stored data \nThe Schedule tab's dail",
+    "last": "lag. \nSources: ScheduleCalendar.tsx, AssistantWeeklyCalendar.tsx, ScheduleDateNavigation.tsx, and \nCalendarZoomControls.tsx. "
   },
   {
     "page": 22,
-    "characters": 2469,
-    "first": "Auto Scheduler Code Guide   |   22 \n14 Archives are saved snapshots \nCapturing and saving \ncreateScheduleArchive validates th",
-    "last": "iveTypes.ts, archiveStorage.ts, archiveWorkflow.ts, ArchiveManager.tsx, \nArchivePreview.tsx, and ArchivedAssistantPanel.tsx. "
+    "characters": 1982,
+    "first": "Auto Scheduler Code Guide   |   22 \n13 Weekly workload reports \nThe report includes the whole roster \nWeeklyWorkloadSummary s",
+    "last": "data. \nSources: frontend/src/formatters/weeklyWorkload.ts and frontend/src/ui/student-\nassistants/WeeklyWorkloadSummary.tsx. "
   },
   {
     "page": 23,
-    "characters": 1910,
-    "first": "Auto Scheduler Code Guide   |   23 \n15 Exporting a room schedule to Excel \nWhat the workbook contains \ncreateRoomScheduleExce",
-    "last": "ble in the app; those fields would need explicit export \nformatting code. \nSource: frontend/src/export/roomScheduleExcel.ts. "
+    "characters": 2469,
+    "first": "Auto Scheduler Code Guide   |   23 \n14 Archives are saved snapshots \nCapturing and saving \ncreateScheduleArchive validates th",
+    "last": "iveTypes.ts, archiveStorage.ts, archiveWorkflow.ts, ArchiveManager.tsx, \nArchivePreview.tsx, and ArchivedAssistantPanel.tsx. "
   },
   {
     "page": 24,
-    "characters": 2512,
-    "first": "Auto Scheduler Code Guide   |   24 \n16 Local storage cloud queues and CSV isolation \nWhere data is kept \nLocation Main conten",
-    "last": " schedule is loaded. \nSources: frontend/src/storage/, App.tsx, and the schedule and student assistant Supabase repositories. "
+    "characters": 1910,
+    "first": "Auto Scheduler Code Guide   |   24 \n15 Exporting a room schedule to Excel \nWhat the workbook contains \ncreateRoomScheduleExce",
+    "last": "ble in the app; those fields would need explicit export \nformatting code. \nSource: frontend/src/export/roomScheduleExcel.ts. "
   },
   {
     "page": 25,
-    "characters": 2537,
-    "first": "Auto Scheduler Code Guide   |   25 \n17 Versioned assignments and permanent event deletion \nWhy roster versions alone were ins",
-    "last": "udentAssistantStorage.ts, localFirstSync.ts, student_assistant_repository.py, \nadmin_event_repository.py, and migration 010. "
+    "characters": 2512,
+    "first": "Auto Scheduler Code Guide   |   25 \n16 Local storage cloud queues and CSV isolation \nWhere data is kept \nLocation Main conten",
+    "last": " schedule is loaded. \nSources: frontend/src/storage/, App.tsx, and the schedule and student assistant Supabase repositories. "
   },
   {
     "page": 26,
-    "characters": 2356,
-    "first": "Auto Scheduler Code Guide   |   26 \n18 The backend routes and database tables \nThe layers on the Python side \nA route receive",
-    "last": "03. Validation errors commonly return 400; archive name conflicts return 409; rejected saves \nfor deleted events return 410. "
+    "characters": 2537,
+    "first": "Auto Scheduler Code Guide   |   26 \n17 Versioned assignments and permanent event deletion \nWhy roster versions alone were ins",
+    "last": "udentAssistantStorage.ts, localFirstSync.ts, student_assistant_repository.py, \nadmin_event_repository.py, and migration 010. "
   },
   {
     "page": 27,
-    "characters": 2305,
-    "first": "Auto Scheduler Code Guide   |   27 \n19 Desktop startup shutdown and building \nDevelopment and packaged mode \nIn development, ",
-    "last": "rontend/src/desktop/, scripts/build-backend.mjs, frontend/electron-builder.json, \nfrontend/vite.config.ts, and package.json. "
+    "characters": 2356,
+    "first": "Auto Scheduler Code Guide   |   27 \n18 The backend routes and database tables \nThe layers on the Python side \nA route receive",
+    "last": "03. Validation errors commonly return 400; archive name conflicts return 409; rejected saves \nfor deleted events return 410. "
   },
   {
     "page": 28,
-    "characters": 2521,
-    "first": "Auto Scheduler Code Guide   |   28 \n20 Testing and diagnosing failures \nWhat the automated checks prove \nnpm test runs Python",
-    "last": "st pass. Back up meaningful schedules as archives, and remember that \nclearing app data also removes unsynced local records. "
+    "characters": 2305,
+    "first": "Auto Scheduler Code Guide   |   28 \n19 Desktop startup shutdown and building \nDevelopment and packaged mode \nIn development, ",
+    "last": "rontend/src/desktop/, scripts/build-backend.mjs, frontend/electron-builder.json, \nfrontend/vite.config.ts, and package.json. "
   },
   {
     "page": 29,
-    "characters": 2603,
-    "first": "Auto Scheduler Code Guide   |   29 \n21 Questions you should be able to answer \nWhy use a solver instead of randomly assigning",
-    "last": "ent. Bundling an environment file does not make its \ncontents secret; do not distribute privileged service-role credentials. "
+    "characters": 2521,
+    "first": "Auto Scheduler Code Guide   |   29 \n20 Testing and diagnosing failures \nWhat the automated checks prove \nnpm test runs Python",
+    "last": "st pass. Back up meaningful schedules as archives, and remember that \nclearing app data also removes unsynced local records. "
   },
   {
     "page": 30,
-    "characters": 2794,
-    "first": "Auto Scheduler Code Guide   |   30 \nSource file reference \nThe following reference covers application source files, styles, m",
-    "last": "efreshes shared records separately, saves locally before closing, and offers view, delete, \nor conflict-only rename actions. "
+    "characters": 2603,
+    "first": "Auto Scheduler Code Guide   |   30 \n21 Questions you should be able to answer \nWhy use a solver instead of randomly assigning",
+    "last": "ent. Bundling an environment file does not make its \ncontents secret; do not distribute privileged service-role credentials. "
   },
   {
     "page": 31,
-    "characters": 2994,
-    "first": "Auto Scheduler Code Guide   |   31 \nfrontend/src/ui/archives/ArchivePreview.tsx  (34 lines) \nDisplays an explicit archive sna",
-    "last": ", editing and deleting students, settings, full or incremental \nsolving, selection, week navigation, and the workload popup. "
+    "characters": 2794,
+    "first": "Auto Scheduler Code Guide   |   31 \nSource file reference \nThe following reference covers application source files, styles, m",
+    "last": "efreshes shared records separately, saves locally before closing, and offers view, delete, \nor conflict-only rename actions. "
   },
   {
     "page": 32,
-    "characters": 2682,
-    "first": "Auto Scheduler Code Guide   |   32 \nfrontend/src/ui/student-assistants/WeeklyWorkloadSummary.tsx  (49 lines) \nRenders the ros",
-    "last": "rmatters/bookingSeries.ts  (3 lines) \nDerives a booking-series key by removing the trailing numeric indices and date suffix. "
+    "characters": 2994,
+    "first": "Auto Scheduler Code Guide   |   32 \nfrontend/src/ui/archives/ArchivePreview.tsx  (34 lines) \nDisplays an explicit archive sna",
+    "last": ", editing and deleting students, settings, full or incremental \nsolving, selection, week navigation, and the workload popup. "
   },
   {
     "page": 33,
-    "characters": 2671,
-    "first": "Auto Scheduler Code Guide   |   33 \nfrontend/src/formatters/dateFormatter.ts  (36 lines) \nConverts local date input values, f",
-    "last": "/themeStorage.ts  (11 lines) \nStores the device\u2019s light or dark preference and falls back to dark if storage is unavailable. "
+    "characters": 2682,
+    "first": "Auto Scheduler Code Guide   |   33 \nfrontend/src/ui/student-assistants/WeeklyWorkloadSummary.tsx  (49 lines) \nRenders the ros",
+    "last": "rmatters/bookingSeries.ts  (3 lines) \nDerives a booking-series key by removing the trailing numeric indices and date suffix. "
   },
   {
     "page": 34,
-    "characters": 2559,
-    "first": "Auto Scheduler Code Guide   |   34 \nDesktop entry points and shared types \nfrontend/src/desktop/backendProcess.ts  (19 lines)",
-    "last": "t configuration, checks whether Supabase is configured, performs REST \nrequests with a timeout, and surfaces service errors. "
+    "characters": 2671,
+    "first": "Auto Scheduler Code Guide   |   34 \nfrontend/src/formatters/dateFormatter.ts  (36 lines) \nConverts local date input values, f",
+    "last": "/themeStorage.ts  (11 lines) \nStores the device\u2019s light or dark preference and falls back to dark if storage is unavailable. "
   },
   {
     "page": 35,
-    "characters": 2579,
-    "first": "Auto Scheduler Code Guide   |   35 \nbackend/database/supabase/schedule_repository.py  (53 lines) \nStores and loads the shared",
-    "last": "  (24 lines) \nValidates event updates, delegates protected deletion, and builds sync snapshots filtered against deleted IDs. "
+    "characters": 2559,
+    "first": "Auto Scheduler Code Guide   |   35 \nDesktop entry points and shared types \nfrontend/src/desktop/backendProcess.ts  (19 lines)",
+    "last": "t configuration, checks whether Supabase is configured, performs REST \nrequests with a timeout, and surfaces service errors. "
   },
   {
     "page": 36,
-    "characters": 2806,
-    "first": "Auto Scheduler Code Guide   |   36 \nbackend/services/archive_service.py  (21 lines) \nValidates snapshot payloads and UUIDs be",
-    "last": "ents.sql  (7 lines) \nAdds the schedule key and supporting index that associate each event with a specific uploaded schedule. "
+    "characters": 2579,
+    "first": "Auto Scheduler Code Guide   |   36 \nbackend/database/supabase/schedule_repository.py  (53 lines) \nStores and loads the shared",
+    "last": "  (24 lines) \nValidates event updates, delegates protected deletion, and builds sync snapshots filtered against deleted IDs. "
   },
   {
     "page": 37,
-    "characters": 2396,
-    "first": "Auto Scheduler Code Guide   |   37 \ndatabase/supabase/migrations/009_unique_archive_names.sql  (6 lines) \nEnforces unique nor",
-    "last": "fines TypeScript compilation scope, strictness, module output, and build relationships for its frontend or Electron \ntarget. "
+    "characters": 2806,
+    "first": "Auto Scheduler Code Guide   |   37 \nbackend/services/archive_service.py  (21 lines) \nValidates snapshot payloads and UUIDs be",
+    "last": "ents.sql  (7 lines) \nAdds the schedule key and supporting index that associate each event with a specific uploaded schedule. "
   },
   {
     "page": 38,
-    "characters": 2571,
-    "first": "Auto Scheduler Code Guide   |   38 \nfrontend/tsconfig.json  (7 lines) \nDefines TypeScript compilation scope, strictness, modu",
-    "last": "ts/test-conflicts.mjs  (86 lines) \nRuns regression checks for conflicts, using the actual related modules and test fixtures. "
+    "characters": 2396,
+    "first": "Auto Scheduler Code Guide   |   38 \ndatabase/supabase/migrations/009_unique_archive_names.sql  (6 lines) \nEnforces unique nor",
+    "last": "fines TypeScript compilation scope, strictness, module output, and build relationships for its frontend or Electron \ntarget. "
   },
   {
     "page": 39,
-    "characters": 1527,
-    "first": "Auto Scheduler Code Guide   |   39 \nscripts/test-event-deletions.mjs  (88 lines) \nRuns regression checks for event deletions,",
-    "last": "nd mocked HTTP calls. Optional modes cover \nassistant edits/removal, booking edits, event deletion, and archive save/rename. "
+    "characters": 2571,
+    "first": "Auto Scheduler Code Guide   |   39 \nfrontend/tsconfig.json  (7 lines) \nDefines TypeScript compilation scope, strictness, modu",
+    "last": "ts/test-conflicts.mjs  (86 lines) \nRuns regression checks for conflicts, using the actual related modules and test fixtures. "
   },
   {
     "page": 40,
-    "characters": 2274,
-    "first": "Auto Scheduler Code Guide   |   40 \nImportant function and handler index \nThis index identifies named functions, exported dat",
-    "last": "at \nline 23 \nbackend/services/archive_service.py \nget_archives at line 8; save_archive at line 12; remove_archive at line 16 "
+    "characters": 1527,
+    "first": "Auto Scheduler Code Guide   |   40 \nscripts/test-event-deletions.mjs  (88 lines) \nRuns regression checks for event deletions,",
+    "last": "nd mocked HTTP calls. Optional modes cover \nassistant edits/removal, booking edits, event deletion, and archive save/rename. "
   },
   {
     "page": 41,
-    "characters": 2873,
-    "first": "Auto Scheduler Code Guide   |   41 \nbackend/services/conflict_detector.py \nevents_overlap at line 4 \nbackend/services/schedul",
-    "last": "ntend/src/desktop/environment.ts \nisDev at line 1 \nfrontend/src/desktop/main.ts \nstartFlask at line 13; stopFlask at line 49 "
+    "characters": 2274,
+    "first": "Auto Scheduler Code Guide   |   41 \nImportant function and handler index \nThis index identifies named functions, exported dat",
+    "last": "at \nline 23 \nbackend/services/archive_service.py \nget_archives at line 8; save_archive at line 12; remove_archive at line 16 "
   },
   {
     "page": 42,
-    "characters": 2979,
-    "first": "Auto Scheduler Code Guide   |   42 \nfrontend/src/export/roomScheduleExcel.ts \nescapeXml at line 12; timeLabel at line 18; eve",
-    "last": "ync at line 125; hasPendingAssistantSync at line 150; \nqueueAssistantSync at line 154; flushPendingAssistantSync at line 159 "
+    "characters": 2873,
+    "first": "Auto Scheduler Code Guide   |   42 \nbackend/services/conflict_detector.py \nevents_overlap at line 4 \nbackend/services/schedul",
+    "last": "ntend/src/desktop/environment.ts \nisDev at line 1 \nfrontend/src/desktop/main.ts \nstartFlask at line 13; stopFlask at line 49 "
   },
   {
     "page": 43,
-    "characters": 3280,
-    "first": "Auto Scheduler Code Guide   |   43 \nfrontend/src/storage/preferenceStorage.ts \nloadActiveTab at line 6; saveActiveTab at line",
-    "last": "31  \nfrontend/src/ui/schedule/CalendarZoomControls.tsx \nCalendarZoomControlsProps at line 3; CalendarZoomControls at line 9  "
+    "characters": 2979,
+    "first": "Auto Scheduler Code Guide   |   43 \nfrontend/src/export/roomScheduleExcel.ts \nescapeXml at line 12; timeLabel at line 18; eve",
+    "last": "ync at line 125; hasPendingAssistantSync at line 150; \nqueueAssistantSync at line 154; flushPendingAssistantSync at line 159 "
   },
   {
     "page": 44,
-    "characters": 2598,
-    "first": "Auto Scheduler Code Guide   |   44 \nfrontend/src/ui/schedule/ScheduleCalendar.tsx \nDutyContext at line 22; RelieverCandidate ",
-    "last": "src/ui/student-assistants/WeeklyWorkloadSummary.tsx \nWeeklyWorkloadSummaryProps at line 5; WeeklyWorkloadSummary at line 13  "
+    "characters": 3280,
+    "first": "Auto Scheduler Code Guide   |   44 \nfrontend/src/storage/preferenceStorage.ts \nloadActiveTab at line 6; saveActiveTab at line",
+    "last": "31  \nfrontend/src/ui/schedule/CalendarZoomControls.tsx \nCalendarZoomControlsProps at line 3; CalendarZoomControls at line 9  "
   },
   {
     "page": 45,
+    "characters": 2598,
+    "first": "Auto Scheduler Code Guide   |   45 \nfrontend/src/ui/schedule/ScheduleCalendar.tsx \nDutyContext at line 22; RelieverCandidate ",
+    "last": "src/ui/student-assistants/WeeklyWorkloadSummary.tsx \nWeeklyWorkloadSummaryProps at line 5; WeeklyWorkloadSummary at line 13  "
+  },
+  {
+    "page": 46,
     "characters": 1433,
-    "first": "Auto Scheduler Code Guide   |   45 \nGlossary \nTerm Meaning in this application \nBackend The local Python service that handles",
+    "first": "Auto Scheduler Code Guide   |   46 \nGlossary \nTerm Meaning in this application \nBackend The local Python service that handles",
     "last": " that prevents stale data from being recreated \nUpsert Insert a new record or update the existing record with the same key \n "
   }
 ]

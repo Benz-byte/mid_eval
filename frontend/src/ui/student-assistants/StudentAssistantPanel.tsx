@@ -65,7 +65,6 @@ export function StudentAssistantPanel({
 }) {
   const localAssistantData = useMemo(() => loadLocalAssistantData(), [])
   const [assistants, setAssistants] = useState<UploadedAssistant[]>(localAssistantData.assistants)
-  const [unlinkedAssistants, setUnlinkedAssistants] = useState(localAssistantData.unlinkedAssistants ?? [])
   const [result, setResult] = useState<StudentAssistantResult | null>(() => mainScheduleKey && localAssistantData.activeScheduleKey === mainScheduleKey
     ? localAssistantData.result : null)
   const [settings, setSettings] = useState<SchedulingSettings>(localAssistantData.settings)
@@ -109,7 +108,6 @@ export function StudentAssistantPanel({
     if (!isActive) return
     const saved = loadLocalAssistantData()
     setAssistants(saved.assistants)
-    setUnlinkedAssistants(saved.unlinkedAssistants ?? [])
     setSettings(saved.settings)
     setResult(mainScheduleKey && saved.activeScheduleKey === mainScheduleKey ? saved.result : null)
   }, [mainScheduleKey, isActive])
@@ -131,7 +129,6 @@ export function StudentAssistantPanel({
           const nextSettings = merged.settings
           const nextResult = merged.result
           setAssistants(merged.assistants)
-          setUnlinkedAssistants(merged.unlinkedAssistants ?? [])
           setResult(nextResult)
           setSettings(nextSettings)
           setDraftDutyGapMinutes(nextSettings.minimumGapAfterThreeHourDutyMinutes)
@@ -575,19 +572,6 @@ export function StudentAssistantPanel({
       </header>
 
       {error && !settingsOpen && <p className="form-error">{error}</p>}
-      {mainScheduleKey && unlinkedAssistants.length > 0 && <div className="sa-profile-actions">
-        <button className="btn-secondary" type="button" onClick={() => {
-          if (!window.confirm(`Link the ${unlinkedAssistants.length} previously shared student assistants to ${mainScheduleName}?`)) return
-          const saved = loadLocalAssistantData()
-          const nextAssistants = [...new Map([...saved.assistants, ...(saved.unlinkedAssistants ?? [])].map(a => [a.id, a])).values()]
-          const nextResult = saved.resultsBySchedule[mainScheduleKey] ?? saved.result
-          saveLocalAssistantData({ ...saved, assistants: nextAssistants, result: nextResult, unlinkedAssistants: [] })
-          assistantRevisionRef.current += 1
-          setAssistants(nextAssistants)
-          setResult(nextResult)
-          setUnlinkedAssistants([])
-        }}>Link previous assistants to this CSV</button>
-      </div>}
       {result && result.status !== 'OPTIMAL' && result.status !== 'FEASIBLE' && <div className={`sa-result-status ${result.status.toLowerCase()}`}><strong>No valid schedule found</strong></div>}
       {visibleDiagnostics.length > 0 && <ul className="sa-diagnostics">{visibleDiagnostics.map(message => <li key={message}>{message}</li>)}</ul>}
 

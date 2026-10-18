@@ -2,7 +2,7 @@
 
 A plain language explanation of the application and its main algorithms
 
-18 October 2026
+19 October 2026
 
 The application turns uploaded class schedules and student assistants' personal schedules into regular duty assignments. It also supports manual assignments, date-specific events, relievers, weekly workload reports, room-based Excel exports, and read-only archives. Most working changes are stored on this device first and sent to Supabase afterward.
 
@@ -17,7 +17,7 @@ The important distinction is between the original class schedule, the duty assig
 | What each part of the application does | Chapters 1 and 2 |
 | What data is saved and how CSVs stay separate | Chapters 3 and 16 |
 | Uploading and validating schedules | Chapter 4 |
-| How CP SAT works and how our solver makes assignments | Chapter 5 then sections 6A through 6H and Chapter 7 |
+| How CP SAT works and how our solver makes assignments | Chapter 5 then sections 6A through 6I and Chapter 7 |
 | Manual duties and relievers | Chapters 8 and 9 |
 | Events and assistant availability | Chapters 10 and 11 |
 | Calendars and weekly workload rankings | Chapters 12 and 13 |
@@ -236,6 +236,8 @@ Sources: `frontend/src/formatters/assistantSchedule.ts`, `frontend/src/storage/s
 The reliever flow starts from a duty that already has an original assistant. `rankRelievers` excludes that person and removes students who have an overlapping personal class, event, effective duty, or existing replacement duty. The remaining candidates can exceed the regular-duty workload limits because covering a duty is treated as overtime.
 
 Candidates are sorted by projected weekly workload, daily workload, longest continuous block, number of duties, and student identifier. Find Reliever takes the first eligible candidate, saves a date-specific RelieverAssignment, and closes the flow. It does not rerun the solver or permanently replace the original recurring DutyAssignment.
+
+This is lexicographic multi-criteria sorting: each later criterion is used only to break a tie in the earlier ones. Section 6I explains the comparator and contrasts it with the CP-SAT weighted objective.
 
 ### Original assistant and replacement assistant
 
